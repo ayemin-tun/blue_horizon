@@ -1,100 +1,10 @@
-"use client";
+import { Metadata } from "next";
+import LoginForm from "./components/LoginForm";
 
-import { useState } from "react";
-import Input from "@/components/Input";
-import Link from "next/link";
+export const metadata: Metadata = {
+  title: "Login",
+};
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Logging in with:", { email, password, rememberMe });
-    // TODO: Connect to Backend API
-    alert("Account login submitted!");
-  };
-
-  return (
-    <div className="mx-full w-full max-w-md space-y-8">
-
-      {/* Form Header */}
-      <div>
-        <h2 className="text-3xl font-serif font-bold text-blue-950">Sign In</h2>
-        <p className="mt-2 text-sm text-slate-500">Access the air ticket system</p>
-        <div className="mt-4 h-[2px] w-full bg-slate-200" />
-      </div>
-
-      {/* Login Form */}
-      <form onSubmit={handleLogin} className="space-y-6">
-        {/* Email Address */}
-
-        <Input
-          id="email"
-          label="Email Address"
-          type="email"
-          placeholder="example@bluehorizon.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        {/* Password */}
-        <Input
-          id="password"
-          label = 'Passsword'
-          placeholder="••••••••"         
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        {/* Checkbox & Forgot Password */}
-        <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-600"
-            />
-            Remember this device
-          </label>
-          <Link href="/forgot-password" className="font-medium text-blue-700 hover:underline">
-            Forgot password
-          </Link>
-        </div>
-
-        {/* Secure Login Button */}
-        <button
-          type="submit"
-          className="w-full rounded-md bg-blue-800 py-3 text-center text-sm font-bold tracking-wider text-white uppercase shadow-md transition-all hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-600"
-        >
-          Secure Login
-        </button>
-
-        <p className="text-sm text-center text-slate-600">
-            Don't have an account?{" "}
-            <Link href="/register" className="font-semibold text-blue-700 hover:underline">
-              Register
-            </Link>
-          </p>
-      </form>
-
-      {/* Bottom Restricted Notice */}
-      <div className="pt-6">
-        <div className="h-[2px] w-full bg-slate-200 mb-4" />
-        <div className="text-center space-y-1">
-          <p className="text-xs font-bold tracking-widest text-blue-800 uppercase">
-            Blue Horizon - Restricted Access
-          </p>
-          <p className="text-[11px] text-slate-500">
-            Unauthorised access is prohibited and monitored
-          </p>
-        </div>
-      </div>
-
-    </div>
-  );
+  return <LoginForm />;
 }
