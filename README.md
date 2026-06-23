@@ -68,3 +68,42 @@ npm run dev
 Open `http://localhost:3000 `in your browser to view the application.
 
 ---
+
+## 2. Backend & Database Setup (Python/SQLite)
+Navigate to the backend-python directory:
+```bash 
+cd backend-python
+```
+
+## 🗄️ Database Initialization
+Create a data directory inside backend-python to hold the SQLite database:
+
+```bash 
+mkdir -p data
+```
+
+Initialize and generate the database tables:
+
+- on MacOS/Linux
+```bash 
+python3 app/database/init_db.py
+```
+
+- On Window 
+```bash 
+python app/database/init_db.py
+```
+(Note: If `python` doesn't work on Windows, try using `py app/database/init_db.py` instead.)
+
+---
+
+## 📝 Git Workflow Notes
+Before pushing any code changes, ensure that unwanted files (e.g., node_modules/, venv/, local database files) are properly ignored using the .gitignore file.
+
+To commit and push your changes:
+
+```bash 
+git add .
+git commit -m "Your descriptive commit message"
+git push origin master
+```
