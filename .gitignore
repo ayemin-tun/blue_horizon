@@ -1,0 +1,18 @@
+# Node.js (Frontend)
+frontend-nextjs/node_modules/
+frontend-nextjs/.next/
+frontend-nextjs/out/
+frontend-nextjs/.env*.local
+
+# Python (Backend)
+backend-python/__pycache__/
+backend-python/*.pyc
+backend-python/venv/
+backend-python/.env
+
+# Database 
+backend-python/data/blue_horizon.db
+
+# OS Files
+.DS_Store
+Thumbs.db
