@@ -16,3 +16,4 @@ backend-python/data/blue_horizon.db
 # OS Files
 .DS_Store
 Thumbs.db
+.env

@@ -1,7 +1,15 @@
 import sqlite3
 import os
+import sys
+
+# add root path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+# Password Hash Function Call 
+from app.utils.auth_utils import get_password_hash
 
 def init_database():
+
     # Database location (backend-python/data/blue_horizon.db)
     db_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data')
     os.makedirs(db_dir, exist_ok=True)
@@ -19,9 +27,9 @@ def init_database():
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS USERS (
         user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL UNIQUE,
+        username TEXT NOT NULL,
         password TEXT NOT NULL,
-        email TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
         role TEXT CHECK(role IN ('admin', 'agent')) NOT NULL
     )''')
 
@@ -110,9 +118,18 @@ def init_database():
     # 🚀 Insert Mock Data
     # ---------------------------------------------------------
     
-    # 1. Default Users 
-    cursor.execute("INSERT OR IGNORE INTO USERS (user_id, username, password, email, role) VALUES (1, 'admin', 'admin123', 'admin@bluehorizon.com', 'admin')")
-    cursor.execute("INSERT OR IGNORE INTO USERS (user_id, username, password, email, role) VALUES (2, 'agent01', 'agent123', 'agent01@bluehorizon.com', 'agent')")
+    admin_hashed_password = get_password_hash("admin@123")
+    agent_hashed_password = get_password_hash("agent@123")
+
+    # 1. Default User 
+    cursor.execute(
+        "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role) VALUES (?, ?, ?, ?, ?)",
+        (1, 'admin', admin_hashed_password, 'admin@bluehorizon.com', 'admin')
+    )
+    cursor.execute(
+        "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role) VALUES (?, ?, ?, ?, ?)",
+        (2, 'agent01', agent_hashed_password, 'agent01@bluehorizon.com', 'agent')
+    )
 
     # 2. Sample Airline & Route
     cursor.execute("INSERT OR IGNORE INTO AIRLINES (airline_id, airline_name) VALUES (1, 'MAI')")
