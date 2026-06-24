@@ -15,11 +15,20 @@ air-ticket-analytics-system/
 │   └── public/               # Static Assets (Logos, Icons)
 │
 ├── backend-python/           # FastAPI (Backend RESTful APIs)
-│   ├── data/                 # SQLite Database (blue_horizon.db)
-│   ├── auth_utils.py         # Password Hashing & JWT Token Utilities
-│   └── run.py                # Main FastAPI Application Entry
-|
-── backend-Cobol/          
+│   ├── app/
+│   │   ├── database/         # Database Connection, Models & Mock Data
+│   │   │   ├── database.py
+│   │   │   ├── models.py
+│   │   │   └── init_db.py    # Database Initialization & Seed Script
+│   │   ├── routes/           # API Endpoints (auth.py, etc.)
+│   │   └── utils/            # Shared Helper Utilities
+│   │       └── auth_utils.py # Password Hashing & JWT Token Utilities
+│   ├── data/                 # Local SQLite Database Folder (Auto-generated)
+│   ├── venv/                 # Python Virtual Environment (Local only)
+│   ├── requirements.txt      # Python Dependencies & Libraries List
+│   └── run.py                # Main FastAPI Application Entry & Docs Security
+│
+├── backend-Cobol/            # Legacy COBOL Processing Core
 │
 └── README.md                 # Project Documentation
 ```
@@ -75,25 +84,72 @@ Navigate to the backend-python directory:
 cd backend-python
 ```
 
-## 🗄️ Database Initialization
-Create a data directory inside backend-python to hold the SQLite database:
+## 🔌 Virtual Environment Setup
+It is highly recommended to use a virtual environment to manage dependencies:
+
+```bash 
+
+# Create Virtual Environment
+python3 -m venv venv
+
+# Activate on MacOS/Linux
+source venv/bin/box/activate
+
+# Activate on Windows
+venv\Scripts\activate
+
+```
+
+## 📦 Dependencies Installation
+Install all required libraries including specified secure bcrypt versions:
+
+```bash 
+pip install -r requirements.txt
+```
+(Note: If you manually update libraries, run ``pip freeze > requirements.txt`` to sync the dependencies file.)
+
+## 🗄️ Database Initialization & Seed Data 
+Initialize and generate the database tables along with secure hashed mock data (``admin@bluehorizon.com`` and ``agent01@bluehorizon.com``):
 
 ```bash 
 mkdir -p data
 ```
 
-Initialize and generate the database tables:
-
-- on MacOS/Linux
+on MacOS/Linux
 ```bash 
 python3 app/database/init_db.py
 ```
 
-- On Window 
+On Window 
 ```bash 
 python app/database/init_db.py
 ```
 (Note: If `python` doesn't work on Windows, try using `py app/database/init_db.py` instead.)
+Note: If you ever need to reset or sync the database structure, manually delete the `data/blue_horizon.db` file and re-run this initialization script.)
+
+---
+## 🏃‍♂️ Running the Server
+Start the FastAPI development backend server:
+
+```bash 
+python run.py 
+```
+
+or 
+
+```bash 
+uvicorn run:app --reload
+```
+The backend API server will start running at `http://127.0.0.1:8000`.
+
+---
+## 🛡️ API Documentation Security
+
+The interactive API documentation (Swagger UI) is hosted at http://127.0.0.1:8000/docs.
+
+To prevent unauthorized access and data manipulation in production environments, the documentation route is strictly protected via HTTP Basic Authentication. Please use the following credentials to access the Swagger UI panel:
+- username: `bh_admin`
+- password: `horizon@2026`
 
 ---
 
@@ -103,6 +159,7 @@ Before pushing any code changes, ensure that unwanted files (e.g., node_modules/
 To commit and push your changes:
 
 ```bash 
+git pull origin master
 git add .
 git commit -m "Your descriptive commit message"
 git push origin master
