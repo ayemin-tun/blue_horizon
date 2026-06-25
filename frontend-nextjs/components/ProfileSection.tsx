@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useAuthStore } from "@/services/auth/authStore";
+import { useAuthStore } from "@/services/store/authStore";
 import ProfileDropdown from "./ProfileDropdown";
 
 interface ProfileSectionProps {

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/services/auth/authStore";
+import { useAuthStore } from "@/services/store/authStore";
 
 interface ProfileDropdownProps {
   isMainPage?: boolean;

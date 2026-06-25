@@ -4,8 +4,9 @@ import { useState } from "react";
 import Input from "@/components/Input";
 import Link from "next/link";
 import { useLoginMutation } from "@/services/auth/authService";
-import { useAuthStore } from "@/services/auth/authStore";
+import { useAuthStore } from "@/services/store/authStore";
 import { useRouter } from "next/navigation";
+import { toast } from "@/services/store/alertStore";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ export default function LoginForm() {
       const result = await loginMutation.mutateAsync({ email, password });
 
       if (result.success) {
-        alert("Login Successful!");
+        toast.success("Login Successful!");
 
         setAuth(
           (result.data as any)?.access_token,

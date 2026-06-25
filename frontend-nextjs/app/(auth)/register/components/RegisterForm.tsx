@@ -5,6 +5,7 @@ import Link from "next/link";
 import Input from "@/components/Input";
 import { useRegisterMutation } from "@/services/auth/authService";
 import { useRouter } from "next/navigation";
+import { toast } from "@/services/store/alertStore";
 
 export default function RegisterForm() {
   const [fullName, setFullName] = useState("");
@@ -31,8 +32,8 @@ export default function RegisterForm() {
       });
 
       if (result.success) {
-        alert("Registration Successful!");
-        router.push("/register");
+        toast.success("Registration Successful!");
+        router.push("/login");
       } else {
         setUiError(result.error?.details || result.message);
       }
