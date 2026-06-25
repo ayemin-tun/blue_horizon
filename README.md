@@ -152,7 +152,13 @@ To prevent unauthorized access and data manipulation in production environments,
 - password: `horizon@2026`
 
 ---
+## Admin Access
+use this email and password to login as admin role or you can manually add this admin on `init_db.py` mocked data file 
 
+- email: `admin@bluehorizon.com`
+- password: `admin@123`
+
+---
 ## 📝 Git Workflow Notes
 Before pushing any code changes, ensure that unwanted files (e.g., node_modules/, venv/, local database files) are properly ignored using the .gitignore file.
 
