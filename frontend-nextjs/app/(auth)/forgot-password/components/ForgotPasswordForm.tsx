@@ -51,7 +51,7 @@ export default function ForgotPasswordForm() {
           
           <p className="text-sm text-center text-slate-600">
             Try one more time?{" "}
-            <Link href="/" className="font-semibold text-blue-700 hover:underline">
+            <Link href="/login" className="font-semibold text-blue-700 hover:underline">
               Sign In
             </Link>
           </p>

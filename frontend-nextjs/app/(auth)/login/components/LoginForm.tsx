@@ -5,6 +5,7 @@ import Input from "@/components/Input";
 import Link from "next/link";
 import { useLoginMutation } from "@/services/auth/authService";
 import { useAuthStore } from "@/services/auth/authStore";
+import { useRouter } from "next/navigation";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -16,6 +17,7 @@ export default function LoginForm() {
   const [uiError, setUiError] = useState<string | null>(null);
   const loginMutation = useLoginMutation();
 
+  const router = useRouter();
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setUiError(null);
@@ -24,7 +26,15 @@ export default function LoginForm() {
 
       if (result.success) {
         alert("Login Successful!");
-        setAuth((result.data as any)?.access_token, 3600000);
+
+        setAuth(
+          (result.data as any)?.access_token,
+           3600000,
+          (result.data as any).username || "Unknown user", 
+          (result.data as any).role || "user"
+          );
+
+        router.push("/");
       } else {
         setUiError(result.error?.details || result.message);
       }

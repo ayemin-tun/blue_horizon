@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Input from "@/components/Input";
 import { useRegisterMutation } from "@/services/auth/authService";
+import { useRouter } from "next/navigation";
 
 export default function RegisterForm() {
   const [fullName, setFullName] = useState("");
@@ -13,7 +14,7 @@ export default function RegisterForm() {
   const [uiError, setUiError] = useState<string | null>(null); 
 
   const registerMutation = useRegisterMutation();
-
+  const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +32,7 @@ export default function RegisterForm() {
 
       if (result.success) {
         alert("Registration Successful!");
+        router.push("/register");
       } else {
         setUiError(result.error?.details || result.message);
       }
@@ -50,7 +52,7 @@ export default function RegisterForm() {
         <div className="mt-3 h-[2px] w-full bg-slate-200" />
       </div>
 
-      {/* ⚠️ Error Box - အမှားတစ်ခုခုရှိရင် လှလှပပ Box လေးနဲ့ ပြပေးမယ် */}
+      
       {uiError && (
         <div className="p-3 bg-red-50 text-red-600 border border-red-200 text-sm rounded-md font-medium">
           ⚠️ {uiError}
@@ -115,7 +117,7 @@ export default function RegisterForm() {
 
           <p className="text-sm text-center text-slate-600">
             Already have an account?{" "}
-            <Link href="/" className="font-semibold text-blue-700 hover:underline">
+            <Link href="/login" className="font-semibold text-blue-700 hover:underline">
               Sign In
             </Link>
           </p>

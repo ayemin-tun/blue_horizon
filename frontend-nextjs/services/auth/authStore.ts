@@ -4,7 +4,9 @@ import { persist } from 'zustand/middleware';
 interface AuthState {
   token: string | null;
   expiry: number | null;
-  setAuth: (token: string, ttl: number) => void;
+  name: string | null; //  User Name State
+  role: string | null; // User Role  State
+  setAuth: (token: string, ttl: number, name: string, role: string) => void;
   getValidToken: () => string | null;
   logout: () => void;
 }
@@ -12,13 +14,16 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
+      //Initial state is null 
       token: null,
       expiry: null,
+      name: null,
+      role: null, 
 
-      // Store Token if login is success
-      setAuth: (token, ttl) => {
+      // Store Token, Expiry, Name and Role if login is success
+      setAuth: (token, ttl, name, role) => {
         const expiryTime = new Date().getTime() + ttl; // current time + TTL (ms)
-        set({ token, expiry: expiryTime });
+        set({ token, expiry: expiryTime, name, role }); 
       },
 
       // check token is expire or not 
@@ -28,15 +33,15 @@ export const useAuthStore = create<AuthState>()(
 
         const now = new Date().getTime();
         if (now > expiry) {
-          // if token is null auto login 
-          set({ token: null, expiry: null });
+          // if token is expire, clear everything
+          set({ token: null, expiry: null, name: null, role: null });
           return null;
         }
         return token;
       },
 
-      //for logout
-      logout: () => set({ token: null, expiry: null }),
+      // for logout (Clear all user data)
+      logout: () => set({ token: null, expiry: null, name: null, role: null }),
     }),
     {
       name: 'bluehorizon-auth', // store on local storage 
