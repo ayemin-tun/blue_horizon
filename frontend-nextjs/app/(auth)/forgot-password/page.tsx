@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import ForgotPasswordForm from "./components/ForgotPasswordForm";
 
 export const metadata: Metadata = {
-  title: "Forgot Password",
+  title: "BlueHorizon-Forgot Password",
 };
 
 export default function ForgotPasswordPage() {

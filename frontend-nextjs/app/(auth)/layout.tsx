@@ -2,6 +2,7 @@ import React from "react";
 
 import Image from 'next/image';
 import logoImg from '@/public/logo.png';
+import Link from "next/link";
 
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -21,35 +22,37 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     <div className="absolute inset-0 bg-linear-to-t from-blue-950/80 via-transparent to-blue-900/40" />
 
                     {/* Text Contents */}
-                    <div className="absolute inset-0 flex flex-col justify-between p-12 text-white">
-                        <div className="flex items-center gap-3">
-                            {/* Logo Icon */}
-                            <div className="relative h-12 w-12 object-contain">
-                                <Image
-                                    src={logoImg}
-                                    alt="Blue Horizon Logo"
-                                    priority
-                                    className="h-full w-full object-contain filter brightness-0 invert"
-                                />
+                    <Link href="/">
+                        <div className="absolute inset-0 flex flex-col justify-between p-12 text-white">
+                            <div className="flex items-center gap-3">
+                                {/* Logo Icon */}
+                                <div className="relative h-12 w-12 object-contain">
+                                    <Image
+                                        src={logoImg}
+                                        alt="Blue Horizon Logo"
+                                        priority
+                                        className="h-full w-full object-contain filter brightness-0 invert"
+                                    />
+                                </div>
+
+
+                                <div>
+                                    <h2 className="text-xl font-bold tracking-wider">BLUE HORIZON</h2>
+                                    <p className="text-xs text-blue-200/80">Air ticket analysis system</p>
+                                </div>
                             </div>
 
-
-                            <div>
-                                <h2 className="text-xl font-bold tracking-wider">BLUE HORIZON</h2>
-                                <p className="text-xs text-blue-200/80">Air ticket analysis system</p>
+                            <div className="max-w-md space-y-4">
+                                <h1 className="text-4xl font-extrabold tracking-tight leading-tight uppercase">
+                                    Discover <br /> The Horizon
+                                </h1>
+                                <p className="text-blue-100/90 leading-relaxed italic text-sm">
+                                    "Explore the world with Blue Horizon. <br />
+                                    Fly to your dream destinations with comfort, safety, and unmatched reliability."
+                                </p>
                             </div>
                         </div>
-
-                        <div className="max-w-md space-y-4">
-                            <h1 className="text-4xl font-extrabold tracking-tight leading-tight uppercase">
-                                Discover <br /> The Horizon
-                            </h1>
-                            <p className="text-blue-100/90 leading-relaxed italic text-sm">
-                                "Explore the world with Blue Horizon. <br />
-                                Fly to your dream destinations with comfort, safety, and unmatched reliability."
-                            </p>
-                        </div>
-                    </div>
+                    </Link>
                 </div>
 
                 {/* 🔐 Left Size - Form Section */}

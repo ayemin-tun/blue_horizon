@@ -33,8 +33,12 @@ export default function LoginForm() {
           (result.data as any).username || "Unknown user", 
           (result.data as any).role || "user"
           );
-
-        router.push("/");
+        
+        if((result.data as any).role == 'admin'){
+          router.push('/admin')
+        }else{
+          router.push('/')
+        }
       } else {
         setUiError(result.error?.details || result.message);
       }

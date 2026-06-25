@@ -1,0 +1,129 @@
+"use client";
+
+import { useState } from "react";
+
+interface AdminSidebarProps {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}
+
+export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
+  const menuItems = [
+    { 
+      id: "overview", 
+      label: "System Overview", 
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="9" rx="1" />
+          <rect x="14" y="3" width="7" height="5" rx="1" />
+          <rect x="14" y="12" width="7" height="9" rx="1" />
+          <rect x="3" y="16" width="7" height="5" rx="1" />
+        </svg>
+      )
+    },
+    { 
+      id: "flights", 
+      label: "Flight Management", 
+      icon: (
+        <svg className="w-4 h-4 relative -rotate-45" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path d="M17.8 19.2L16 11l3.5-3.5c.5-.5.5-1.3 0-1.8s-1.3-.5-1.8 0L14.2 9.2 6 7.4 3.5 9.9l6.5 3.5-3.5 3.5H4.3l-1.8 1.8 3.5.7.7 3.5 1.8-1.8v-2.2l3.5-3.5 3.5 6.5z" />
+        </svg>
+      )
+    },
+    { 
+      id: "bookings", 
+      label: "Booking History", 
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
+      )
+    },
+    { 
+      id: "agents", 
+      label: "Agent Management", 
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      )
+    },
+    { 
+      id: "passwords", 
+      label: "Password Request", 
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+      )
+    },
+    { 
+      id: "forecasting", 
+      label: "Demand Forecasting", 
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      )
+    },
+    { 
+      id: "reports", 
+      label: "Generate Report", 
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      )
+    },
+  ];
+
+  const [activeMenu, setActiveMenu] = useState("overview");
+
+  return (
+    <>
+      
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 z-40 md:hidden transition-opacity duration-300"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* 📋 Sidebar Main Body */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200/80 flex flex-col pt-16 md:pt-2 shrink-0
+        transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-auto
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+      `}>
+        <ul className="w-full flex flex-col">
+          {menuItems.map((item) => {
+            const isActive = activeMenu === item.id;
+            return (
+              <li key={item.id} className="w-full">
+                <button
+                  onClick={() => {
+                    setActiveMenu(item.id);
+                    setIsOpen(false);//close on mobile view
+                  }}
+                  className={`w-full flex items-center gap-3.5 text-left px-6 md:px-8 py-3.5 text-xs font-semibold tracking-wide transition-all duration-200 border-b border-slate-100/70 ${
+                    isActive
+                      ? "bg-blue-900 text-white font-bold"
+                      : "text-blue-900 hover:bg-slate-50"
+                  }`}
+                >
+                  {/* Icon Area */}
+                  <span className={`${isActive ? "text-white" : "text-blue-900/70"}`}>
+                    {item.icon}
+                  </span>
+                  
+                  {/* Label Text */}
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </aside>
+    </>
+  );
+}

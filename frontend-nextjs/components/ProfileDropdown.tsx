@@ -80,7 +80,7 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
           
           {role?.toLowerCase() === "admin" ? (
             <Link
-              href="/"
+              href="/admin"
               onClick={() => setIsOpen(false)}
               className="block px-4 py-3 font-semibold text-slate-800 hover:bg-slate-50 border-b border-slate-100 transition"
             >
@@ -92,7 +92,7 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
               onClick={() => setIsOpen(false)}
               className="block px-4 py-3 font-semibold text-slate-800 hover:bg-slate-50 border-b border-slate-100 transition"
             >
-              Admin Dashboard
+              My Bookings
             </Link>
           }
 
