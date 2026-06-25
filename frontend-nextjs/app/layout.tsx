@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+import Providers from "./provider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: {
     default: "Blue Horizon",
-    template: "Blue Horizon - %s", 
+    template: "Blue Horizon - %s",
   },
   description: "Explore the world with Blue Horizon. Fly to your dream destinations.",
 };
@@ -30,7 +30,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }

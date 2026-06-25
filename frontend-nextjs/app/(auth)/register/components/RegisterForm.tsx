@@ -3,24 +3,41 @@
 import { useState } from "react";
 import Link from "next/link";
 import Input from "@/components/Input";
+import { useRegisterMutation } from "@/services/authService";
 
 export default function RegisterForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [uiError, setUiError] = useState<string | null>(null); 
 
-  const handleRegister = (e: React.FormEvent) => {
+  const registerMutation = useRegisterMutation();
+
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      setUiError("Passwords do not match!");
       return;
     }
+    try {
+      const result = await registerMutation.mutateAsync({ 
+        username: fullName, 
+        email, 
+        password 
+      });
 
-    console.log("Registering user with:", { fullName, email, password, role: "user" });
-    // TODO: Connect to Python API
-    alert("Account registration request submitted!");
+      if (result.success) {
+        alert("Registration Successful!");
+      } else {
+        setUiError(result.error?.details || result.message);
+      }
+      
+    } catch (error) {
+      setUiError("An unexpected error occurred. Please try again.")
+    }
   };
 
   return (
@@ -33,6 +50,13 @@ export default function RegisterForm() {
         <div className="mt-3 h-[2px] w-full bg-slate-200" />
       </div>
 
+      {/* ⚠️ Error Box - အမှားတစ်ခုခုရှိရင် လှလှပပ Box လေးနဲ့ ပြပေးမယ် */}
+      {uiError && (
+        <div className="p-3 bg-red-50 text-red-600 border border-red-200 text-sm rounded-md font-medium">
+          ⚠️ {uiError}
+        </div>
+      )}
+      
       {/* Registration Form */}
       <form onSubmit={handleRegister} className="space-y-4">
         {/* 👤 Full Name */}

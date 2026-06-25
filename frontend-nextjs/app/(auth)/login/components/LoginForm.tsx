@@ -3,17 +3,32 @@
 import { useState } from "react";
 import Input from "@/components/Input";
 import Link from "next/link";
+import { useLoginMutation } from "@/services/authService";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Error Handle state
+  const [uiError, setUiError] = useState<string | null>(null);
+  const loginMutation = useLoginMutation();
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Logging in with:", { email, password, rememberMe });
-    // TODO: Connect to Backend API
-    alert("Account login submitted!");
+    setUiError(null);
+    try {
+      const result = await loginMutation.mutateAsync({ email, password });
+
+      if (result.success) {
+        alert("Login Successful!");
+      } else {
+        setUiError(result.error?.details || result.message);
+      }
+    } catch (error) {
+      setUiError("An unexpected error occurred. Please try again.")
+    }
+
   };
 
   return (
@@ -25,6 +40,13 @@ export default function LoginForm() {
         <p className="mt-2 text-sm text-slate-500">Access the air ticket system</p>
         <div className="mt-4 h-[2px] w-full bg-slate-200" />
       </div>
+
+      {/* ⚠️ Error Box  */}
+      {uiError && (
+        <div className="p-3 bg-red-50 text-red-600 border border-red-200 text-sm rounded-md font-medium">
+          ⚠️ {uiError}
+        </div>
+      )}
 
       {/* Login Form */}
       <form onSubmit={handleLogin} className="space-y-6">
@@ -43,8 +65,9 @@ export default function LoginForm() {
         {/* Password */}
         <Input
           id="password"
-          label = 'Passsword'
-          placeholder="••••••••"         
+          label='Password'
+          type="password"
+          placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -75,11 +98,11 @@ export default function LoginForm() {
         </button>
 
         <p className="text-sm text-center text-slate-600">
-            Don't have an account?{" "}
-            <Link href="/register" className="font-semibold text-blue-700 hover:underline">
-              Register
-            </Link>
-          </p>
+          Don't have an account?{" "}
+          <Link href="/register" className="font-semibold text-blue-700 hover:underline">
+            Register
+          </Link>
+        </p>
       </form>
 
       {/* Bottom Restricted Notice */}
