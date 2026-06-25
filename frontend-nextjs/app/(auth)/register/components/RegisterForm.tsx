@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Input from "@/components/Input";
-import { useRegisterMutation } from "@/services/authService";
+import { useRegisterMutation } from "@/services/auth/authService";
 
 export default function RegisterForm() {
   const [fullName, setFullName] = useState("");
@@ -56,7 +56,7 @@ export default function RegisterForm() {
           ⚠️ {uiError}
         </div>
       )}
-      
+
       {/* Registration Form */}
       <form onSubmit={handleRegister} className="space-y-4">
         {/* 👤 Full Name */}

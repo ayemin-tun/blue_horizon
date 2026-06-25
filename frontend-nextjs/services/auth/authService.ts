@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { api, ApiResponse } from './apiClient';
+import { api, ApiResponse } from '../apiClient';
 
 // Login Mutation Hook
 export function useLoginMutation() {

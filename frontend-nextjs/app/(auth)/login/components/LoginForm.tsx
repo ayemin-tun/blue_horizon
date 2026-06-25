@@ -3,12 +3,14 @@
 import { useState } from "react";
 import Input from "@/components/Input";
 import Link from "next/link";
-import { useLoginMutation } from "@/services/authService";
+import { useLoginMutation } from "@/services/auth/authService";
+import { useAuthStore } from "@/services/auth/authStore";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   // Error Handle state
   const [uiError, setUiError] = useState<string | null>(null);
@@ -22,6 +24,7 @@ export default function LoginForm() {
 
       if (result.success) {
         alert("Login Successful!");
+        setAuth((result.data as any)?.access_token, 3600000);
       } else {
         setUiError(result.error?.details || result.message);
       }
