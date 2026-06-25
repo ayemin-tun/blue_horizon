@@ -31,6 +31,9 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
 
   const handleLogout = () => {
     logout();
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "name=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setIsOpen(false);
     router.push("/");
     window.location.reload();
@@ -43,9 +46,8 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
         onClick={() => setIsOpen(!isOpen)}
         className="focus:outline-none transition active:scale-95 block"
       >
-        <div className={`h-9 w-9 rounded-full border-2 flex items-center justify-center overflow-hidden bg-slate-100 ${
-          isMainPage ? "border-white/80" : "border-blue-900/20"
-        }`}>
+        <div className={`h-9 w-9 rounded-full border-2 flex items-center justify-center overflow-hidden bg-slate-100 ${isMainPage ? "border-white/80" : "border-blue-900/20"
+          }`}>
           <svg
             className={`h-6 w-6 ${isMainPage ? "text-blue-950" : "text-slate-600"}`}
             fill="currentColor"
@@ -62,9 +64,8 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
           {/* Header / Admin Name */}
           <div className="bg-slate-50 px-4 py-3 flex items-center justify-between border-b border-slate-100">
             <span className="font-bold text-slate-700">{name || "User"}</span>
-            <span className={`font-semibold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider ${
-              role?.toLowerCase() === "admin" ? "bg-red-500 text-white" : "bg-blue-600 text-white"
-            }`}>
+            <span className={`font-semibold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider ${role?.toLowerCase() === "admin" ? "bg-red-500 text-white" : "bg-blue-600 text-white"
+              }`}>
               {role || "agent"}
             </span>
           </div>
@@ -77,7 +78,7 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
           >
             Edit Profile
           </Link>
-          
+
           {role?.toLowerCase() === "admin" ? (
             <Link
               href="/admin"
@@ -86,8 +87,8 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
             >
               Admin Dashboard
             </Link>
-          ) : 
-          <Link
+          ) :
+            <Link
               href="/"
               onClick={() => setIsOpen(false)}
               className="block px-4 py-3 font-semibold text-slate-800 hover:bg-slate-50 border-b border-slate-100 transition"

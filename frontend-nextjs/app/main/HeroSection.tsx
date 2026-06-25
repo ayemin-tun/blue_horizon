@@ -1,9 +1,23 @@
 "use client";
 
-import Image from "next/image";
-import logoImg from "@/public/logo.png";
 import Navbar from "@/components/Navbar";
+import { toast } from "@/services/store/alertStore";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+
 export default function HeroSection() {
+
+  // Hadle serverside alert message from middleware.ts
+      const searchParams = useSearchParams();
+      const alertType = searchParams.get("alert_action");
+      useEffect(() => {
+          if (alertType === "unauthorized") {
+              toast.warning("You are not authorized, please login first");
+          } else if (alertType === "forbidden") {
+              toast.warning("You are not authorized to access this page");
+          }
+      }, [alertType]);
+
   return (
     <div
       className="relative h-96 w-full bg-cover bg-center flex flex-col justify-between pb-24 text-white "

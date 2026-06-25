@@ -7,6 +7,8 @@ import { useLoginMutation } from "@/services/auth/authService";
 import { useAuthStore } from "@/services/store/authStore";
 import { useRouter } from "next/navigation";
 import { toast } from "@/services/store/alertStore";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -18,6 +20,17 @@ export default function LoginForm() {
   const [uiError, setUiError] = useState<string | null>(null);
   const loginMutation = useLoginMutation();
 
+      // Hadle serverside alert message from middleware.ts
+    const searchParams = useSearchParams();
+    const alertType = searchParams.get("alert_action");
+    useEffect(() => {
+        if (alertType === "unauthorized") {
+            toast.warning("You are not authorized, please login first");
+        } else if (alertType === "forbidden") {
+            toast.warning("You are not authorized to access this page");
+        }
+    }, [alertType]);
+
   const router = useRouter();
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,18 +41,24 @@ export default function LoginForm() {
       if (result.success) {
         toast.success("Login Successful!");
 
+        // cookie store because next js middleware does not use zustand localStorage
+        document.cookie = `token=${(result.data as any)?.access_token}; path=/; max-age=3600`;
+        document.cookie = `name=${(result.data as any).username}; path=/; max-age=3600`;
+        document.cookie = `role=${(result.data as any).role}; path=/; max-age=3600`;
+
         setAuth(
           (result.data as any)?.access_token,
-           3600000,
-          (result.data as any).username || "Unknown user", 
+          3600000,
+          (result.data as any).username || "Unknown user",
           (result.data as any).role || "user"
-          );
-        
-        if((result.data as any).role == 'admin'){
+        );
+
+        if ((result.data as any).role == 'admin') {
           router.push('/admin')
-        }else{
+        } else {
           router.push('/')
         }
+
       } else {
         setUiError(result.error?.details || result.message);
       }

@@ -1,11 +1,12 @@
-import React from "react";
+import Reacts from "react";
 
 import Image from 'next/image';
 import logoImg from '@/public/logo.png';
 import Link from "next/link";
 
-
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+
+
     return (
         <>
             <div className="flex min-h-screen bg-slate-50 font-sans">
