@@ -19,11 +19,28 @@ function authHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// ─── 1. Fetch Hook (GET) ─────────────────────────────────────────────────
-export function useRoutesQuery() {
+
+export interface PaginationInfo {
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface PaginatedRouteResponse {
+  success: boolean;
+  data: Route[];
+  pagination: PaginationInfo;
+}
+
+export function useRoutesQuery(page: number = 1, limit: number = 10) {
+  const skip = (page - 1) * limit; 
+  
   return useQuery({
-    queryKey: ['routes'],
-    queryFn: () => api.get<Route[]>('/api/routes/', { headers: authHeader() }),
+    queryKey: ['routes', page, limit],
+    queryFn: () => 
+      api.get<PaginatedRouteResponse>(`/api/routes/?skip=${skip}&limit=${limit}`, { 
+        headers: authHeader() 
+      }),
   });
 }
 

@@ -36,10 +36,28 @@ def create_route(data: RouteSchema, db: Session = Depends(get_db)):
     return {"success": True, "message": "Route created", "data": new_route}
 
 # 2. READ ALL
+
 @router.get("/")
-def get_routes(db: Session = Depends(get_db)):
-    routes = db.query(models.Route).filter(models.Route.is_deleted == False).all()
-    return {"success": True, "data": routes}
+def get_routes(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    total_count = db.query(models.Route).filter(models.Route.is_deleted == False).count()
+    
+    routes = (
+        db.query(models.Route)
+        .filter(models.Route.is_deleted == False)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    
+    return {
+        "success": True, 
+        "data": routes,
+        "pagination": {
+            "total": total_count,
+            "skip": skip,
+            "limit": limit
+        }
+    }
 
 # 3. UPDATE
 @router.put("/{id}")

@@ -8,17 +8,23 @@ import {
   useUpdateRouteMutation,
   useDeleteRouteMutation,
   Route,
+  PaginatedRouteResponse, // for type checking
 } from '@/services/routeService';
 import Modal from '@/components/Modal';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
 import RouteForm from './components/RouterForm';
 import RouteStats from './components/RouteStats';
+import Pagination from '@/components/Pagination';
 
 // ─── Lucide Icons Import ───────────────────────────────────────────────────
 import { Plus, Pencil, Trash2, ArrowRight, Search, Loader2 } from 'lucide-react';
 
 export default function RoutePage() {
   const [search, setSearch] = useState('');
+  
+  // ─── Pagination States ───────────────────────────────────────────────────
+  const [page, setPage] = useState(1);
+  const LIMIT = 5;
 
   // Modals visibility states
   const [showAdd, setShowAdd] = useState(false);
@@ -26,13 +32,16 @@ export default function RoutePage() {
   const [deleteTarget, setDeleteTarget] = useState<Route | null>(null);
 
   // ─── React Query Hooks ────────────────────────────────────────────────────
-  const { data: apiResponse, isLoading: loading, error } = useRoutesQuery();
+  const { data: apiResponse, isLoading: loading, error } = useRoutesQuery(page, LIMIT);
   const createMutation = useCreateRouteMutation();
   const updateMutation = useUpdateRouteMutation();
   const deleteMutation = useDeleteRouteMutation();
 
-  // get data from api response
-  const routes = apiResponse?.data || [];
+  //  (Type Casting)
+  const res = apiResponse as unknown as PaginatedRouteResponse;
+
+  const routes: Route[] = res?.data || [];
+  const paginationInfo = res?.pagination;
 
   // made form loading when one mutation is working
   const formLoading = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
@@ -90,7 +99,7 @@ export default function RoutePage() {
   // ─── Filter ────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return routes.filter(
-      (r) =>
+      (r: Route) => 
         r.departure_city.toLowerCase().includes(search.toLowerCase()) ||
         r.arrival_city.toLowerCase().includes(search.toLowerCase())
     );
@@ -98,12 +107,12 @@ export default function RoutePage() {
 
   return (
     <>
-      <div className=" max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* ── Header ── */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h4 className="text-xl font-bold text-gray-950">Route Management</h4>
-           <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 mt-1">
               Manage departure and arrival city routes for Blue Horizon flights.
             </p>
           </div>
@@ -117,7 +126,10 @@ export default function RoutePage() {
         </div>
 
         {/* ── Stats Strip ── */}
-        <RouteStats totalCount={routes.length} filteredCount={filtered.length} />
+        <RouteStats 
+          totalCount={paginationInfo?.total || routes.length} 
+          filteredCount={search ? filtered.length : (paginationInfo?.total || routes.length)} 
+        />
 
         {/* ── Search ── */}
         <div className="relative mb-6">
@@ -127,7 +139,10 @@ export default function RoutePage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Search by city name…"
             className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
@@ -162,7 +177,7 @@ export default function RoutePage() {
 
           {/* Table Rows */}
           {!loading &&
-            filtered.map((route, idx) => (
+            filtered.map((route: Route, idx: number) => ( 
               <div
                 key={route.route_id}
                 className={`grid grid-cols-[60px_1fr_40px_1fr_120px] items-center px-6 py-4 transition hover:bg-slate-50 ${
@@ -202,11 +217,21 @@ export default function RoutePage() {
               </div>
             ))}
         </div>
+
+        {/* ── Pagination ── */}
+        {!loading && paginationInfo && (
+          <Pagination
+            currentPage={page}
+            totalCount={paginationInfo.total}
+            pageSize={LIMIT}
+            onPageChange={(newPage) => setPage(newPage)}
+          />
+        )}
       </div>
 
       {/* ── Add Modal ── */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Route">
-        <RouteForm
+        <RouteForm 
           onSubmit={handleCreate}
           onCancel={() => setShowAdd(false)}
           loading={formLoading}
