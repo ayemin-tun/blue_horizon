@@ -7,6 +7,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const role = request.cookies.get('role')?.value;
 
+  // middleware logic for damin route
   if (pathname.startsWith('/admin')) {
     if (!token) {
       return NextResponse.redirect(new URL('/login?alert_action=unauthorized', request.url));
@@ -16,10 +17,17 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // middleware logic for login/register
+  if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+    if (token) {
+      return NextResponse.redirect(new URL('/?alert_action=already_logged_in', request.url));
+    }
+  }
+
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*','/login','/register'],
 };
