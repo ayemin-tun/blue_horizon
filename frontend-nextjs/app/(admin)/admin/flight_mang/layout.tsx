@@ -13,7 +13,7 @@ export default function FlightManagementLayout({
 
   // Tab Menu Data
   const tabs = [
-    { name: 'Airline', href: '/admin/flight-mang/' },
+    { name: 'Airline', href: '/admin/flight_mang' },
     { name: 'Route', href: '/admin/flight_mang/route' },
     { name: 'Flight', href: '/admin/flight-mang/flight' },
   ];

@@ -66,7 +66,7 @@ export default function AdminAirlinesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 md:p-10">
+        <div className="min-h-screen bg-slate-50">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
