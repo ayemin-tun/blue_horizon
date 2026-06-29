@@ -1,0 +1,73 @@
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from app.database.database import get_db
+from app.database import models
+
+router = APIRouter(prefix="/api/routes", tags=["Routes"])
+
+class RouteSchema(BaseModel):
+    departure_city: str
+    arrival_city: str
+
+# 1. CREATE
+@router.post("/", status_code=status.HTTP_201_CREATED)
+def create_route(data: RouteSchema, db: Session = Depends(get_db)):
+    # Check route is already exist on db 
+    existing_route = db.query(models.Route).filter(
+        models.Route.departure_city == data.departure_city,
+        models.Route.arrival_city == data.arrival_city
+    ).first()
+
+    if existing_route:
+        if existing_route.is_deleted:
+            existing_route.is_deleted = False
+            db.commit()
+            return {"success": True, "message": "Route re-activated", "data": existing_route}
+        return {"success": False, "message": "Route already exists"}
+
+    new_route = models.Route(
+        departure_city=data.departure_city, 
+        arrival_city=data.arrival_city
+    )
+    db.add(new_route)
+    db.commit()
+    db.refresh(new_route)
+    return {"success": True, "message": "Route created", "data": new_route}
+
+# 2. READ ALL
+@router.get("/")
+def get_routes(db: Session = Depends(get_db)):
+    routes = db.query(models.Route).filter(models.Route.is_deleted == False).all()
+    return {"success": True, "data": routes}
+
+# 3. UPDATE
+@router.put("/{id}")
+def update_route(id: int, data: RouteSchema, db: Session = Depends(get_db)):
+    route = db.query(models.Route).filter(
+        models.Route.route_id == id,
+        models.Route.is_deleted == False
+    ).first()
+    
+    if not route:
+        return {"success": False, "message": "Route not found"}
+    
+    route.departure_city = data.departure_city
+    route.arrival_city = data.arrival_city
+    db.commit()
+    return {"success": True, "message": "Route updated successfully", "data": route}
+
+# 4. DELETE (Soft Delete)
+@router.delete("/{id}")
+def delete_route(id: int, db: Session = Depends(get_db)):
+    route = db.query(models.Route).filter(
+        models.Route.route_id == id,
+        models.Route.is_deleted == False
+    ).first()
+    
+    if not route:
+        return {"success": False, "message": "Route not found or deleted"}
+    
+    route.is_deleted = True
+    db.commit()
+    return {"success": True, "message": "Route marked as deleted"}

@@ -47,7 +47,8 @@ def init_database():
     CREATE TABLE IF NOT EXISTS ROUTES (
         route_id INTEGER PRIMARY KEY AUTOINCREMENT,
         departure_city TEXT NOT NULL,
-        arrival_city TEXT NOT NULL
+        arrival_city TEXT NOT NULL,
+        is_deleted INTEGER DEFAULT 0
     )''')
 
     # 4. FLIGHTS Table
@@ -135,7 +136,7 @@ def init_database():
 
     # 2. Sample Airline & Route
     cursor.execute("INSERT OR IGNORE INTO AIRLINES (airline_id, airline_name,country,is_deleted) VALUES (1, 'MAI','Myanmar',0)")
-    cursor.execute("INSERT OR IGNORE INTO ROUTES (route_id, departure_city, arrival_city) VALUES (1, 'Yangon', 'Mandalay')")
+    cursor.execute("INSERT OR IGNORE INTO ROUTES (route_id, departure_city, arrival_city,is_deleted) VALUES (1, 'Yangon', 'Mandalay',0)")
 
     # 3. Sample Flight
     cursor.execute('''

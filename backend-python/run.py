@@ -8,6 +8,7 @@ from fastapi.openapi.utils import get_openapi
 # import api router
 from app.routes.auth import router as auth_router
 from app.routes.airline import router as airline_router
+from app.routes.route import router as route_router
 
 # Close Docs url in fast api 
 app = FastAPI(
@@ -27,6 +28,7 @@ app.add_middleware(
 # register api router ....
 app.include_router(auth_router)
 app.include_router(airline_router)
+app.include_router(route_router)
 
 # Define user name and password 
 security = HTTPBasic()
