@@ -26,8 +26,12 @@ export default function LoginForm() {
     useEffect(() => {
         if (alertType === "unauthorized") {
             toast.warning("You are not authorized, please login first");
-        } else if (alertType === "forbidden") {
+        } 
+         if (alertType === "forbidden") {
             toast.warning("You are not authorized to access this page");
+        }
+        if (alertType === "already_logged_in") {
+            toast.warning("You are already login!");
         }
     }, [alertType]);
 
