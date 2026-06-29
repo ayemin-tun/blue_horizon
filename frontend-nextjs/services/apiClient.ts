@@ -36,11 +36,17 @@ async function request<T>(endpoint: string, options: RequestInit): Promise<ApiRe
   }
 }
 
-// For POST and GET Helper 
+// For POST, GET, PUT, DELETE Helper 
 export const api = {
   get: <T>(endpoint: string, options?: RequestInit) => 
     request<T>(endpoint, { method: 'GET', ...options }),
 
   post: <T>(endpoint: string, body: any, options?: RequestInit) => 
     request<T>(endpoint, { method: 'POST', body: JSON.stringify(body), ...options }),
+
+  put: <T>(endpoint: string, body: any, options?: RequestInit) => 
+    request<T>(endpoint, { method: 'PUT', body: JSON.stringify(body), ...options }),
+
+  delete: <T>(endpoint: string, options?: RequestInit) => 
+    request<T>(endpoint, { method: 'DELETE', ...options }),
 };
