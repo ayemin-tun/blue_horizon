@@ -5,7 +5,9 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 
+# import api router
 from app.routes.auth import router as auth_router
+from app.routes.airline import router as airline_router
 
 # Close Docs url in fast api 
 app = FastAPI(
@@ -22,7 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# register api router ....
 app.include_router(auth_router)
+app.include_router(airline_router)
 
 # Define user name and password 
 security = HTTPBasic()

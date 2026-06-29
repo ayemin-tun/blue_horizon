@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String,Boolean
 from app.database.database import Base
 
 class User(Base):
@@ -10,3 +10,10 @@ class User(Base):
     password = Column(String, nullable=False)
     email = Column(String, nullable=False,unique=True)
     role = Column(String, default="agent") 
+
+class Airline(Base):
+    __tablename__ = 'AIRLINES'
+    airline_id = Column(Integer, primary_key=True, index=True)
+    airline_name = Column(String, index=True, nullable=False)
+    country = Column(String, index=True, nullable=False)
+    is_deleted = Column(Boolean, default=False)
