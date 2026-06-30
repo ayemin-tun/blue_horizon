@@ -31,13 +31,17 @@ export interface PaginatedAirlineResponse {
   pagination: PaginationInfo;
 }
 
-export function useAirlinesQuery(page: number = 1, limit: number = 10) {
+export function useAirlinesQuery(page: number = 1, limit: number = 10, search: string = '') {
   const skip = (page - 1) * limit; 
+  let url = `/api/airlines/?skip=${skip}&limit=${limit}`;
+  if (search) {
+    url += `&search=${encodeURIComponent(search)}`;
+  }
   
   return useQuery({
-    queryKey: ['airlines', page, limit],
+    queryKey: ['airlines', page, limit, search],
     queryFn: () => 
-      api.get<PaginatedAirlineResponse>(`/api/airlines/?skip=${skip}&limit=${limit}`, { 
+      api.get<PaginatedAirlineResponse>(url, { 
         headers: authHeader() 
       }),
   });

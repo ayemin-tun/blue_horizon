@@ -33,7 +33,7 @@ export default function AdminAirlinesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Airline | null>(null);
 
   // ─── React Query Hooks ────────────────────────────────────────────────────
-  const { data: apiResponse, isLoading: loading, error } = useAirlinesQuery(page, LIMIT);
+  const { data: apiResponse, isLoading: loading, error } = useAirlinesQuery(page, LIMIT, search);
   const createMutation = useCreateAirlineMutation();
   const updateMutation = useUpdateAirlineMutation();
   const deleteMutation = useDeleteAirlineMutation();
@@ -42,7 +42,19 @@ export default function AdminAirlinesPage() {
   const res = apiResponse as unknown as PaginatedAirlineResponse;
 
   const airlines: Airline[] = res?.data || [];
-  const paginationInfo = res?.pagination;
+  
+  // ─── Client-Side Filter ───────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return airlines.filter(
+      (a: Airline) => 
+        a.airline_name.toLowerCase().includes(search.toLowerCase()) ||
+        a.country.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [airlines, search]);
+
+  // ─── Client-Side Pagination ────────────────────────────────────────────────
+  const totalItems = filtered.length;
+  const slicedData = filtered.slice((page - 1) * LIMIT, page * LIMIT);
 
   // made form loading when one mutation is working
   const formLoading = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
@@ -97,15 +109,6 @@ export default function AdminAirlinesPage() {
     });
   };
 
-  // ─── Filter ────────────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    return airlines.filter(
-      (a: Airline) => 
-        a.airline_name.toLowerCase().includes(search.toLowerCase()) ||
-        a.country.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [airlines, search]);
-
   return (
     <>
       <div className="max-w-5xl mx-auto">
@@ -128,12 +131,12 @@ export default function AdminAirlinesPage() {
 
         {/* ── Stats Strip ── */}
         <AirlineStats 
-          totalCount={paginationInfo?.total || airlines.length} 
-          filteredCount={search ? filtered.length : (paginationInfo?.total || airlines.length)} 
+          totalCount={airlines.length} 
+          filteredCount={totalItems} 
         />
 
         {/* ── Search ── */}
-        <div className="relative mb-6">
+        <div className="relative mb-6 sm:max-w-xs">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
             <Search className="w-4 h-4 text-slate-400" />
           </span>
@@ -151,22 +154,24 @@ export default function AdminAirlinesPage() {
 
         {/* ── Table ── */}
         <AirlineTable 
-          airlines={filtered}
+          airlines={slicedData}
           loading={loading}
           search={search}
           onEdit={(airline) => setEditTarget(airline)}
           onDelete={(airline) => setDeleteTarget(airline)}
+          pagination={
+            !loading && totalItems > LIMIT ? (
+              <div className="pb-4 flex justify-end px-4">
+                <Pagination
+                  currentPage={page}
+                  totalCount={totalItems}
+                  pageSize={LIMIT}
+                  onPageChange={(newPage) => setPage(newPage)}
+                />
+              </div>
+            ) : null
+          }
         />
-
-        {/* ── Pagination ── */}
-        {!loading && paginationInfo && (
-          <Pagination
-            currentPage={page}
-            totalCount={paginationInfo.total}
-            pageSize={LIMIT}
-            onPageChange={(newPage) => setPage(newPage)}
-          />
-        )}
       </div>
 
       {/* ── Add Modal ── */}

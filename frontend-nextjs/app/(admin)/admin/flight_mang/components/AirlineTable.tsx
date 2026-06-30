@@ -10,9 +10,10 @@ interface AirlineTableProps {
   search: string;
   onEdit: (airline: Airline) => void;
   onDelete: (airline: Airline) => void;
+  pagination?: React.ReactNode;
 }
 
-export default function AirlineTable({ airlines, loading, search, onEdit, onDelete }: AirlineTableProps) {
+export default function AirlineTable({ airlines, loading, search, onEdit, onDelete, pagination }: AirlineTableProps) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
       {/* Table Header */}
@@ -79,6 +80,13 @@ export default function AirlineTable({ airlines, loading, search, onEdit, onDele
             </div>
           </div>
         ))}
+
+      {/* Pagination Container */}
+      {pagination && (
+        <div className="border-t border-slate-200 bg-white">
+          {pagination}
+        </div>
+      )}
     </div>
   );
 }
