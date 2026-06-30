@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import RegisterForm from "./components/RegisterForm";
 
 export const metadata: Metadata = {
-  title: "BlueHorizon-Register",
+  title: "Register",
 };
 
 export default function RegisterPage() {

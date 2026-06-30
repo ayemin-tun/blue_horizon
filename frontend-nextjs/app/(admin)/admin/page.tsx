@@ -1,11 +1,16 @@
-'use client';
 
 import React from 'react';
 import Image from 'next/image';
 import StatCard from '@/components/StatCard';
 import BookingTable from '@/components/BookingTables';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "admin",
+};
 
 const OverviewPage: React.FC = () => {
+  
   return (
     <div className="p-6">
       {/* Title & Description */}
