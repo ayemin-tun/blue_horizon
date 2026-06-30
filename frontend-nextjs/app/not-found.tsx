@@ -15,24 +15,21 @@ export default function NotFound() {
     setHasToken(!!getValidToken());
   }, [getValidToken]);
 
-  // Admin ဖြစ်ရင် /admin ကို ပြန်မယ်၊ မဟုတ်ရင် / ကို ပြန်မယ်
+  // if admin go to admin if not go to home
   const redirectUrl = hasToken && role === 'admin' ? '/admin' : '/';
   const buttonLabel = hasToken && role === 'admin' ? 'Back to Dashboard' : 'Back to Home';
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-b from-slate-50 to-blue-50/30 text-center px-6 relative overflow-hidden">
       
-      {/* ── Background Decorative Elements (လေယာဉ်လမ်းကြောင်း ပုံစံနောက်ခံလိုင်းများ) ── */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-125 h-125 bg-blue-400/5 rounded-full blur-3xl pointer-events-none" />
       
       {/* ── 404 & Plane Animation Section ── */}
       <div className="relative mb-6 select-none">
-        {/* 404 စာသားကြီး */}
         <div className="text-[12rem] font-black text-blue-900/4 leading-none tracking-tighter">
           404
         </div>
         
-        {/* စာသားအလယ်တည့်တည့်မှာ ပျံတက်နေမယ့် လေယာဉ်အိုင်ကွန် */}
         <div className="absolute inset-0 flex items-center justify-center animate-bounce duration-1000">
           <div className="p-5 bg-white border border-slate-100 rounded-3xl shadow-xl shadow-blue-900/5 text-blue-900">
             <PlaneTakeoff className="w-12 h-12 stroke-[1.5]" />
