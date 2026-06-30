@@ -2,27 +2,25 @@
 
 import React, { useState } from "react";
 import { toast } from "@/services/store/alertStore";
+import { Plane, Loader2 } from "lucide-react";
 
-// ─── Lucide Icons Import ───────────────────────────────────────────────────
-import { ArrowRight, Loader2 } from "lucide-react";
-
-export interface RoutePayload {
-  departure_city: string;
-  arrival_city: string;
+export interface AirlinePayload {
+  airline_name: string;
+  country: string;
 }
 
-interface RouteFormProps {
-  initialData?: RoutePayload;
-  onSubmit: (data: RoutePayload) => void;
+interface AirlineFormProps {
+  initialData?: AirlinePayload;
+  onSubmit: (data: AirlinePayload) => void;
   onCancel: () => void;
   loading: boolean;
   submitLabel: string;
 }
 
-export default function RouteForm({ initialData, onSubmit, onCancel, loading, submitLabel }: RouteFormProps) {
-  const [form, setForm] = useState<RoutePayload>({
-    departure_city: initialData?.departure_city ?? "",
-    arrival_city: initialData?.arrival_city ?? "",
+export default function AirlineForm({ initialData, onSubmit, onCancel, loading, submitLabel }: AirlineFormProps) {
+  const [form, setForm] = useState<AirlinePayload>({
+    airline_name: initialData?.airline_name ?? "",
+    country: initialData?.country ?? "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,8 +29,8 @@ export default function RouteForm({ initialData, onSubmit, onCancel, loading, su
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.departure_city.trim() || !form.arrival_city.trim()) {
-      toast.warning("Both departure and arrival cities are required.");
+    if (!form.airline_name.trim() || !form.country.trim()) {
+      toast.warning("Both airline name and country are required.");
       return;
     }
     onSubmit(form);
@@ -42,40 +40,41 @@ export default function RouteForm({ initialData, onSubmit, onCancel, loading, su
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-          Departure City
+          Airline Name
         </label>
         <input
-          id="departure_city"
-          name="departure_city"
+          id="airline_name"
+          name="airline_name"
           type="text"
-          value={form.departure_city}
+          value={form.airline_name}
           onChange={handleChange}
-          placeholder="e.g. Yangon"
+          placeholder="e.g. Blue Horizon"
           className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-black"
         />
       </div>
       
       <div>
         <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-          Arrival City
+          Country
         </label>
         <input
-          id="arrival_city"
-          name="arrival_city"
+          id="country"
+          name="country"
           type="text"
-          value={form.arrival_city}
+          value={form.country}
           onChange={handleChange}
-          placeholder="e.g. Mandalay"
+          placeholder="e.g. Myanmar"
           className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-black"
         />
       </div>
 
       {/* Preview */}
-      {(form.departure_city || form.arrival_city) && (
+      {(form.airline_name || form.country) && (
         <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5">
-          <span className="text-sm font-semibold text-blue-900">{form.departure_city || "—"}</span>
-          <ArrowRight className="w-4 h-4 text-blue-400" />
-          <span className="text-sm font-semibold text-blue-900">{form.arrival_city || "—"}</span>
+          <Plane className="w-4 h-4 text-blue-400" />
+          <span className="text-sm font-semibold text-blue-900">{form.airline_name || "—"}</span>
+          <span className="text-sm text-blue-400">•</span>
+          <span className="text-sm font-semibold text-blue-900">{form.country || "—"}</span>
         </div>
       )}
 

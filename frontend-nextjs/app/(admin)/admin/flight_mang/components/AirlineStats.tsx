@@ -1,15 +1,15 @@
 'use client';
 
-interface RouteStatsProps {
+interface AirlineStatsProps {
   totalCount: number;
   filteredCount: number;
 }
 
-export default function RouteStats({ totalCount, filteredCount }: RouteStatsProps) {
+export default function AirlineStats({ totalCount, filteredCount }: AirlineStatsProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
       <div className="bg-white border border-slate-200 rounded-2xl px-5 py-4">
-        <p className="text-xs text-slate-500 font-medium">Total Routes</p>
+        <p className="text-xs text-slate-500 font-medium">Total Airlines</p>
         <p className="text-2xl font-bold text-blue-900 mt-1">{totalCount}</p>
       </div>
       
