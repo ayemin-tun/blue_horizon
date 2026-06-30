@@ -1,128 +1,205 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { toast } from '@/services/store/alertStore';
+import {
+  useAirlinesQuery,
+  useCreateAirlineMutation,
+  useUpdateAirlineMutation,
+  useDeleteAirlineMutation,
+  Airline,
+  PaginatedAirlineResponse,
+} from '@/services/airlineService';
+import Modal from '@/components/Modal';
+import AirlineForm from './components/AirlineForm';
+import AirlineStats from './components/AirlineStats';
+import Pagination from '@/components/Pagination';
+import AirlineTable from './components/AirlineTable';
+import ConfirmDeleteAirlineModal from './components/ConfirmDeleteAirlineModal';
 
-interface Airline {
-    airline_id: number;
-    airline_name: string;
-    country: string;
-}
+// ─── Lucide Icons Import ───────────────────────────────────────────────────
+import { Plus, Search } from 'lucide-react';
 
 export default function AdminAirlinesPage() {
-    const [airlines, setAirlines] = useState<Airline[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  
+  // ─── Pagination States ───────────────────────────────────────────────────
+  const [page, setPage] = useState(1);
+  const LIMIT = 5;
 
-    useEffect(() => {
-        const fetchAirlines = async () => {
-            try {
-                const response = await fetch('http://localhost:8000/api/airlines');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch airlines');
-                }
+  // Modals visibility states
+  const [showAdd, setShowAdd] = useState(false);
+  const [editTarget, setEditTarget] = useState<Airline | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Airline | null>(null);
 
-                const data = await response.json();
+  // ─── React Query Hooks ────────────────────────────────────────────────────
+  const { data: apiResponse, isLoading: loading, error } = useAirlinesQuery(page, LIMIT);
+  const createMutation = useCreateAirlineMutation();
+  const updateMutation = useUpdateAirlineMutation();
+  const deleteMutation = useDeleteAirlineMutation();
 
-                if (data.success) {
-                    setAirlines(data.data || []);
-                } else {
-                    throw new Error(data.message || 'Failed to fetch airlines');
-                }
-            } catch (err: any) {
-                setError(err.message || 'An unexpected error occurred while fetching airlines.');
-            } finally {
-                setLoading(false);
-            }
-        };
+  //  (Type Casting)
+  const res = apiResponse as unknown as PaginatedAirlineResponse;
 
-        fetchAirlines();
-    }, []);
+  const airlines: Airline[] = res?.data || [];
+  const paginationInfo = res?.pagination;
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen bg-slate-50">
-                <div className="text-lg font-semibold text-slate-600 animate-pulse flex items-center space-x-2">
-                    <svg className="w-6 h-6 animate-spin text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    <span>Loading airline data...</span>
-                </div>
-            </div>
-        );
-    }
+  // made form loading when one mutation is working
+  const formLoading = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
-    if (error) {
-        return (
-            <div className="flex justify-center items-center min-h-screen bg-slate-50 p-4">
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-6 rounded shadow-sm max-w-lg w-full">
-                    <div className="flex items-center mb-2">
-                        <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <h3 className="font-bold text-lg">Error Loading Data</h3>
-                    </div>
-                    <p className="ml-8">{error}</p>
-                </div>
-            </div>
-        );
-    }
+  // Error handle logic
+  if (error) {
+    toast.error(error.message || 'Failed to load data');
+  }
 
-    return (
-        <div className="min-h-screen bg-slate-50">
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Airlines Management</h1>
-                        <p className="text-slate-500 mt-2 text-sm">View-only dashboard for all registered airlines in the system.</p>
-                    </div>
-                </div>
+  // ─── API Actions ──────────────────────────────────────────────────────────────
+  const handleCreate = (payload: any) => {
+    createMutation.mutate(payload, {
+      onSuccess: (res) => {
+        if (res.success) {
+          toast.success(res.message || 'Airline created successfully.');
+          setShowAdd(false);
+        } else {
+          toast.error(res.error?.details || res.message || 'Failed to create airline.');
+        }
+      },
+    });
+  };
 
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200">
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                        ID
-                                    </th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                        Airline Name
-                                    </th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                        Country
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200">
-                                {airlines.length > 0 ? (
-                                    airlines.map((airline) => (
-                                        <tr key={airline.airline_id} className="hover:bg-slate-50/80 transition-colors duration-150 ease-in-out">
-                                            <td className="px-6 py-5 whitespace-nowrap">
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
-                                                    #{airline.airline_id}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-5 whitespace-nowrap text-sm font-medium text-slate-900">
-                                                {airline.airline_name}
-                                            </td>
-                                            <td className="px-6 py-5 whitespace-nowrap text-sm text-slate-600">
-                                                {airline.country}
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={3} className="px-6 py-12 text-center">
-                                            <div className="flex flex-col items-center justify-center text-slate-500">
-                                                <svg className="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                                                <p className="text-sm">No airlines found in the system.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
+  const handleUpdate = (payload: any) => {
+    if (!editTarget) return;
+    updateMutation.mutate(
+      { id: editTarget.airline_id, payload },
+      {
+        onSuccess: (res) => {
+          if (res.success) {
+            toast.success(res.message || 'Airline updated successfully.');
+            setEditTarget(null);
+          } else {
+            toast.error(res.error?.details || res.message || 'Failed to update airline.');
+          }
+        },
+      }
     );
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    deleteMutation.mutate(deleteTarget.airline_id, {
+      onSuccess: (res) => {
+        if (res.success) {
+          toast.success(res.message || 'Airline deleted.');
+          setDeleteTarget(null);
+        } else {
+          toast.error(res.error?.details || res.message || 'Failed to delete airline.');
+        }
+      },
+    });
+  };
+
+  // ─── Filter ────────────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return airlines.filter(
+      (a: Airline) => 
+        a.airline_name.toLowerCase().includes(search.toLowerCase()) ||
+        a.country.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [airlines, search]);
+
+  return (
+    <>
+      <div className="max-w-5xl mx-auto">
+        {/* ── Header ── */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h4 className="text-xl font-bold text-gray-950">Airlines Management</h4>
+            <p className="text-sm text-gray-500 mt-1">
+              Manage all registered airlines in the Blue Horizon system.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-sm transition active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            Add Airline
+          </button>
+        </div>
+
+        {/* ── Stats Strip ── */}
+        <AirlineStats 
+          totalCount={paginationInfo?.total || airlines.length} 
+          filteredCount={search ? filtered.length : (paginationInfo?.total || airlines.length)} 
+        />
+
+        {/* ── Search ── */}
+        <div className="relative mb-6">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+            <Search className="w-4 h-4 text-slate-400" />
+          </span>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search by airline name or country…"
+            className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          />
+        </div>
+
+        {/* ── Table ── */}
+        <AirlineTable 
+          airlines={filtered}
+          loading={loading}
+          search={search}
+          onEdit={(airline) => setEditTarget(airline)}
+          onDelete={(airline) => setDeleteTarget(airline)}
+        />
+
+        {/* ── Pagination ── */}
+        {!loading && paginationInfo && (
+          <Pagination
+            currentPage={page}
+            totalCount={paginationInfo.total}
+            pageSize={LIMIT}
+            onPageChange={(newPage) => setPage(newPage)}
+          />
+        )}
+      </div>
+
+      {/* ── Add Modal ── */}
+      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Airline">
+        <AirlineForm 
+          onSubmit={handleCreate}
+          onCancel={() => setShowAdd(false)}
+          loading={formLoading}
+          submitLabel="Create Airline"
+        />
+      </Modal>
+
+      {/* ── Edit Modal ── */}
+      <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title="Edit Airline">
+        {editTarget && (
+          <AirlineForm
+            initialData={{ airline_name: editTarget.airline_name, country: editTarget.country }}
+            onSubmit={handleUpdate}
+            onCancel={() => setEditTarget(null)}
+            loading={formLoading}
+            submitLabel="Save Changes"
+          />
+        )}
+      </Modal>
+
+      {/* ── Delete Confirm Modal ── */}
+      <ConfirmDeleteAirlineModal
+        isOpen={!!deleteTarget}
+        airline={deleteTarget}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        loading={formLoading}
+      />
+    </>
+  );
 }
