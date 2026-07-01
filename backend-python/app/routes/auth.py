@@ -6,6 +6,7 @@ from typing import Any, Optional
 from app.database.database import get_db
 from app.database import models
 from app.utils.auth_utils import get_password_hash, verify_password, create_access_token
+from datetime import datetime
 
 router = APIRouter(
     prefix="/api",
@@ -35,7 +36,11 @@ class ApiResponse(BaseModel):
 def register_user(user_data: RegisterSchema, db: Session = Depends(get_db)):
 
     #check email is already register
-    db_user = db.query(models.User).filter(models.User.email == user_data.email).first()
+    db_user = db.query(models.User).filter(
+        models.User.email == user_data.email,
+        models.User.is_deleted == 0 # 🌟 ဒီတစ်လိုင်း တိုးပေးပါ
+    ).first()
+    
     if db_user:
         return {
             "success": False,
@@ -47,11 +52,15 @@ def register_user(user_data: RegisterSchema, db: Session = Depends(get_db)):
     #password hash
     hashed_pwd = get_password_hash(user_data.password)
     
+    #catch register date
+    current_date_str = datetime.now().strftime("%d/%m/%Y")
     new_user = models.User(
         username=user_data.username,
         email=user_data.email,
         password=hashed_pwd,
-        role="agent"
+        role="agent",
+        joined_date=current_date_str,
+        status="ACTIVE"
     )
     
     db.add(new_user)
@@ -70,7 +79,11 @@ def register_user(user_data: RegisterSchema, db: Session = Depends(get_db)):
 @router.post("/login", response_model=ApiResponse)
 def login_user(login_data: LoginSchema, db: Session = Depends(get_db)):
     # chcek email and user is on db
-    db_user = db.query(models.User).filter(models.User.email == login_data.email).first()
+    db_user = db.query(models.User).filter(
+        models.User.email == login_data.email,
+        models.User.is_deleted == 0 
+    ).first()
+
     if not db_user:
         return {
             "success": False,
@@ -87,7 +100,29 @@ def login_user(login_data: LoginSchema, db: Session = Depends(get_db)):
             "data": None,
             "error": {"code": "INVALID_CREDENTIALS", "details": "Invalid Email or Password"}
         }
-        
+    
+    if db_user.status != "ACTIVE":
+        return {
+            "success": False,
+            "message": "Login failed",
+            "data": None,
+            "error": {
+                "code": "ACCOUNT_INACTIVE", 
+                "details": "Your account has been deactivated. Please contact the administrator."
+            }
+        }
+
+    if db_user.is_deleted != 0:
+        return {
+            "success": False,
+            "message": "Login failed",
+            "data": None,
+            "error": {
+                "code": "ACCOUNT_INACTIVE Or Deleted", 
+                "details": "Your account has been deactivated or deleted. Please contact the administrator."
+            }
+        }
+
     # generate jwt token 
     access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role})
     

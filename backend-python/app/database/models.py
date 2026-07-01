@@ -12,12 +12,18 @@ class User(Base):
     email = Column(String, nullable=False,unique=True)
     role = Column(String, default="agent") 
 
+    # allow nullable
+    phone_no = Column(String, nullable=True) 
+    status = Column(String, nullable=True, default="ACTIVE") # default Active
+    joined_date = Column(String, nullable=True) 
+    is_deleted = Column(Integer, default=0, nullable=False)
+
 class Airline(Base):
     __tablename__ = 'AIRLINES'
     airline_id = Column(Integer, primary_key=True, index=True)
     airline_name = Column(String, index=True, nullable=False)
     country = Column(String, index=True, nullable=False)
-    is_deleted = Column(Boolean, default=False)
+    is_deleted = Column(Integer, default=0, nullable=False)
 
 class Route(Base):
     __tablename__ = 'ROUTES'
