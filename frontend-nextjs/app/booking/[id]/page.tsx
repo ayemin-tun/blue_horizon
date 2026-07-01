@@ -38,7 +38,7 @@ export default function BookingDetails() {
                     {/* Left Side Panel: Booking Details */}
                     <div className="lg:col-span-3 bg-white border border-gray-200 rounded-lg shadow-sm p-5 sm:p-7">
                         
-                        {/* Header Row: DATE ညာဘက်အစွန်း */}
+                        {/* Header Row: DATE Right Side */}
                         <div className="flex flex-row justify-between items-center border-b border-gray-200 pb-4 mb-5">
                             <h2 className="text-base font-bold text-gray-800">Booking Details</h2>
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider text-right">
@@ -46,7 +46,7 @@ export default function BookingDetails() {
                             </p>
                         </div>
 
-                        {/* ⚡ Flight Identifier Section - flex justify-between သုံးပြီး ညာဘက် ကပ်ထားပါတယ် */}
+                        {/* ⚡ Flight Identifier Section - flex justify-between Use */}
                         <div className="flex flex-row justify-between items-start mb-6 w-full">
                             {/* Left: Logo Box */}
                             <div className="w-24 h-24 shrink-0 bg-[#e0f2fe]/50 rounded-xl flex items-center justify-center p-3">
@@ -59,7 +59,7 @@ export default function BookingDetails() {
                                 />
                             </div>
 
-                            {/* Right: Top Info List - DATE ရဲ့ အောက်တည့်တည့် ညာဘက်အစွန်းကို ရောက်သွားအောင် ချိန်ညှိထားပါတယ် */}
+                            {/* Right: Top Info List */}
                             <div className="flex flex-col gap-3 text-[13px] max-w-xs w-full pt-0.5">
                                 <div className="flex gap-2">
                                     <span className="text-gray-500 font-medium min-w-[100px]">Flight No</span>
@@ -82,7 +82,7 @@ export default function BookingDetails() {
 
                         <hr className="border-gray-200 mb-6" />
 
-                        {/* ⚡ Bottom Specific Route & Time Metrics - အောက်ကစာသားတွေကိုပါ ညာဘက်အစွန်းကို ပို့ပေးထားပါတယ် */}
+                        {/* ⚡ Bottom Specific Route & Time Metrics */}
                         <div className="flex flex-col items-end w-full">
                             <div className="space-y-4 text-[13px] max-w-xs w-full">
                                 {/* Route Row */}
