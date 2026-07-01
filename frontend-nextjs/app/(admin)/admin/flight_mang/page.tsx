@@ -16,13 +16,12 @@ import AirlineStats from '@/app/(admin)/admin/flight_mang/airline/components/Air
 import Pagination from '@/components/Pagination';
 import AirlineTable from '@/app/(admin)/admin/flight_mang/airline/components/AirlineTable';
 import ConfirmDeleteAirlineModal from '@/components/ConfirmDeleteModal';
-
 // ─── Lucide Icons Import ───────────────────────────────────────────────────
 import { Plus, Search } from 'lucide-react';
 
 export default function AdminAirlinesPage() {
   const [search, setSearch] = useState('');
-  
+
   // ─── Pagination States ───────────────────────────────────────────────────
   const [page, setPage] = useState(1);
   const LIMIT = 5;
@@ -33,7 +32,7 @@ export default function AdminAirlinesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Airline | null>(null);
 
   // ─── React Query Hooks ────────────────────────────────────────────────────
-  const { data: apiResponse, isLoading: loading, error } = useAirlinesQuery(page, LIMIT, search);
+  const { data: apiResponse, isLoading: loading, error } = useAirlinesQuery(page, LIMIT,search);
   const createMutation = useCreateAirlineMutation();
   const updateMutation = useUpdateAirlineMutation();
   const deleteMutation = useDeleteAirlineMutation();
@@ -42,19 +41,8 @@ export default function AdminAirlinesPage() {
   const res = apiResponse as unknown as PaginatedAirlineResponse;
 
   const airlines: Airline[] = res?.data || [];
-  
-  // ─── Client-Side Filter ───────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    return airlines.filter(
-      (a: Airline) => 
-        a.airline_name.toLowerCase().includes(search.toLowerCase()) ||
-        a.country.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [airlines, search]);
+  const paginationInfo = res?.pagination;
 
-  // ─── Client-Side Pagination ────────────────────────────────────────────────
-  const totalItems = filtered.length;
-  const slicedData = filtered.slice((page - 1) * LIMIT, page * LIMIT);
 
   // made form loading when one mutation is working
   const formLoading = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
@@ -130,9 +118,9 @@ export default function AdminAirlinesPage() {
         </div>
 
         {/* ── Stats Strip ── */}
-        <AirlineStats 
-          totalCount={airlines.length} 
-          filteredCount={totalItems} 
+        <AirlineStats
+          totalCount={paginationInfo?.total || 0}
+          filteredCount={paginationInfo?.total || 0}
         />
 
         {/* ── Search ── */}
@@ -155,22 +143,20 @@ export default function AdminAirlinesPage() {
         </div>
 
         {/* ── Table ── */}
-        <AirlineTable 
-          airlines={slicedData}
+        <AirlineTable
+          airlines={airlines}
           loading={loading}
           search={search}
           onEdit={(airline) => setEditTarget(airline)}
           onDelete={(airline) => setDeleteTarget(airline)}
-          currentPage={page}
-          pageSize={LIMIT}
         />
 
         {/* ── Pagination ── */}
-        {!loading && totalItems > LIMIT && (
+        {!loading && paginationInfo?.total && paginationInfo.total > LIMIT && (
           <div className="w-full">
             <Pagination
               currentPage={page}
-              totalCount={totalItems}
+              totalCount={paginationInfo.total}
               pageSize={LIMIT}
               onPageChange={(newPage) => setPage(newPage)}
             />
@@ -180,7 +166,7 @@ export default function AdminAirlinesPage() {
 
       {/* ── Add Modal ── */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Airline">
-        <AirlineForm 
+        <AirlineForm
           onSubmit={handleCreate}
           onCancel={() => setShowAdd(false)}
           loading={formLoading}
@@ -201,14 +187,7 @@ export default function AdminAirlinesPage() {
         )}
       </Modal>
 
-      {/* ── Delete Confirm Modal ── */}
-      <ConfirmDeleteAirlineModal
-        isOpen={!!deleteTarget}
-        airline={deleteTarget}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-        loading={formLoading}
-      />
+
     </>
   );
 }

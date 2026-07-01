@@ -22,7 +22,7 @@ import { Plus, Pencil, Trash2, ArrowRight, Search, Loader2 } from 'lucide-react'
 
 export default function RoutePage() {
   const [search, setSearch] = useState('');
-  
+
   // ─── Pagination States ───────────────────────────────────────────────────
   const [page, setPage] = useState(1);
   const LIMIT = 5;
@@ -33,7 +33,7 @@ export default function RoutePage() {
   const [deleteTarget, setDeleteTarget] = useState<Route | null>(null);
 
   // ─── React Query Hooks ────────────────────────────────────────────────────
-  const { data: apiResponse, isLoading: loading, error } = useRoutesQuery(page, LIMIT);
+  const { data: apiResponse, isLoading: loading, error } = useRoutesQuery(page, LIMIT, search);
   const createMutation = useCreateRouteMutation();
   const updateMutation = useUpdateRouteMutation();
   const deleteMutation = useDeleteRouteMutation();
@@ -97,14 +97,6 @@ export default function RoutePage() {
     });
   };
 
-  // ─── Filter ────────────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    return routes.filter(
-      (r: Route) => 
-        r.departure_city.toLowerCase().includes(search.toLowerCase()) ||
-        r.arrival_city.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [routes, search]);
 
   return (
     <>
@@ -127,31 +119,37 @@ export default function RoutePage() {
         </div>
 
         {/* ── Stats Strip ── */}
-        <RouteStats 
-          totalCount={paginationInfo?.total || routes.length} 
-          filteredCount={search ? filtered.length : (paginationInfo?.total || routes.length)} 
+
+
+        <RouteStats
+          totalCount={paginationInfo?.total || 0}
+          filteredCount={paginationInfo?.total || 0}
         />
 
         {/* ── Search ── */}
-        <div className="relative mb-6">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-            <Search className="w-4 h-4 text-slate-400" />
-          </span>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search by city name…"
-            className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-          />
+
+        <div className="flex justify-end mb-6">
+          <div className="relative w-full max-w-md">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+              <Search className="w-4 h-4 text-slate-400" />
+            </span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Search by city name"
+              className="w-full pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
+          </div>
         </div>
 
+
         {/* ── Table ── */}
-        <RouteTable 
-          routes={filtered}
+        <RouteTable
+          routes={routes}
           loading={loading}
           search={search}
           onEdit={(route) => setEditTarget(route)}
@@ -171,7 +169,7 @@ export default function RoutePage() {
 
       {/* ── Add Modal ── */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Route">
-        <RouteForm 
+        <RouteForm
           onSubmit={handleCreate}
           onCancel={() => setShowAdd(false)}
           loading={formLoading}

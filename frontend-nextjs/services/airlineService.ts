@@ -7,8 +7,6 @@ export interface Airline {
   id?: number;          // Fallback id
   airline_id: number;   // Backend က သုံးထားတဲ့ တကယ့် ID
   airline_name: string;
-
-  
   country: string;
   is_deleted: boolean;
 }
@@ -38,18 +36,21 @@ function authHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// ─── 1. Get Airlines Query Hook (GET) ───────────────────────────────────────
-export function useAirlinesQuery(page: number = 1, limit: number = 10) {
-  const skip = (page - 1) * limit; 
-  
+
+// --1. get Mutation hook (Get) --
+export const useAirlinesQuery = (page: number, limit: number, search: string) => {
   return useQuery({
-    queryKey: ['airlines', page, limit],
-    queryFn: () => 
-      api.get<PaginatedAirlineResponse>(`/api/airlines/?skip=${skip}&limit=${limit}`, { 
-        headers: authHeader() 
-      }),
+    queryKey: ['airlines', page, limit, search], 
+    queryFn: async () => {
+      const skip = (page - 1) * limit;
+      
+      const response = await api.get(
+        `/api/airlines?skip=${skip}&limit=${limit}&search=${encodeURIComponent(search)}`
+      );
+      return response;
+    },
   });
-}
+};
 
 // ─── 2. Create Mutation Hook (POST) ───────────────────────────────────────
 export function useCreateAirlineMutation() {

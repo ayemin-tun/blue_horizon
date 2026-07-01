@@ -1,15 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Edit2, Trash2 } from 'lucide-react';
-
-export interface Airline {
-  id: number;
-  airline_name: string;
-  airline_code: string;
-  country: string;
-  status: string;
-}
+import { Airline } from '@/services/airlineService'; 
+import { Pencil, Trash2, Loader2 } from 'lucide-react';
 
 interface AirlineTableProps {
   airlines: Airline[];
@@ -17,99 +10,95 @@ interface AirlineTableProps {
   search: string;
   onEdit: (airline: Airline) => void;
   onDelete: (airline: Airline) => void;
-  currentPage: number;
-  pageSize: number;
 }
 
-export default function AirlineTable({
-  airlines,
-  loading,
-  search,
-  onEdit,
-  onDelete,
-  currentPage,
-  pageSize,
+export default function AirlineTable({ 
+  airlines = [], 
+  loading, 
+  search, 
+  onEdit, 
+  onDelete 
 }: AirlineTableProps) {
-  
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-10">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-900"></div>
-      </div>
-    );
-  }
-
-  if (airlines.length === 0) {
-    return (
-      <div className="text-center py-10 text-sm text-gray-400">
-        {search ? 'No matching airlines found.' : 'No airlines found.'}
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-            {/* 💡 CODE ကော်လံ ဖျောက်ထားပြီး Header ၄ ခုပဲ ထားပါတယ် */}
-            <th className="py-4 px-4 w-16">#</th>
-            <th className="py-4 px-4">Airline Name</th>
-            <th className="py-4 px-4">Country</th>
-            <th className="py-4 px-4 text-right w-24">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50 text-xs text-gray-700">
-          {airlines.map((airline, index) => {
-            // 💡 Fallback အကာအကွယ်ထည့်ထားလို့ Prop မပါလာရင်တောင် #NaN လုံးဝ မဖြစ်တော့ပါဘူး
-            const currPage = currentPage || 1;
-            const pSize = pageSize || 5;
-            const serialNumber = (currPage - 1) * pSize + index + 1;
+    <div className="w-full bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+      
+      <div className="flex items-center px-6 py-4 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="w-16 shrink-0">#</div>
+        <div className="flex-1 min-w-[200px]">Airline Name</div>
+        <div className="flex-1 min-w-[150px]">Country</div>
+        <div className="w-24 shrink-0 text-right">Actions</div>
+      </div>
 
+      {/* ─── Loading View ─── */}
+      {loading && (
+        <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
+          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+          <span className="text-sm font-medium">Loading Airlines...</span>
+        </div>
+      )}
+
+      {/* ─── Empty View ─── */}
+      {!loading && airlines.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+          <p className="text-sm font-medium">
+            {search ? 'No airlines match your search.' : 'No airlines found.'}
+          </p>
+        </div>
+      )}
+
+      {!loading && airlines.length > 0 && (
+        <div className="divide-y divide-slate-100">
+          {airlines.map((airline, idx) => {
+            const rowKey = airline.airline_id ? `airline-${airline.airline_id}` : `airline-idx-${idx}`;
+            
             return (
-              <tr key={airline.id} className="hover:bg-gray-50/50 transition">
-                {/* ၁။ အမှတ်စဉ် (#) */}
-                <td className="py-4 px-4 text-gray-400 font-medium">
-                  #{serialNumber}
-                </td>
-
-                {/* ၂။ Airline Name (Code မပါဘဲ နာမည်သက်သက်နှင့် အစိမ်းစက်လေး) */}
-                <td className="py-4 px-4 font-semibold text-gray-900">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <div
+                key={rowKey}
+                className="flex items-center px-6 py-4 transition hover:bg-slate-50/50"
+              >
+                <div className="w-16 shrink-0 text-xs font-mono text-slate-400">
+                  #{airline.airline_id}
+                </div>
+                
+                <div className="flex-1 min-w-[200px] flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                  <span className="text-sm font-semibold text-slate-800">
                     {airline.airline_name}
-                  </div>
-                </td>
+                  </span>
+                </div>
 
                 {/* ၃။ Country */}
-                <td className="py-4 px-4 text-gray-500">
-                  {airline.country || '-'}
-                </td>
+                <div className="flex-1 min-w-[150px] flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="text-sm font-medium text-slate-600">
+                    {airline.country || '-'}
+                  </span>
+                </div>
 
-                {/* ၄။ Actions (Edit & Delete) */}
-                <td className="py-4 px-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => onEdit(airline)}
-                      className="p-1 text-gray-400 hover:text-blue-900 rounded transition"
-                      title="Edit"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(airline)}
-                      className="p-1 text-gray-400 hover:text-rose-600 rounded transition"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                {/* ၄။ Actions Button Context */}
+                <div className="w-24 shrink-0 flex items-center justify-end gap-1.5">
+                  <button
+                    onClick={() => onEdit(airline)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-blue-50 transition active:scale-95"
+                    title="Edit Airline"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => onDelete(airline)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition active:scale-95"
+                    title="Delete Airline"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+              </div>
             );
           })}
-        </tbody>
-      </table>
+        </div>
+      )}
     </div>
   );
 }
