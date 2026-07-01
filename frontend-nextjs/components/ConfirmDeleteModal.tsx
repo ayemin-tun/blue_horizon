@@ -5,9 +5,9 @@ import React from "react";
 
 interface ConfirmDeleteProps {
   isOpen: boolean;
-  title?: string;       // 💡 Dynamic Title ပေးလို့ရအောင်
-  message?: string;     // 💡 Dynamic Message ပေးလို့ရအောင်
-  itemName: React.ReactNode; // 💡 String ရော၊ Icon ပါတဲ့ JSX ပါ လက်ခံနိုင်အောင် React.ReactNode ပြောင်းလိုက်တာပါ
+  title?: string;       //Dynamic Title
+  message?: string;     // Dynamic Message 
+  itemName: React.ReactNode; // react node to display string or icon or any other react node
   onConfirm: () => void;
   onCancel: () => void;
   loading: boolean;
@@ -44,7 +44,7 @@ export default function ConfirmDeleteModal({
             {message}
           </p>
           
-          {/* 💡 ဒီနေရာမှာ ပို့လိုက်တဲ့ ItemName ပုံစံအတိုင်း လှလှပပ ဖော်ပြပေးသွားမှာပါ */}
+          {/* Item Name Display */}
           <div className="bg-slate-50 rounded-xl px-4 py-3 mb-6 border border-slate-200 text-blue-900 text-sm font-semibold">
             {itemName}
           </div>

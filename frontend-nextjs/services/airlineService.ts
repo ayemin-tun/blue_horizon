@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from './apiClient'; // မင်းရဲ့ apiClient လမ်းကြောင်းအတိုင်း ပြင်ပါ
+import { api } from './apiClient';
 import { useAuthStore } from './store/authStore';
 
 // ─── Interfaces ────────────────────────────────────────────────────────────
 export interface Airline {
-  id?: number;          // Fallback id
-  airline_id: number;   // Backend က သုံးထားတဲ့ တကယ့် ID
+  id?: number;          
+  airline_id: number;   
   airline_name: string;
   country: string;
   is_deleted: boolean;
@@ -61,7 +61,6 @@ export function useCreateAirlineMutation() {
       api.post<Airline>('/api/airlines/', payload, { headers: authHeader() }),
     onSuccess: (res) => {
       if (res.success) {
-        // exact: false ပေးလိုက်ခြင်းဖြင့် ['airlines', page, limit] သုံးထားသမျှ pagination keys တွေကိုပါ အကုန် automatic refetch လုပ်ခိုင်းတာဖြစ်ပါတယ်
         queryClient.invalidateQueries({ queryKey: ['airlines'], exact: false });
       }
     },

@@ -25,7 +25,7 @@ export default function AirlineForm({ initialData, onSubmit, onCancel, loading, 
     country: initialData?.country ?? "",
   });
 
-  // Edit လုပ်တဲ့အခါ initialData ပြောင်းရင် form state ထဲ update ဖြစ်အောင်လုပ်ပေးခြင်း
+  // change initial data on edit form
   useEffect(() => {
     if (initialData) {
       setForm({
