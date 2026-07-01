@@ -1,25 +1,29 @@
 "use client";
 
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import React from "react";
-
-interface RouteData {
-  route_id: number;
-  departure_city: string;
-  arrival_city: string;
-}
 
 interface ConfirmDeleteProps {
   isOpen: boolean;
-  route: RouteData | null;
+  title?: string;       // 💡 Dynamic Title ပေးလို့ရအောင်
+  message?: string;     // 💡 Dynamic Message ပေးလို့ရအောင်
+  itemName: React.ReactNode; // 💡 String ရော၊ Icon ပါတဲ့ JSX ပါ လက်ခံနိုင်အောင် React.ReactNode ပြောင်းလိုက်တာပါ
   onConfirm: () => void;
   onCancel: () => void;
   loading: boolean;
 }
 
-
-export default function ConfirmDeleteModal({ isOpen, route, onConfirm, onCancel, loading }: ConfirmDeleteProps) {
-  if (!isOpen || !route) return null;
+export default function ConfirmDeleteModal({ 
+  isOpen, 
+  title = "Confirm Delete", 
+  message = "Are you sure you want to delete this item?", 
+  itemName, 
+  onConfirm, 
+  onCancel, 
+  loading 
+}: ConfirmDeleteProps) {
+  
+  if (!isOpen || !itemName) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -32,18 +36,17 @@ export default function ConfirmDeleteModal({ isOpen, route, onConfirm, onCancel,
       {/* Panel */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden transform transition-all duration-300 scale-100">
         <div className="bg-linear-to-r from-rose-600 to-rose-500 px-6 py-4">
-          <h2 className="text-white font-bold text-sm tracking-wide">Confirm Delete</h2>
+          <h2 className="text-white font-bold text-sm tracking-wide">{title}</h2>
         </div>
         
         <div className="p-6">
-          <p className="text-slate-600 text-sm mb-2">
-            Are you sure you want to delete this route?
+          <p className="text-slate-600 text-sm mb-4">
+            {message}
           </p>
           
-          <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-3 mb-6 border border-slate-200">
-            <span className="font-semibold text-blue-900 text-sm">{route.departure_city}</span>
-            <ArrowRight className="w-4 h-4 text-blue-400" />
-            <span className="font-semibold text-blue-900 text-sm">{route.arrival_city}</span>
+          {/* 💡 ဒီနေရာမှာ ပို့လိုက်တဲ့ ItemName ပုံစံအတိုင်း လှလှပပ ဖော်ပြပေးသွားမှာပါ */}
+          <div className="bg-slate-50 rounded-xl px-4 py-3 mb-6 border border-slate-200 text-blue-900 text-sm font-semibold">
+            {itemName}
           </div>
           
           <p className="text-xs text-slate-400 mb-6">

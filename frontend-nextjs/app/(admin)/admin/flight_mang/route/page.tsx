@@ -192,12 +192,23 @@ export default function RoutePage() {
 
       {/* ── Delete Confirm Modal ── */}
       <ConfirmDeleteModal
-        isOpen={!!deleteTarget}
-        route={deleteTarget}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-        loading={formLoading}
-      />
+  isOpen={!!deleteTarget}
+  title="Delete Route"
+  message="Are you sure you want to delete this route?"
+  // 💡 ArrowRight Icon ရော စာသားတွေပါ စုစည်းပြီး Flexible ဖြစ်ဖြစ် ပို့လိုက်တာပါ
+  itemName={
+    deleteTarget && (
+      <div className="flex items-center gap-2">
+        <span>{deleteTarget.departure_city}</span>
+        <ArrowRight className="w-4 h-4 text-blue-400" />
+        <span>{deleteTarget.arrival_city}</span>
+      </div>
+    )
+  }
+  onConfirm={handleDelete}
+  onCancel={() => setDeleteTarget(null)}
+  loading={deleteMutation.isPending}
+/>
     </>
   );
 }

@@ -186,7 +186,16 @@ export default function AdminAirlinesPage() {
           />
         )}
       </Modal>
-
+<ConfirmDeleteAirlineModal
+  isOpen={!!deleteTarget}
+  title="Delete Airline"
+  message="Are you sure you want to delete this airline?"
+ 
+  itemName={deleteTarget ? `${deleteTarget.airline_name} (${deleteTarget.country})` : ''} 
+  onConfirm={handleDelete}
+  onCancel={() => setDeleteTarget(null)}
+  loading={deleteMutation.isPending}
+/>
 
     </>
   );
