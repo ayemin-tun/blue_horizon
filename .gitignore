@@ -17,3 +17,13 @@ backend-python/data/blue_horizon.db
 .DS_Store
 Thumbs.db
 .env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Operating system files
+.DS_Store
+Thumbs.db
