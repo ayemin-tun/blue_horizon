@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status,Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database.database import get_db
 from app.database import models
+from typing import Optional
 
 router = APIRouter(prefix="/api/routes", tags=["Routes"])
 
@@ -36,21 +37,32 @@ def create_route(data: RouteSchema, db: Session = Depends(get_db)):
     return {"success": True, "message": "Route created", "data": new_route}
 
 # 2. READ ALL
-
 @router.get("/")
-def get_routes(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    total_count = db.query(models.Route).filter(models.Route.is_deleted == False).count()
+def get_routes(
+    skip: int = 0, 
+    limit: int = 5, 
+    search: Optional[str] = Query(None), # accept search as optional query
+    db: Session = Depends(get_db)
+):
+    # Base query
+    query = db.query(models.Route).filter(models.Route.is_deleted == False)
     
-    routes = (
-        db.query(models.Route)
-        .filter(models.Route.is_deleted == False)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    # search city name on db
+    if search:
+        search_filter = f"%{search.strip()}%"
+        query = query.filter(
+            (models.Route.departure_city.like(search_filter)) | 
+            (models.Route.arrival_city.like(search_filter))
+        )
+        
+    # calculate total after filter
+    total_count = query.count()
+    
+    # Paginate
+    routes = query.offset(skip).limit(limit).all()
     
     return {
-        "success": True, 
+        "success": True,
         "data": routes,
         "pagination": {
             "total": total_count,

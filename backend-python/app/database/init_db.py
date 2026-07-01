@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # Password Hash Function Call 
 from app.utils.auth_utils import get_password_hash
+from datetime import datetime
 
 def init_database():
 
@@ -29,9 +30,19 @@ def init_database():
         user_id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL,
         password TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        role TEXT CHECK(role IN ('admin', 'agent')) NOT NULL
+        email TEXT NOT NULL,
+        role TEXT CHECK(role IN ('admin', 'agent')) NOT NULL,
+        phone_no TEXT,                                     
+        status TEXT CHECK(status IN ('ACTIVE', 'INACTIVE')) DEFAULT 'ACTIVE', 
+        joined_date TEXT,
+        is_deleted INTEGER DEFAULT 0
     )''')
+
+    cursor.execute('''
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_active_user_email 
+    ON USERS (email) 
+    WHERE is_deleted = 0;
+    ''')
 
     # 2. AIRLINES Table
     cursor.execute('''
@@ -131,15 +142,16 @@ def init_database():
     
     admin_hashed_password = get_password_hash("admin@123")
     agent_hashed_password = get_password_hash("agent@123")
+    current_date_str = datetime.now().strftime("%d/%m/%Y")
 
     # 1. Default User 
     cursor.execute(
-        "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role) VALUES (?, ?, ?, ?, ?)",
-        (1, 'admin', admin_hashed_password, 'admin@bluehorizon.com', 'admin')
+        "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role,phone_no,status,joined_date,is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (1, 'admin', admin_hashed_password, 'admin@bluehorizon.com', 'admin', '09-123456789', 'ACTIVE', current_date_str, 0)
     )
     cursor.execute(
-        "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role) VALUES (?, ?, ?, ?, ?)",
-        (2, 'agent01', agent_hashed_password, 'agent01@bluehorizon.com', 'agent')
+        "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role,phone_no,status,joined_date,is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (2, 'agent01', agent_hashed_password, 'agent01@bluehorizon.com', 'agent', '09-987654321', 'ACTIVE', current_date_str, 0)
     )
 
     # 2. Sample Airline & Route

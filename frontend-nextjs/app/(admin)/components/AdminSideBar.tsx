@@ -105,7 +105,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
       `}>
         <ul className="w-full flex flex-col">
           {menuItems.map((item) => {
-            // Path ကိုစစ်ပြီး Active ဖြစ်မဖြစ် ဆုံးဖြတ်မယ်
+            //check if the current pathname matches the item's path to determine if it's active
             const isActive = item.id === "overview" 
               ? pathname === "/admin" 
               : pathname.startsWith(item.path);

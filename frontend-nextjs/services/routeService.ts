@@ -32,17 +32,20 @@ export interface PaginatedRouteResponse {
   pagination: PaginationInfo;
 }
 
-export function useRoutesQuery(page: number = 1, limit: number = 10) {
-  const skip = (page - 1) * limit; 
-  
+// --1. get Mutation hook (Post) --
+export const useRoutesQuery = (page: number, limit: number, search: string) => {
   return useQuery({
-    queryKey: ['routes', page, limit],
-    queryFn: () => 
-      api.get<PaginatedRouteResponse>(`/api/routes/?skip=${skip}&limit=${limit}`, { 
-        headers: authHeader() 
-      }),
+    queryKey: ['routes', page, limit, search], 
+    queryFn: async () => {
+      const skip = (page - 1) * limit;
+      
+      const response = await api.get(
+        `/api/routes?skip=${skip}&limit=${limit}&search=${encodeURIComponent(search)}`
+      );
+      return response;
+    },
   });
-}
+};
 
 // ─── 2. Create Mutation Hook (POST) ───────────────────────────────────────
 export function useCreateRouteMutation() {
