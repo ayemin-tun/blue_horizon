@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 from app.database.database import get_db
 from app.database import models
+from sqlalchemy import cast, String
 
 router = APIRouter(prefix="/api/agents", tags=["Agent Management"])
 
@@ -24,16 +25,17 @@ class AgentCreateSchema(BaseModel):
     status: Optional[str] = "ACTIVE"
 
 
-# --- 1. READ ALL AGENTS API (With Status Filter) ---
+# --- 1. READ ALL AGENTS API (With Status Filter) ---    
 @router.get("", response_model=ApiResponse)
 def get_agents(
     skip: int = 0, 
     limit: int = 10, 
-    status: Optional[str] = Query(None), # filter url src
+    status: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     try:
-        #base query for agents (role = agent and is_deleted = 0)
+        # base query for agents (role = agent and is_deleted = 0)
         base_query = db.query(models.User).filter(models.User.role == "agent", models.User.is_deleted == 0)
         
         # check if status filter is provided and apply it to the base query
@@ -41,7 +43,15 @@ def get_agents(
             formatted_status = status.strip().upper()
             base_query = base_query.filter(models.User.status == formatted_status)
 
-        # mertics calculation
+        #  Search Keyword with email or user_name
+        if search:
+            search_filter = f"%{search.strip()}%"
+            base_query = base_query.filter(
+                (models.User.email.like(search_filter)) | # Email
+                (models.User.username.like(search_filter)) # Name / Username 
+            )
+
+        # metrics calculation
         total_count = db.query(models.User).filter(models.User.role == "agent", models.User.is_deleted == 0).count()
         active_count = db.query(models.User).filter(models.User.role == "agent", models.User.is_deleted == 0, models.User.status == "ACTIVE").count()
         inactive_count = db.query(models.User).filter(models.User.role == "agent", models.User.is_deleted == 0, models.User.status == "INACTIVE").count()
@@ -59,8 +69,9 @@ def get_agents(
                 except ValueError:
                     continue
 
-        #  Filtered Total Count and pagination ---
-        filtered_total = base_query.count()
+        # Filtered Total Count and pagination ---
+       
+        filtered_total = base_query.count() 
         
         agents = (
             base_query
@@ -111,7 +122,7 @@ def get_agents(
                 "details": str(e)
             }
         }
-    
+
 # --- 2. RETRIEVE (GET AGENT ) ---
 @router.get("/{id}", response_model=ApiResponse)
 def get_agent_by_id(id: int, db: Session = Depends(get_db)):

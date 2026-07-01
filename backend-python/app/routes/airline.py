@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status,Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, Any
@@ -39,9 +39,38 @@ def create_airline(data: AirlineSchema, db: Session = Depends(get_db)):
 
 # --- 2. READ ALL ---
 @router.get("/")
-def get_airlines(db: Session = Depends(get_db)):
-    airlines = db.query(models.Airline).filter(models.Airline.is_deleted == False).all()
-    return {"success": True, "data": airlines}
+def get_airlines(
+    skip: int = 0, 
+    limit: int = 5, 
+    search: Optional[str] = Query(None), # accept search as optional query
+    db: Session = Depends(get_db)
+):
+    # Base query
+    query = db.query(models.Airline).filter(models.Airline.is_deleted == False)
+    
+    # search airline name on db
+    if search:
+        search_filter = f"%{search.strip()}%"
+        query = query.filter(
+            (models.Airline.airline_name.like(search_filter)) | 
+            (models.Airline.country.like(search_filter))
+        )
+        
+    # calculate total after filter
+    total_count = query.count()
+    
+    # Paginate
+    airline = query.offset(skip).limit(limit).all()
+    
+    return {
+        "success": True,
+        "data": airline,
+        "pagination": {
+            "total": total_count,
+            "skip": skip,
+            "limit": limit
+        }
+    }
 
 # --- 3. UPDATE ---
 @router.put("/{id}")

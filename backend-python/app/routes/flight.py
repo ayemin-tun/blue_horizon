@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database import models
 from app.schemas.flights_schema import FlightCreate
+from typing import Optional
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/flights", tags=["Flights"])
 
@@ -57,17 +59,25 @@ def create_flight(data: FlightCreate, db: Session = Depends(get_db)):
 
 # 2. READ ALL WITH PAGINATION
 @router.get("/")
-def get_flights(skip: int = 0, limit: int = 5, db: Session = Depends(get_db)):
-    total_count = db.query(models.Flight).filter(models.Flight.is_deleted == False).count()
+def get_flights(
+    skip: int = 0, 
+    limit: int = 5, 
+    search: Optional[str] = Query(None), 
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.Flight).join(models.Flight.route).filter(models.Flight.is_deleted == False)
     
-    # use Relationship (join) to retrieve Airline and Route 
-    flights = (
-        db.query(models.Flight)
-        .filter(models.Flight.is_deleted == False)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    if search:
+        search_filter = f"%{search.strip()}%"
+        query = query.filter(
+            (models.Flight.flight_no.like(search_filter)) |       # Flight Number search
+            (models.Route.departure_city.like(search_filter)) |      # Departure City search
+            (models.Route.arrival_city.like(search_filter))          # Arrival City search
+        )
+        
+    total_count = query.count()
+    
+    flights = query.offset(skip).limit(limit).all()
     
     return {
         "success": True,
