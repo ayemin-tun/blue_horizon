@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { toast } from "@/services/store/alertStore";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plane } from "lucide-react"; // 🌟 လေယာဉ်ပုံစံ Preview Icon အတွက် Plane ပါ ထည့်သွင်းထားပါတယ်
 
 export interface AirlinePayload {
   airline_name: string;
-
   country: string;
 }
 
@@ -21,7 +20,6 @@ interface AirlineFormProps {
 export default function AirlineForm({ initialData, onSubmit, onCancel, loading, submitLabel }: AirlineFormProps) {
   const [form, setForm] = useState<AirlinePayload>({
     airline_name: initialData?.airline_name ?? "",
-
     country: initialData?.country ?? "",
   });
 
@@ -30,7 +28,6 @@ export default function AirlineForm({ initialData, onSubmit, onCancel, loading, 
     if (initialData) {
       setForm({
         airline_name: initialData.airline_name ?? "",
-       
         country: initialData.country ?? "",
       });
     }
@@ -42,7 +39,7 @@ export default function AirlineForm({ initialData, onSubmit, onCancel, loading, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.airline_name.trim()  || !form.country.trim()) {
+    if (!form.airline_name.trim() || !form.country.trim()) {
       toast.warning("All fields are required.");
       return;
     }
@@ -66,8 +63,6 @@ export default function AirlineForm({ initialData, onSubmit, onCancel, loading, 
           className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-black"
         />
       </div>
-      
-     
 
       {/* 3. Country Input */}
       <div>
@@ -84,6 +79,25 @@ export default function AirlineForm({ initialData, onSubmit, onCancel, loading, 
           className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-black"
         />
       </div>
+
+      {/* preview */}
+      {(form.airline_name.trim() || form.country.trim()) && (
+        <>
+          <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-lg p-2.5">
+            <div className="p-2 bg-blue-100 rounded-lg text-blue-900 shrink-0">
+              <Plane className="w-4 h-4" />
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-semibold text-slate-900 truncate">
+                {form.airline_name || "—"}
+              </p>
+              <p className="text-xs text-slate-500 font-medium truncate">
+                {form.country || "—"}
+              </p>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Actions Button Area */}
       <div className="flex gap-3 pt-2">

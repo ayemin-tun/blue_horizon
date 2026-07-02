@@ -48,10 +48,7 @@ export default function ConfirmDeleteModal({
           <div className="bg-slate-50 rounded-xl px-4 py-3 mb-6 border border-slate-200 text-blue-900 text-sm font-semibold">
             {itemName}
           </div>
-          
-          <p className="text-xs text-slate-400 mb-6">
-            This action performs a soft delete and can be re-activated later.
-          </p>
+         
           
           <div className="flex gap-3">
             <button
