@@ -15,7 +15,9 @@ export default function FlightManagementLayout({
   const tabs = [
     { name: 'Airline', href: '/admin/flight_mang' },
     { name: 'Route', href: '/admin/flight_mang/route' },
-    { name: 'Flight', href: '/admin/flight-mang/flight' },
+    { name: 'Flight', href: '/admin/flight_mang/flight' },
+    { name: 'Route Schedule', href:'/admin/flight_mang/route_schedule'},
+    { name: 'Today Schedule', href:'/admin/flight_mang/today_schedule'},
   ];
 
   return (

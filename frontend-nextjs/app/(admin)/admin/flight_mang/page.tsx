@@ -32,7 +32,7 @@ export default function AdminAirlinesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Airline | null>(null);
 
   // ─── React Query Hooks ────────────────────────────────────────────────────
-  const { data: apiResponse, isLoading: loading, error } = useAirlinesQuery(page, LIMIT,search);
+  const { data: apiResponse, isLoading: loading, error } = useAirlinesQuery(page, LIMIT, search);
   const createMutation = useCreateAirlineMutation();
   const updateMutation = useUpdateAirlineMutation();
   const deleteMutation = useDeleteAirlineMutation();
@@ -186,16 +186,16 @@ export default function AdminAirlinesPage() {
           />
         )}
       </Modal>
-<ConfirmDeleteAirlineModal
-  isOpen={!!deleteTarget}
-  title="Delete Airline"
-  message="Are you sure you want to delete this airline?"
- 
-  itemName={deleteTarget ? `${deleteTarget.airline_name} (${deleteTarget.country})` : ''} 
-  onConfirm={handleDelete}
-  onCancel={() => setDeleteTarget(null)}
-  loading={deleteMutation.isPending}
-/>
+      <ConfirmDeleteAirlineModal
+        isOpen={!!deleteTarget}
+        title="Delete Airline"
+        message="Are you sure you want to delete this airline?"
+
+        itemName={deleteTarget ? `${deleteTarget.airline_name} (${deleteTarget.country})` : ''}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        loading={deleteMutation.isPending}
+      />
 
     </>
   );

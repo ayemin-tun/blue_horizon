@@ -28,25 +28,28 @@ async function request<T>(endpoint: string, options: RequestInit): Promise<ApiRe
       success: false,
       message: 'Network Error',
       data: null,
-      error: { 
-        code: 'NETWORK_FAILURE', 
-        details: 'Cannot connect to backend server. Please check your connection or start FastAPI server.' 
+      error: {
+        code: 'NETWORK_FAILURE',
+        details: 'Cannot connect to backend server. Please check your connection or start FastAPI server.'
       }
     };
   }
 }
 
-// For POST, GET, PUT, DELETE Helper 
+// For POST, GET, PUT,PATCH, DELETE Helper 
 export const api = {
-  get: <T>(endpoint: string, options?: RequestInit) => 
+  get: <T>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { method: 'GET', ...options }),
 
-  post: <T>(endpoint: string, body: any, options?: RequestInit) => 
+  post: <T>(endpoint: string, body: any, options?: RequestInit) =>
     request<T>(endpoint, { method: 'POST', body: JSON.stringify(body), ...options }),
 
-  put: <T>(endpoint: string, body: any, options?: RequestInit) => 
+  put: <T>(endpoint: string, body: any, options?: RequestInit) =>
     request<T>(endpoint, { method: 'PUT', body: JSON.stringify(body), ...options }),
 
-  delete: <T>(endpoint: string, options?: RequestInit) => 
+  patch: <T>(endpoint: string, body: any, options?: RequestInit) =>
+    request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body), ...options }),
+
+  delete: <T>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { method: 'DELETE', ...options }),
 };

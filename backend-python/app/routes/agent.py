@@ -346,3 +346,96 @@ def update_agent_status(id: int, data: AgentStatusUpdateSchema, db: Session = De
                 "details": str(e)
             }
         }
+
+class AgentUpdateSchema(BaseModel):
+    username: str
+    email: str
+    phone_no: Optional[str] = None
+    status: Optional[str] = "ACTIVE"
+
+# --- 6. UPDATE AGENT ALL DATA API (🌟 အသစ်ဖြည့်စွက်လိုက်သည့်အချက်) ---
+@router.put("/{id}", response_model=ApiResponse)
+def update_agent(id: int, data: AgentUpdateSchema, db: Session = Depends(get_db)):
+    try:
+        # Check agent is on db
+        agent = db.query(models.User).filter(
+            models.User.user_id == id,
+            models.User.role == "agent",
+            models.User.is_deleted == 0
+        ).first()
+        
+        if not agent:
+            return {
+                "success": False,
+                "message": "Agent not found",
+                "data": None,
+                "error": {
+                    "code": "AGENT_NOT_FOUND",
+                    "details": f"Active agent with ID {id} does not exist."
+                }
+            }
+            
+        # Check email is already exist
+        if data.email != agent.email:
+            email_exists = db.query(models.User).filter(
+                models.User.email == data.email,
+                models.User.user_id != id,  
+                models.User.is_deleted == 0
+            ).first()
+            
+            if email_exists:
+                return {
+                    "success": False,
+                    "message": "Update failed",
+                    "data": None,
+                    "error": {
+                        "code": "EMAIL_ALREADY_EXISTS",
+                        "details": "This email is already registered by another active user."
+                    }
+                }
+
+        # check status value
+        formatted_status = data.status.strip().upper() if data.status else "ACTIVE"
+        if formatted_status not in ["ACTIVE", "INACTIVE"]:
+            return {
+                "success": False,
+                "message": "Invalid status value",
+                "data": None,
+                "error": {
+                    "code": "INVALID_STATUS",
+                    "details": "Status must be either 'ACTIVE' or 'INACTIVE'."
+                }
+            }
+
+        # updae
+        agent.username = data.username.strip()
+        agent.email = data.email.strip()
+        agent.phone_no = data.phone_no.strip() if data.phone_no else None
+        agent.status = formatted_status
+        
+        db.commit()
+        db.refresh(agent)
+        
+        return {
+            "success": True,
+            "message": "Agent information updated successfully",
+            "data": {
+                "agent_id": agent.user_id,
+                "username": agent.username,
+                "email": agent.email,
+                "phone_no": agent.phone_no if agent.phone_no else "-",
+                "status": agent.status
+            },
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": "Failed to update agent details",
+            "data": None,
+            "error": {
+                "code": "SERVER_ERROR",
+                "details": str(e)
+            }
+        }

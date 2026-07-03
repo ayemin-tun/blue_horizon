@@ -1,9 +1,13 @@
 import secrets
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 # import api router
 from app.routes.auth import router as auth_router
@@ -69,3 +73,24 @@ def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("run:app", host="127.0.0.1", port=8000, reload=True)
+
+@app.exception_handler(RequestValidationError)
+def custom_validation_exception_handler(request: Request, exc: RequestValidationError):
+    error_details = []
+    for error in exc.errors():
+        field = " -> ".join([str(loc) for loc in error["loc"] if loc != "body"])
+        msg = error["msg"]
+        error_details.append(f"'{field}': {msg}")
+    #unifined response for validation error
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "success": False,
+            "message": "Validation failed: Please check your input data.",
+            "data": None,
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "details": error_details 
+            }
+        }
+    )
