@@ -170,6 +170,18 @@ def forgot_password_request(request_data: ForgotPasswordSchema, db: Session = De
                 "details": "Agent not found"
             }
         }
+    # Check if the user status is ACTIVE (Only ACTIVE users can request password reset)
+    formatted_user_status = db_user.status.strip().upper() if db_user.status else "ACTIVE"
+    if formatted_user_status != "ACTIVE":
+        return {
+            "success": False,
+            "message": "Request failed",
+            "data": None,
+            "error": {
+                "code": "INVALID_STATUS",
+                "details": f"Password reset is not allowed. Your account status is currently '{formatted_user_status}', but it must be 'ACTIVE'."
+            }
+        }
         
     if db_user.role and db_user.role.lower() == "admin":
         return {
@@ -239,8 +251,11 @@ def get_all_password_requests(
         filter(models.PasswordResetRequest.is_deleted == 0)
 
     if status:
-        base_query = base_query.filter(models.PasswordResetRequest.status == status)
-
+        # Normalize status input to uppercase for case-insensitive filtering
+        # Examples: 'pending', 'Pending', 'PENDING' -> all become 'PENDING'
+        # Examples: 'resolved', 'Resolved', 'RESOLVED' -> all become 'RESOLVED'
+        formatted_status = status.strip().upper()
+        base_query = base_query.filter(models.PasswordResetRequest.status == formatted_status)
     if search:
         base_query = base_query.filter(
             (models.PasswordResetRequest.email.contains(search)) |
@@ -318,5 +333,77 @@ def get_password_request_detail(request_id: int, db: Session = Depends(get_db)):
         "success": True,
         "message": "Password request detail retrieved successfully",
         "data": formatted_data,
+        "error": None
+    }
+# --- Request Schema for Resolving Password ---
+class ResolvePasswordSchema(BaseModel):
+    new_password: str
+
+# --- 3. RESOLVE PASSWORD REQUEST API ---
+@router.patch("/admin/password-requests/{request_id}/resolve", response_model=ApiResponse)
+def resolve_password_request(
+    request_id: int, 
+    payload: ResolvePasswordSchema, 
+    db: Session = Depends(get_db)
+):
+    # 1. Find the password reset request by ID and check if it's active
+    request_record = db.query(models.PasswordResetRequest).filter(
+        models.PasswordResetRequest.id == request_id,
+        models.PasswordResetRequest.is_deleted == 0
+    ).first()
+
+    # If the request record doesn't exist
+    if not request_record:
+        return {
+            "success": False,
+            "message": "Action failed",
+            "data": None,
+            "error": {"code": "REQUEST_NOT_FOUND", "details": "The password request ID does not exist."}
+        }
+
+    # If the request has already been resolved before
+    if request_record.status.upper() == "RESOLVED":
+        return {
+            "success": False,
+            "message": "Action failed",
+            "data": None,
+            "error": {"code": "REQUEST_ALREADY_RESOLVED", "details": "This request has already been processed and resolved."}
+        }
+
+    # 2. Find the user associated with this request's email
+    db_user = db.query(models.User).filter(
+        models.User.email == request_record.email,
+        models.User.is_deleted == 0
+    ).first()
+
+    # If the user is missing or deleted in the database
+    if not db_user:
+        return {
+            "success": False,
+            "message": "Action failed",
+            "data": None,
+            "error": {"code": "USER_NOT_FOUND", "details": "The user associated with this email was not found."}
+        }
+
+    # 3. Hash the new password provided by Admin and update the user record
+    hashed_pwd = get_password_hash(payload.new_password)
+    db_user.password = hashed_pwd
+
+    # 4. Update the request status to RESOLVED and capture the timestamp
+    request_record.status = "RESOLVED"
+    request_record.updated_at = datetime.now()
+
+    # 5. Commit all changes to the database atomically
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Password has been successfully reset and request marked as RESOLVED.",
+        "data": {
+            "request_id": request_record.id,
+            "email": request_record.email,
+            "status": request_record.status,
+            "updated_at": request_record.updated_at
+        },
         "error": None
     }
