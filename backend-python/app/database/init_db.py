@@ -67,7 +67,7 @@ def init_database():
     CREATE TABLE IF NOT EXISTS FLIGHTS (
         flight_id INTEGER PRIMARY KEY AUTOINCREMENT,
         airline_id INTEGER NOT NULL,
-        flight_no TEXT NOT NULL UNIQUE,
+        flight_no TEXT NOT NULL,
         total_seats INTEGER NOT NULL,
         is_deleted INTEGER DEFAULT 0, 
         FOREIGN KEY (airline_id) REFERENCES AIRLINES(airline_id)
@@ -148,13 +148,13 @@ def init_database():
     )
 
     # 2. Sample Airline & Route
-    cursor.execute("INSERT OR IGNORE INTO AIRLINES (airline_id, airline_name,country,is_deleted) VALUES (1, 'MAI','Myanmar',0)")
+    cursor.execute("INSERT OR IGNORE INTO AIRLINES (airline_id, airline_name,country,is_deleted) VALUES (1, 'Blue Horizon','Myanmar',0)")
     cursor.execute("INSERT OR IGNORE INTO ROUTES (route_id, departure_city, arrival_city,is_deleted) VALUES (1, 'Yangon', 'Mandalay',0)")
 
     # 3. Sample Flight
     cursor.execute('''
     INSERT OR IGNORE INTO FLIGHTS (flight_id, airline_id, flight_no, total_seats,is_deleted)
-    VALUES (1, 1, 'UB-101', 120, 0) 
+    VALUES (1, 1, 'BH-101', 120, 0) 
     ''')
 
     conn.commit()

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database import models
@@ -11,6 +12,8 @@ router = APIRouter(prefix="/api/flights", tags=["Flights"])
 @router.post("", response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
 def create_flight(data: FlightCreate, db: Session = Depends(get_db)):
     try:
+        from app.schemas.flights_schema import FlightResponse
+        
         # Check airline exist
         airline_exists = db.query(models.Airline).filter(models.Airline.airline_id == data.airline_id).first()
         if not airline_exists:
@@ -24,24 +27,26 @@ def create_flight(data: FlightCreate, db: Session = Depends(get_db)):
                 }
             }
 
-        # Check flight is already exist or not (including soft-deleted)
+        # Check flight is already exist or not (Case-insensitive using func.lower)
         existing_flight = db.query(models.Flight).filter(
-            models.Flight.flight_no == data.flight_no
+            func.lower(models.Flight.flight_no) == func.lower(data.flight_no)
         ).first()
 
         if existing_flight:
             if existing_flight.is_deleted:
-                # 🌟 If soft-deleted, reactivate with updated parameters (prices removed)
+                # If soft-deleted, reactivate with updated parameters and capital flight_no
                 existing_flight.is_deleted = False
                 existing_flight.airline_id = data.airline_id
+                existing_flight.flight_no = data.flight_no.strip().upper()  #store on uppercase
                 existing_flight.total_seats = data.total_seats
                 
                 db.commit()
                 db.refresh(existing_flight)
+                
                 return {
                     "success": True,
                     "message": "Flight re-activated and updated successfully",
-                    "data": existing_flight,
+                    "data": FlightResponse.model_validate(existing_flight).model_dump(),
                     "error": None
                 }
                 
@@ -55,8 +60,11 @@ def create_flight(data: FlightCreate, db: Session = Depends(get_db)):
                 }
             }
 
-        # Create New Flight
-        new_flight = models.Flight(**data.model_dump())
+        # Create New Flight with capitalized flight_no
+        flight_data = data.model_dump()
+        flight_data["flight_no"] = flight_data["flight_no"].strip().upper()  #id store on upper case
+
+        new_flight = models.Flight(**flight_data)
         db.add(new_flight)
         db.commit()
         db.refresh(new_flight)
@@ -64,7 +72,7 @@ def create_flight(data: FlightCreate, db: Session = Depends(get_db)):
         return {
             "success": True,
             "message": "Flight created successfully",
-            "data": new_flight,
+            "data": FlightResponse.model_validate(new_flight).model_dump(),
             "error": None
         }
 
@@ -78,8 +86,8 @@ def create_flight(data: FlightCreate, db: Session = Depends(get_db)):
                 "details": str(e)
             }
         }
-
-# ─── 2. READ ALL FLIGHTS (WITH PAGINATION) ──────────────────────────────────
+    
+# ─── 2. READ ALL FLIGHTS (WITH PAGINATION & METRICS) ────────────────────────
 @router.get("", response_model=ApiResponse)
 def get_flights(
     skip: int = 0, 
@@ -88,28 +96,40 @@ def get_flights(
     db: Session = Depends(get_db)
 ):
     try:
-        query = db.query(models.Flight).filter(models.Flight.is_deleted == False)
+        base_query = db.query(models.Flight).filter(models.Flight.is_deleted == False)
         
+        metrics_total_flights = base_query.count()
+        recent_flight_total = base_query.order_by(models.Flight.flight_id.desc()).limit(5).count()
+        
+        from app.schemas.flights_schema import FlightResponse
+        
+        # Handle Search Filter for Paginated List
+        query = base_query
         if search:
-            search_filter = f"%{search.strip()}%"
-            query = query.filter(models.Flight.flight_no.like(search_filter))
+            # for search change to lower case for all
+            search_filter = f"%{search.strip().lower()}%"
+            query = query.filter(func.lower(models.Flight.flight_no).like(search_filter))
             
+        # Total count for the current query (used for pagination)
         total_count = query.count()
         raw_flights = query.offset(skip).limit(limit).all()
         
-        from app.schemas.flights_schema import FlightResponse
         serialized_flights = [FlightResponse.model_validate(f).model_dump() for f in raw_flights]
         
         return {
             "success": True,
             "message": "Flights fetched successfully",
             "data": {
+                 "metrics": { 
+                    "total_flight": metrics_total_flights,
+                    "recently_joined": recent_flight_total
+                },
                 "flights": serialized_flights,  
                 "pagination": {
                     "total": total_count,
                     "skip": skip,
                     "limit": limit
-                }
+                },
             },
             "error": None
         }
@@ -158,9 +178,9 @@ def update_flight(id: int, data: FlightCreate, db: Session = Depends(get_db)):
                 }
             }
 
-        # Check duplicate flight number
+        # Check duplicate flight number (Case-insensitive check using func.lower)
         duplicate_flight_no = db.query(models.Flight).filter(
-            models.Flight.flight_no == data.flight_no,
+            func.lower(models.Flight.flight_no) == func.lower(data.flight_no),
             models.Flight.flight_id != id,
             models.Flight.is_deleted == 0
         ).first()
@@ -176,13 +196,14 @@ def update_flight(id: int, data: FlightCreate, db: Session = Depends(get_db)):
                 }
             }
 
-        # 🌟 Update fields (Prices fields removed)
+        # Update fields with capitalized flight_no
         flight.airline_id = data.airline_id
-        flight.flight_no = data.flight_no
+        flight.flight_no = data.flight_no.strip().upper()  
         flight.total_seats = data.total_seats
         
         db.commit()
         db.refresh(flight)
+        
         from app.schemas.flights_schema import FlightResponse
         return {
             "success": True,
@@ -201,7 +222,6 @@ def update_flight(id: int, data: FlightCreate, db: Session = Depends(get_db)):
                 "details": str(e)
             }
         }
-
 
 # ─── 4. DELETE FLIGHT (SOFT DELETE) ─────────────────────────────────────────
 @router.delete("/{id}", response_model=ApiResponse)

@@ -20,13 +20,21 @@ class FlightCreate(BaseModel):
         }
     }
 
-# --- 🌟 UNIFIED RESPONSE SCHEMA ---
+# --- UNIFIED RESPONSE SCHEMA ---
 class ApiResponse(BaseModel):
     success: bool  
     message: str
     data: Optional[Any] = None
     error: Optional[dict] = None
     model_config = ConfigDict(from_attributes=True)
+
+class AirlineInFlight(BaseModel):
+    airline_id: int
+    airline_name: str
+    country: str
+
+    class Config:
+        from_attributes = True
 
 # Response Body (Data response)
 class FlightResponse(BaseModel):
@@ -35,6 +43,7 @@ class FlightResponse(BaseModel):
     flight_no: str
     total_seats: int
     is_deleted: bool
+    airline: Optional[AirlineInFlight] = None
 
     class Config:
         from_attributes = True
