@@ -37,17 +37,9 @@ class Flight(Base):
 
     flight_id = Column(Integer, primary_key=True, autoincrement=True)
     airline_id = Column(Integer, ForeignKey("AIRLINES.airline_id"), nullable=False)
-    route_id = Column(Integer, ForeignKey("ROUTES.route_id"), nullable=False)
-    
     flight_no = Column(String, unique=True, nullable=False)
-    departure_time = Column(DateTime, nullable=False)
-    arrival_time = Column(DateTime, nullable=False)
     total_seats = Column(Integer, nullable=False)
-    available_seats = Column(Integer, nullable=False)
-    economy_price = Column(Numeric(10, 2), nullable=False)
-    business_price = Column(Numeric(10, 2), nullable=False)
     is_deleted = Column(Integer, default=0)
 
     # Relationships
     airline = relationship("Airline")
-    route = relationship("Route")

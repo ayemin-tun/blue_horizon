@@ -67,17 +67,10 @@ def init_database():
     CREATE TABLE IF NOT EXISTS FLIGHTS (
         flight_id INTEGER PRIMARY KEY AUTOINCREMENT,
         airline_id INTEGER NOT NULL,
-        route_id INTEGER NOT NULL,
-        flight_no TEXT NOT NULL,
-        departure_time DATETIME NOT NULL,
-        arrival_time DATETIME NOT NULL,
+        flight_no TEXT NOT NULL UNIQUE,
         total_seats INTEGER NOT NULL,
-        available_seats INTEGER NOT NULL,
-        economy_price DECIMAL(10, 2) NOT NULL,
-        business_price DECIMAL(10, 2) NOT NULL,
         is_deleted INTEGER DEFAULT 0, 
-        FOREIGN KEY (airline_id) REFERENCES AIRLINES(airline_id),
-        FOREIGN KEY (route_id) REFERENCES ROUTES(route_id)
+        FOREIGN KEY (airline_id) REFERENCES AIRLINES(airline_id)
     )''')
 
     # made flight no is unique if the is_delete is 0 (not soft delete) if the flight is soft delete it can be use on other flight (no is not unique for soft delete data)
@@ -160,8 +153,8 @@ def init_database():
 
     # 3. Sample Flight
     cursor.execute('''
-    INSERT OR IGNORE INTO FLIGHTS (flight_id, airline_id, route_id, flight_no, departure_time, arrival_time, total_seats, available_seats, economy_price, business_price, is_deleted)
-    VALUES (1, 1, 1, 'UB-101', '2026-07-01 08:00:00', '2026-07-01 09:00:00', 120, 120, 150000.00, 250000.00, 0) 
+    INSERT OR IGNORE INTO FLIGHTS (flight_id, airline_id, flight_no, total_seats,is_deleted)
+    VALUES (1, 1, 'UB-101', 120, 0) 
     ''')
 
     conn.commit()

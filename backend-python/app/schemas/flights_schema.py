@@ -1,31 +1,39 @@
 # app/schemas/flight.py
-from pydantic import BaseModel
+from typing import Optional,Any
+
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from decimal import Decimal
 
 # Request Body (Data request)
 class FlightCreate(BaseModel):
     airline_id: int
-    route_id: int
     flight_no: str
-    departure_time: datetime
-    arrival_time: datetime
-    total_seats: int
-    economy_price: Decimal
-    business_price: Decimal
+    total_seats: int = Field(gt=0, description="Seats must be greater than 0")
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "airline_id": 1,
+                "flight_no": "UB-101",
+                "total_seats": 120
+            }
+        }
+    }
+
+# --- 🌟 UNIFIED RESPONSE SCHEMA ---
+class ApiResponse(BaseModel):
+    success: bool  
+    message: str
+    data: Optional[Any] = None
+    error: Optional[dict] = None
+    model_config = ConfigDict(from_attributes=True)
 
 # Response Body (Data response)
 class FlightResponse(BaseModel):
     flight_id: int
     airline_id: int
-    route_id: int
     flight_no: str
-    departure_time: datetime
-    arrival_time: datetime
     total_seats: int
-    available_seats: int
-    economy_price: Decimal
-    business_price: Decimal
     is_deleted: bool
 
     class Config:
