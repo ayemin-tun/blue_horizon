@@ -59,7 +59,7 @@ export default function AirlineForm({ initialData, onSubmit, onCancel, loading, 
           type="text"
           value={form.airline_name}
           onChange={handleChange}
-          placeholder="e.g. Myanmar National Airlines"
+          placeholder="e.g. Blue Horizon"
           className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-black"
         />
       </div>
