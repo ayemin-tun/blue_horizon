@@ -138,3 +138,175 @@ def login_user(login_data: LoginSchema, db: Session = Depends(get_db)):
         },
         "error": None
     }
+
+# =====================================================================
+#  NEW CODES FOR FORGOT PASSWORD 
+# =====================================================================
+
+# --- 1. NEW REQUEST SCHEMA ---
+class ForgotPasswordSchema(BaseModel):
+    email: EmailStr
+
+
+# --- 2. FORGOT PASSWORD REQUEST API (Agent Area) ---
+@router.post("/auth/forgot-password", response_model=ApiResponse)
+def forgot_password_request(request_data: ForgotPasswordSchema, db: Session = Depends(get_db)):
+    
+    # 1. ဝင်လာတဲ့ Email ဟာ USERS table ထဲမှာ အကောင့်အစစ် ရှိ/မရှိ စစ်ဆေးခြင်း
+    db_user = db.query(models.User).filter(
+        models.User.email == request_data.email,
+        models.User.is_deleted == 0
+    ).first()
+
+    if not db_user:
+        return {
+            "success": False,
+            "message": "Request failed",
+            "data": None,
+            "error": {"code": "USER_NOT_FOUND", "details": "This email address is not registered in our system."}
+        }
+        
+    # 2. PASSWORD_RESET_REQUESTS table ထဲမှာ PENDING Request ရှိနှင့်ပြီးသားလား စစ်ဆေးခြင်း
+    existing_request = db.query(models.PasswordResetRequest).filter(
+        models.PasswordResetRequest.email == request_data.email,
+        models.PasswordResetRequest.status == "PENDING",
+        models.PasswordResetRequest.is_deleted == 0
+    ).first()
+
+    if existing_request:
+        return {
+            "success": False,
+            "message": "Request already exists",
+            "data": None,
+            "error": {
+                "code": "PENDING_REQUEST_EXISTS", 
+                "details": "You have already requested a password reset. Please wait for Admin approval."
+            }
+        }
+
+    # 3. အကုန်ကိုက်ညီပါက Request အသစ်အား Table ထဲသို့ ထည့်သွင်းခြင်း
+    new_request = models.PasswordResetRequest(
+        email=request_data.email,
+        status="PENDING"
+    )
+    
+    db.add(new_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return {
+        "success": True,
+        "message": "Password reset request submitted successfully to admin.",
+        "data": {"email": new_request.email, "status": new_request.status},
+        "error": None
+    }
+
+
+# --- 3. GET ALL PASSWORD REQUESTS WITH METRICS (Admin Dashboard) ---
+@router.get("/admin/password-requests", response_model=ApiResponse)
+def get_all_password_requests(
+    page: int = 1, 
+    limit: int = 10, 
+    search: Optional[str] = None, 
+    db: Session = Depends(get_db)
+):
+    # 1. Сount Metrics (PENDING နှင့် RESOLVED အရေအတွက် တွက်ခြင်း)
+    pending_count = db.query(models.PasswordResetRequest).filter(
+        models.PasswordResetRequest.status == "PENDING",
+        models.PasswordResetRequest.is_deleted == 0
+    ).count()
+
+    resolved_count = db.query(models.PasswordResetRequest).filter(
+        models.PasswordResetRequest.status == "RESOLVED",
+        models.PasswordResetRequest.is_deleted == 0
+    ).count()
+
+    # 2. USERS Table နှင့် JOIN တွဲပြီး Base Query တည်ဆောက်ခြင်း
+    base_query = db.query(models.PasswordResetRequest, models.User.username).\
+        outerjoin(models.User, (models.User.email == models.PasswordResetRequest.email) & (models.User.is_deleted == 0)).\
+        filter(models.PasswordResetRequest.is_deleted == 0)
+
+    # 3. Search Filter (Email သို့မဟုတ် Username ဖြင့် ရှာဖွေခြင်း)
+    if search:
+        base_query = base_query.filter(
+            (models.PasswordResetRequest.email.contains(search)) |
+            (models.User.username.contains(search))
+        )
+
+    # 4. Total Count နှင့် Pagination ပတ်ခြင်း
+    total_items = base_query.count()
+    offset = (page - 1) * limit
+    
+    results = base_query.order_by(models.PasswordResetRequest.id.desc()).offset(offset).limit(limit).all()
+
+    # 5. Data JSON Format ပြန်ညှိခြင်း
+    formatted_list = []
+    for request, username in results:
+        formatted_list.append({
+            "id": request.id,
+            "email": request.email,
+            "username": username or "Unknown User",
+            "status": request.status,
+            "created_at": request.created_at,
+            "updated_at": request.updated_at
+        })
+
+    return {
+        "success": True,
+        "message": "Password requests retrieved successfully",
+        "data": {
+            "requests": formatted_list,
+            "metrics": {
+                "total_pending": pending_count,
+                "total_resolved": resolved_count,
+                "total_all": pending_count + resolved_count
+            },
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total_items": total_items
+            }
+        },
+        "error": None
+    }
+
+
+# --- 4. GET PASSWORD REQUEST DETAIL BY ID (Admin View Detail) ---
+@router.get("/admin/password-requests/{request_id}", response_model=ApiResponse)
+def get_password_request_detail(request_id: int, db: Session = Depends(get_db)):
+    
+    # ID ဖြင့် ရှာဖွေပြီး User Table နှင့် JOIN ပတ်ခြင်း
+    result = db.query(models.PasswordResetRequest, models.User).\
+        outerjoin(models.User, (models.User.email == models.PasswordResetRequest.email) & (models.User.is_deleted == 0)).\
+        filter(models.PasswordResetRequest.id == request_id, models.PasswordResetRequest.is_deleted == 0).first()
+
+    if not result:
+        return {
+            "success": False,
+            "message": "Request not found",
+            "data": None,
+            "error": {"code": "REQUEST_NOT_FOUND", "details": "The password request ID does not exist."}
+        }
+
+    request, user = result
+    
+    formatted_data = {
+        "id": request.id,
+        "email": request.email,
+        "status": request.status,
+        "created_at": request.created_at,
+        "updated_at": request.updated_at,
+        "user_details": {
+            "username": user.username if user else "Unknown User",
+            "role": user.role if user else None,
+            "status": user.status if user else None,
+            "joined_date": user.joined_date if user else None
+        }
+    }
+
+    return {
+        "success": True,
+        "message": "Password request detail retrieved successfully",
+        "data": formatted_data,
+        "error": None
+    }
