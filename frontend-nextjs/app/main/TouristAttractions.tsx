@@ -14,7 +14,7 @@ export default function TouristAttractions() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="md:col-span-3 block relative h-48 rounded-xl overflow-hidden shadow-sm bg-cover bg-center group cursor-pointer"
-                    style={{ backgroundImage: `url('bagan.jpg')` }}
+                    style={{ backgroundImage: `url('tourist_attractions/bagan.jpg')` }}
                 >
                     <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent transition-all group-hover:from-black/70" />
                     <div className="absolute bottom-4 left-4 text-white font-bold tracking-wider text-[11px] uppercase font-serif transition-transform group-hover:translate-x-1">
@@ -28,7 +28,7 @@ export default function TouristAttractions() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="md:col-span-3 block relative h-48 rounded-xl overflow-hidden shadow-sm bg-cover bg-center group cursor-pointer"
-                    style={{ backgroundImage: `url('/mandalay.jpg')` }} 
+                    style={{ backgroundImage: `url('tourist_attractions/mandalay.jpg')` }} 
                 >
                     <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent transition-all group-hover:from-black/70" />
                     <div className="absolute bottom-4 left-4 text-white font-bold tracking-wider text-[11px] uppercase font-serif transition-transform group-hover:translate-x-1">
@@ -42,7 +42,7 @@ export default function TouristAttractions() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="md:col-span-2 block relative h-40 rounded-xl overflow-hidden shadow-sm bg-cover bg-center group cursor-pointer"
-                    style={{ backgroundImage: `url('/naypyidaw.jpg')` }}
+                    style={{ backgroundImage: `url('tourist_attractions/naypyidaw.jpg')` }}
                 >
                     <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent transition-all group-hover:from-black/70" />
                     <div className="absolute bottom-4 left-4 text-white font-bold tracking-wider text-[11px] uppercase font-serif transition-transform group-hover:translate-x-1">
@@ -56,7 +56,7 @@ export default function TouristAttractions() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="md:col-span-2 block relative h-40 rounded-xl overflow-hidden shadow-sm bg-cover bg-center group cursor-pointer"
-                    style={{ backgroundImage: `url('/taunggyi.jpg')` }}
+                    style={{ backgroundImage: `url('tourist_attractions/taunggyi.jpg')` }}
                 >
                     <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent transition-all group-hover:from-black/70" />
                     <div className="absolute bottom-4 left-4 text-white font-bold tracking-wider text-[11px] uppercase font-serif transition-transform group-hover:translate-x-1">
@@ -70,7 +70,7 @@ export default function TouristAttractions() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="md:col-span-2 block relative h-40 rounded-xl overflow-hidden shadow-sm bg-cover bg-center group cursor-pointer"
-                    style={{ backgroundImage: `url('/yangon.jpg')` }}
+                    style={{ backgroundImage: `url('tourist_attractions/yangon.jpg')` }}
                 >
                     <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent transition-all group-hover:from-black/70" />
                     <div className="absolute bottom-4 left-4 text-white font-bold tracking-wider text-[11px] uppercase font-serif transition-transform group-hover:translate-x-1">
