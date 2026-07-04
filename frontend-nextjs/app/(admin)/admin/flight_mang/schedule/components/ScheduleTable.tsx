@@ -3,6 +3,7 @@
 import React from 'react';
 import { Schedule } from '@/services/scheduleService'; 
 import { Pencil, Trash2, Loader2, Eye, Plane } from 'lucide-react';
+import { formatDisplayTime } from '@/utils/timeHelper';
 
 interface ScheduleTableProps {
   schedules: Schedule[]; 
@@ -93,8 +94,8 @@ export default function ScheduleTable({
 
                     {/* Timing */}
                     <div className="w-36 shrink-0 flex flex-col justify-center text-xs">
-                      <span className="font-semibold text-slate-700">Dep: {schedule.departure_time}</span>
-                      <span className="text-slate-500 mt-0.5">Arr: {schedule.arrival_time}</span>
+                      <span className="font-semibold text-slate-700">Dep: {formatDisplayTime(schedule.departure_time)}</span>
+                      <span className="text-slate-500 mt-0.5">Arr: {formatDisplayTime(schedule.arrival_time)}</span>
                     </div>
 
                     {/* Flight Type Badge */}
