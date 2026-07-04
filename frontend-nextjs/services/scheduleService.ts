@@ -67,14 +67,17 @@ function authHeader(): Record<string, string> {
 }
 
 // ─── 1. Get Schedules Query (GET) ──────────────────────────────────────────
-export const useSchedulesQuery = (page: number, limit: number, search: string, routeId?: number) => {
+export const useSchedulesQuery = (page: number, limit: number, search: string, routeId?: number,flightType?: string) => {
   return useQuery({
-    queryKey: ['schedules', page, limit, search, routeId],
+    queryKey: ['schedules', page, limit, search, routeId,flightType],
     queryFn: async () => {
       const skip = (page - 1) * limit;
       let url = `/api/schedules?skip=${skip}&limit=${limit}&search=${encodeURIComponent(search)}`;
       if (routeId) {
         url += `&route_id=${routeId}`;
+      }
+      if (flightType) {
+        url += `&flight_type=${encodeURIComponent(flightType)}`;
       }
 
       const response = await api.get<PaginatedScheduleResponse>(url);

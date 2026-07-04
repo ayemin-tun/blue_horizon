@@ -102,7 +102,7 @@ export default function ScheduleTable({
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                         isOutbound 
                           ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                          : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                          : 'bg-green-50 text-green-700 border border-green-200'
                       }`}>
                         {schedule.flight_type}
                       </span>
@@ -110,8 +110,8 @@ export default function ScheduleTable({
 
                     {/* Pricing */}
                     <div className="w-40 shrink-0 flex flex-col justify-center text-xs font-medium">
-                      <span className="text-emerald-700">Eco: ${schedule.economy_price}</span>
-                      <span className="text-amber-700 mt-0.5">Biz: ${schedule.business_price}</span>
+                      <span className="text-emerald-700">Eco: {schedule.economy_price}</span>
+                      <span className="text-amber-700 mt-0.5">Biz: {schedule.business_price}</span>
                     </div>
 
                     {/* Actions */}

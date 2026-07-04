@@ -24,16 +24,19 @@ export default function SchedulePage() {
     const [deleteTarget, setDeleteTarget] = useState<Schedule | null>(null);
 
     const [routeId, setRouteId] = useState('');
+    const [flightType, setFlightType] = useState('');
+
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
 
     // ─── React Query Hooks ────────────────────────────────────────────────────
 
     //Get Schedule API CALL 
-    const { data: apiResponse, isLoading: loading, error } = useSchedulesQuery(page, LIMIT, search, routeId as any);
+    const { data: apiResponse, isLoading: loading, error } = useSchedulesQuery(page, LIMIT, search, routeId as any, flightType || undefined);
     const createMutation = useCreateScheduleMutation();
     const updateMutation = useUpdateScheduleMutation();
     const deleteMutation = useDeleteScheduleMutation();
 
-     const formLoading =
+    const formLoading =
         createMutation.isPending ||
         updateMutation.isPending ||
         deleteMutation.isPending;
@@ -116,20 +119,86 @@ export default function SchedulePage() {
             <ScheduleStats metrics={metricsData} />
 
             {/* ── Status Dropdown and Searchbox ── */}
-            <div className="flex justify-end items-center gap-3 mb-6 w-full">
+            <div className="flex justify-end items-center gap-3 mb-6 w-full relative">
 
-                <div className="w-full max-w-xs">
-                    <RouteFilter
-                        value={routeId}
-                        onChange={(val) => {
-                            setRouteId(val);
-                            setPage(1);
-                        }}
-                    />
+                {/*  Filter Popover Container */}
+                <div className="relative">
+                    {/* Filter Toggle Button */}
+                    <button
+                        type="button"
+                        onClick={() => setShowFilterMenu(!showFilterMenu)}
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-xl transition ${routeId || flightType
+                                ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' // Filter တစ်ခုခုရှိနေရင် active color ပြရန်
+                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
+                        Filters
+                        {(routeId || flightType) && (
+                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse inline-block" />
+                        )}
+                    </button>
+
+                    {/* 🌟 Dropdown Box  */}
+                    {showFilterMenu && (
+                        <>
+                            <div className="fixed inset-0 z-10" onClick={() => setShowFilterMenu(false)} />
+
+                            <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-150 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150 space-y-4">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Filter Options</span>
+                                    {(routeId || flightType) && (
+                                        <button
+                                            onClick={() => {
+                                                setRouteId('');
+                                                setFlightType('');
+                                                setPage(1);
+                                            }}
+                                            className="text-[11px] font-semibold text-blue-600 hover:underline"
+                                        >
+                                            Clear All
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* 🗺️ Route Filter Section */}
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-semibold text-slate-500">Route</label>
+                                    <RouteFilter
+                                        value={routeId}
+                                        onChange={(val) => {
+                                            setRouteId(val);
+                                            setPage(1);
+                                        }}
+                                    />
+                                </div>
+
+                                {/* ✈️ Flight Type Filter Section */}
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-semibold text-slate-500">Flight Type</label>
+                                    <div className="relative">
+                                        <select
+                                            value={flightType || ""}
+                                            onChange={(e) => {
+                                                setFlightType(e.target.value || '');
+                                                setPage(1);
+                                            }}
+                                            className="w-full px-3 py-2 text-sm text-slate-900 border border-slate-200 rounded-xl bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer appearance-none"
+                                        >
+                                            <option value="">All Flight Types</option>
+                                            <option value="OUTBOUND">OUTBOUND</option>
+                                            <option value="INBOUND">INBOUND</option>
+                                        </select>
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs">▼</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* 🔍 Search Input Box */}
-                <div className="relative w-full max-w-xs sm:max-w-md">
+                <div className="relative w-full max-w-xs">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
                         <Search className="w-4 h-4 text-slate-400" />
                     </span>
@@ -144,6 +213,7 @@ export default function SchedulePage() {
                         className="w-full pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                     />
                 </div>
+
 
             </div>
 
@@ -176,7 +246,7 @@ export default function SchedulePage() {
             />
 
             {/* ── Add Flight Modal ── */}
-            <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Schedule">
+            <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Schedule" maxWidth="3xl">
                 <ScheduleForm
                     onSubmit={handleCreate}
                     onCancel={() => setShowAdd(false)}
@@ -186,7 +256,7 @@ export default function SchedulePage() {
             </Modal>
 
             {/* flight edit form  */}
-            <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title="Update Schedule Information">
+            <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title="Update Schedule Information" maxWidth="3xl">
                 <ScheduleForm
                     initialData={editTarget}
                     onSubmit={handleUpdate}

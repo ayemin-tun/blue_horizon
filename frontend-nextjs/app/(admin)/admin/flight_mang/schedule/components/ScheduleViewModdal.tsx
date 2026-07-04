@@ -2,7 +2,8 @@
 
 import React from "react";
 import { Schedule } from "@/services/scheduleService";
-import { X, Plane, CalendarDays, BadgeCheck, MapPin, DollarSign, Clock } from "lucide-react";
+import { X, Plane, BadgeCheck, ArrowRight } from "lucide-react";
+import { formatDisplayTime } from "@/utils/timeHelper";
 
 interface ScheduleViewModalProps {
   isOpen: boolean;
@@ -15,6 +16,15 @@ export default function ScheduleViewModal({ isOpen, schedule, onClose }: Schedul
 
   const isOutbound = schedule.flight_type?.toUpperCase() === "OUTBOUND";
 
+  const routePoints = schedule.route_details
+    ? schedule.route_details.includes("➔")
+      ? schedule.route_details.split("➔").map(p => p.trim())
+      : schedule.route_details.includes("->")
+      ? schedule.route_details.split("->").map(p => p.trim())
+      : [schedule.route_details, ""]
+    : ["—", "—"];
+
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
@@ -25,9 +35,15 @@ export default function ScheduleViewModal({ isOpen, schedule, onClose }: Schedul
 
       {/* Panel */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all duration-300 scale-100">
+        
         {/* Header */}
         <div className="bg-linear-to-r from-blue-900 to-blue-700 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-white font-bold text-sm tracking-wide">Schedule Details</h2>
+          <div className="flex items-center gap-2">
+            <BadgeCheck className="w-4 h-4 text-blue-200" />
+            <h2 className="text-white font-bold text-sm tracking-wide">
+              Schedule Details
+            </h2>
+          </div>
           <button
             onClick={onClose}
             className="text-white/70 hover:text-white transition rounded-lg p-1 hover:bg-white/10 focus:outline-none"
@@ -36,89 +52,80 @@ export default function ScheduleViewModal({ isOpen, schedule, onClose }: Schedul
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-6 space-y-4">
-          {/* Flight No + Type Badge */}
-          <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
-            <div className="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
-              <Plane className="w-7 h-7 text-blue-700" />
-            </div>
-            <div>
-              <p className="text-base font-bold text-slate-800">{schedule.flight_no}</p>
-              <span className="text-xs text-slate-400 font-medium block mt-0.5">{schedule.airline_name}</span>
-              <span
-                className={`inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                  isOutbound
-                    ? "bg-blue-50 text-blue-700 border border-blue-200"
-                    : "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                }`}
-              >
-                {schedule.flight_type}
+        {/* Body (Ticket Style View) */}
+        <div className="p-5 space-y-4">
+          
+          {/* Ticket Outer Wrapper */}
+          <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 text-xs space-y-4 relative overflow-hidden">
+            
+            {/* Header Line inside Ticket */}
+            <div className="flex items-center justify-between border-b border-blue-100/70 pb-2.5">
+              <div className="flex items-center gap-1.5">
+                <Plane className="w-3.5 h-3.5 text-blue-900" />
+                <p className="text-blue-900 font-bold text-[13px]">Schedule Type</p>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${
+                isOutbound ? "bg-blue-100 text-blue-800 border border-blue-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+              }`}>
+                {schedule.flight_type || "OUTBOUND"}
               </span>
             </div>
+
+            {/* Flight No & Airline Details */}
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-slate-400 font-medium text-[10px] uppercase tracking-wider">Flight Number</p>
+                <p className="font-mono font-bold text-slate-900 text-sm">{schedule.flight_no || "—"}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-slate-400 font-medium text-[10px] uppercase tracking-wider">Airline</p>
+                <p className="text-slate-800 font-semibold">{schedule.airline_name || "—"}</p>
+              </div>
+            </div>
+
+            {/* Route & Timings (Ticket Layout Box) */}
+            <div className="bg-white border border-slate-100 rounded-xl p-3 flex items-center justify-between shadow-xs">
+              <div className="space-y-1 max-w-[40%]">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight truncate">From</p>
+                <p className="text-xs font-bold text-slate-800 truncate">{routePoints[0]}</p>
+                <p className="font-mono font-bold text-blue-600 text-[13px]">
+                  {formatDisplayTime(schedule.departure_time)}
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center flex-1 px-2 text-slate-300">
+                <ArrowRight className="w-4 h-4 text-slate-400" />
+              </div>
+
+              <div className="space-y-1 text-right max-w-[40%]">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight truncate">To</p>
+                <p className="text-xs font-bold text-slate-800 truncate">{routePoints[1] || "Destination"}</p>
+                <p className="font-mono font-bold text-blue-600 text-[13px]">
+                  {formatDisplayTime(schedule.arrival_time)}
+                </p>
+              </div>
+            </div>
+
+            {/* Pricing Details Inside Ticket */}
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <div className="bg-white/80 border border-slate-100 rounded-xl p-2.5">
+                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Economy Class</p>
+                <p className="text-emerald-700 font-bold text-[13px] mt-0.5">
+                  {schedule.economy_price ? `${Number(schedule.economy_price).toLocaleString()} MMK` : "0 MMK"}
+                </p>
+              </div>
+              <div className="bg-white/80 border border-slate-100 rounded-xl p-2.5">
+                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Business Class</p>
+                <p className="text-amber-700 font-bold text-[13px] mt-0.5">
+                  {schedule.business_price ? `${Number(schedule.business_price).toLocaleString()} MMK` : "0 MMK"}
+                </p>
+              </div>
+            </div>
+
           </div>
 
-          {/* Detail Rows */}
-          <div className="space-y-3">
-            {/* Schedule ID */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                <BadgeCheck className="w-4 h-4 text-slate-500" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 font-medium">Schedule ID</p>
-                <p className="text-sm font-semibold text-slate-700">#{schedule.schedule_id}</p>
-              </div>
-            </div>
-
-            {/* Route Details */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                <MapPin className="w-4 h-4 text-slate-500" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 font-medium">Flight Route</p>
-                <p className="text-sm font-semibold text-slate-700">{schedule.route_details}</p>
-              </div>
-            </div>
-
-            {/* Timing (Departure & Arrival) */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                <Clock className="w-4 h-4 text-slate-500" />
-              </div>
-              <div className="flex gap-6">
-                <div>
-                  <p className="text-xs text-slate-400 font-medium">Departure</p>
-                  <p className="text-sm font-semibold text-slate-700">{schedule.departure_time}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-medium">Arrival</p>
-                  <p className="text-sm font-semibold text-slate-700">{schedule.arrival_time}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Pricing Section */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                <DollarSign className="w-4 h-4 text-slate-500" />
-              </div>
-              <div className="flex gap-6">
-                <div>
-                  <p className="text-xs text-slate-400 font-medium">Economy Class</p>
-                  <p className="text-sm font-bold text-emerald-700">${schedule.economy_price}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-medium">Business Class</p>
-                  <p className="text-sm font-bold text-amber-700">${schedule.business_price}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Close Button */}
-          <div className="pt-2">
+          {/* Action Button */}
+          <div className="pt-1">
             <button
               onClick={onClose}
               className="w-full px-4 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition focus:outline-none"
@@ -126,6 +133,7 @@ export default function ScheduleViewModal({ isOpen, schedule, onClose }: Schedul
               Close
             </button>
           </div>
+
         </div>
       </div>
     </div>

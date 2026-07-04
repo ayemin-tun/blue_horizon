@@ -115,6 +115,7 @@ def get_schedules(
     limit: int = 10,
     search: Optional[str] = Query(None),
     route_id: Optional[int] = Query(None),
+    flight_type: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     try:
@@ -126,6 +127,12 @@ def get_schedules(
 
         if route_id:
             base_query = base_query.filter(models.RouteSchedule.route_id == route_id)
+
+        #  Flight Type Filter (INBOUND / OUTBOUND)
+        if flight_type:
+            base_query = base_query.filter(
+                func.upper(models.RouteSchedule.flight_type) == flight_type.strip().upper()
+            )
 
         if search:
             search_filter = f"%{search.strip().lower()}%"
