@@ -96,15 +96,15 @@ def delete_airline(id: int, db: Session = Depends(get_db)):
         return {"success": False, "message": "Airline not found or already deleted"}
     
     # check airline is connect to other model
-    # linked_flights = db.query(models.Flight).filter(
-    #     models.Flight.airline_id == id
-    # ).first()
+    linked_flights = db.query(models.Flight).filter(
+        models.Flight.airline_id == id
+    ).first()
     
-    # if linked_flights:
-    #     return {
-    #         "success": False, 
-    #         "message": "Cannot delete this airline because it still has active flights or routes associated with it."
-    #     }
+    if linked_flights:
+        return {
+            "success": False, 
+            "message": "Cannot delete this airline because it still has active flights that associated with it."
+        }
 
     airline.is_deleted = True 
     db.commit()
