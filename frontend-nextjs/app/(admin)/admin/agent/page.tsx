@@ -214,6 +214,7 @@ export default function AgentPage() {
             <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Agent">
                 <AgentForm
                     onSubmit={handleCreate}
+                    isCreateMode={true}
                     onCancel={() => setShowAdd(false)}
                     loading={formLoading}
                     submitLabel="Create Agent"

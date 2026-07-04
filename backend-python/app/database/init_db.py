@@ -80,20 +80,60 @@ def init_database():
     WHERE is_deleted = 0;
     ''')
 
-    # 5. BOOKINGS Table
+    #5 Route Schedule Table 
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS ROUTE_SCHEDULE (
+        schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        route_id INTEGER NOT NULL,
+        flight_id INTEGER NOT NULL,
+        departure_time TEXT NOT NULL,   -- e.g., "08:30"
+        arrival_time TEXT NOT NULL,     -- e.g., "10:00"
+        economy_price DECIMAL(10, 2) NOT NULL,
+        business_price DECIMAL(10, 2) NOT NULL,
+        flight_type TEXT NOT NULL DEFAULT 'OUTBOUND',
+        is_deleted INTEGER DEFAULT 0,
+        FOREIGN KEY (route_id) REFERENCES ROUTES(route_id),
+        FOREIGN KEY (flight_id) REFERENCES FLIGHTS(flight_id)
+    )''')
+
+    # 6. FLIGHT_INSTANCE Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS FLIGHT_INSTANCE (
+        instance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        schedule_id INTEGER NOT NULL,
+        flight_date TEXT NOT NULL,      -- e.g., "03/07/2026" (DD/MM/YYYY)
+        economy_seats_occupied INTEGER DEFAULT 0,
+        business_seats_occupied INTEGER DEFAULT 0,
+        
+        -- history snapshot for instance initial time and price ---
+        base_departure_time TEXT NOT NULL,   -- e.g., "08:30"
+        base_arrival_time TEXT NOT NULL,     -- e.g., "10:00"
+        base_economy_price DECIMAL(10, 2) NOT NULL,
+        base_business_price DECIMAL(10, 2) NOT NULL,
+                   
+        -- for promotion purpose only ---
+        override_economy_price DECIMAL(10, 2) DEFAULT NULL,
+        override_business_price DECIMAL(10, 2) DEFAULT NULL,
+        
+        status TEXT CHECK(status IN ('SCHEDULED', 'DEPARTED', 'CANCELLED')) DEFAULT 'SCHEDULED',
+        is_deleted INTEGER DEFAULT 0,
+        FOREIGN KEY (schedule_id) REFERENCES ROUTE_SCHEDULE(schedule_id)
+    )''')
+
+    # 7. BOOKINGS Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS BOOKINGS (
         booking_id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        flight_id INTEGER NOT NULL,
-        booking_date DATETIME NOT NULL,
+        instance_id INTEGER NOT NULL,
+        booking_date DATETIME NOT NULL,         
         total_price DECIMAL(10, 2) NOT NULL,
         status TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES USERS(user_id),
-        FOREIGN KEY (flight_id) REFERENCES FLIGHTS(flight_id)
+        FOREIGN KEY (instance_id) REFERENCES FLIGHT_INSTANCE(instance_id)
     )''')
 
-    # 6. PASSENGERS Table
+    # 8. PASSENGERS Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS PASSENGERS (
         passenger_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,7 +147,7 @@ def init_database():
         nationality TEXT NOT NULL
     )''')
 
-    # 7. BOOKING_PASSENGERS Table (Many-to-Many Bridge Table)
+    # 9. BOOKING_PASSENGERS Table (Many-to-Many Bridge Table)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS BOOKING_PASSENGERS (
         bp_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -117,7 +157,7 @@ def init_database():
         FOREIGN KEY (passenger_id) REFERENCES PASSENGERS(passenger_id)
     )''')
 
-    # 8. FLIGHT_MANAGEMENT_LOG Table
+    # 10. FLIGHT_MANAGEMENT_LOG Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS FLIGHT_MANAGEMENT_LOG (
         log_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -168,9 +208,35 @@ def init_database():
     VALUES (1, 1, 'BH-101', 120, 0) 
     ''')
 
+    # Sample Route Schedule (Template Master)
+    cursor.execute('''
+    INSERT OR IGNORE INTO ROUTE_SCHEDULE (schedule_id, route_id, flight_id, departure_time, arrival_time, economy_price, business_price,flight_type, is_deleted)
+    VALUES (1, 1, 1, '08:30', '10:00', 150000.00, 250000.00,'OUTBOUND', 0)
+    ''')
+
+    # Sample Flight Instance 
+    cursor.execute('''
+    INSERT OR IGNORE INTO FLIGHT_INSTANCE (
+        instance_id, 
+        schedule_id, 
+        flight_date, 
+        base_departure_time, 
+        base_arrival_time, 
+        base_economy_price, 
+        base_business_price, 
+        economy_seats_occupied, 
+        business_seats_occupied, 
+        override_economy_price, 
+        override_business_price, 
+        status, 
+        is_deleted
+    )
+    VALUES (1, 1, ?, '08:30', '10:00', 150000.00, 250000.00, 0, 0, NULL, NULL, 'SCHEDULED', 0)
+    ''', (current_date_str,))
+
     conn.commit()
     conn.close()
-    print("🎉 USERS Table created Successfully!")
+    print("Tables created Successfully!")
 
 if __name__ == '__main__':
     init_database()

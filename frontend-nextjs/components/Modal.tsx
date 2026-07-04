@@ -7,10 +7,26 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  maxWidth?: "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl";
 }
 
-export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export default function Modal({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children,
+  maxWidth = "md" 
+}: ModalProps) {
   if (!isOpen) return null;
+
+  const maxWidthClasses = {
+    md: "max-w-md",
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    "2xl": "max-w-2xl",
+    "3xl": "max-w-3xl",
+    "4xl": "max-w-4xl",
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -21,7 +37,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
       />
       
       {/* Panel */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all duration-300 scale-100">
+      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} mx-4 overflow-hidden transform transition-all duration-300 scale-100`}>
         {/* Header */}
         <div className="bg-linear-to-r from-blue-900 to-blue-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-white font-bold text-sm tracking-wide">{title}</h2>
