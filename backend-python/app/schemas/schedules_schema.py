@@ -1,6 +1,6 @@
 import re
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Optional, Any, List, Literal  # 🌟 Literal ကို အသစ်ယူလိုက်ပါသည်
+from typing import Optional, Any, List, Literal  
 from decimal import Decimal
 from datetime import datetime
 
@@ -9,8 +9,7 @@ class RouteDetailResponse(BaseModel):
     route_id: int
     departure_city: str
     arrival_city: str
-    
-    # 🌟 Pydantic v2 စတိုင် သို့ ပြောင်းလဲခြင်း
+
     model_config = {"from_attributes": True}
 
 class AirlineDetailResponse(BaseModel):
@@ -35,7 +34,7 @@ class ScheduleBase(BaseModel):
     route_id: int
     flight_id: int
     
-    # 🌟 flight_type ကို OUTBOUND သို့မဟုတ် INBOUND သာ လက်ခံရန် Literal ဖြင့် ကန့်သတ်ခြင်း
+    # Limit flight type is only for "OUTBOUND/INBOUND"
     flight_type: Literal["OUTBOUND", "INBOUND"] = Field(
         ..., 
         description="Flight direction type: Must be 'OUTBOUND' or 'INBOUND'"
@@ -47,7 +46,7 @@ class ScheduleBase(BaseModel):
     economy_price: Decimal = Field(..., gt=0, max_digits=10, decimal_places=2, description="Price must be greater than 0")
     business_price: Decimal = Field(..., gt=0, max_digits=10, decimal_places=2, description="Price must be greater than 0")
 
-    # 🌟 တကယ်လို့ lowercase 'outbound' ပေးလာရင်လည်း UPPERCASE ပြောင်းပေးရန် Validator ထည့်ခြင်း
+    # uppercase validator
     @field_validator('flight_type', mode='before')
     @classmethod
     def uppercase_flight_type(cls, v: str) -> str:
@@ -55,7 +54,7 @@ class ScheduleBase(BaseModel):
             return v.strip().upper()
         return v
 
-    # ၁။ Individual Field Validator: အချိန် Format စစ်ဆေးခြင်း
+    #Time format check
     @field_validator('departure_time', 'arrival_time')
     @classmethod
     def validate_time_format(cls, v: str, info) -> str:
@@ -67,7 +66,7 @@ class ScheduleBase(BaseModel):
         parts = v_clean.split(":")
         return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
 
-    # ၂။ Model-level Validator: Arrival က Departure ထက် ပိုကြီးရမည်ဟု စစ်ဆေးခြင်း
+    # Arrival must be greater than Departure
     @model_validator(mode='after')
     def validate_arrival_after_departure(self) -> 'ScheduleBase':
         dep_str = self.departure_time
@@ -84,12 +83,13 @@ class ScheduleBase(BaseModel):
             
         return self
 
+    #Example api response
     model_config = {
         "json_schema_extra": {
             "example": {
                 "route_id": 1,
                 "flight_id": 1,
-                "flight_type": "OUTBOUND", # 🌟 Example ထဲတွင်ပါ ထည့်သွင်းပေးလိုက်ပါသည်
+                "flight_type": "OUTBOUND",
                 "departure_time": "08:30",
                 "arrival_time": "10:00",
                 "economy_price": 150000.00,
@@ -103,14 +103,11 @@ class ScheduleCreate(ScheduleBase):
     pass
 
 
-# Nested Object များနှင့် Response ပုံစံ
 class ScheduleResponse(ScheduleBase):
     schedule_id: int
     is_deleted: int
     route: Optional[RouteDetailResponse] = None   
     flight: Optional[FlightDetailResponse] = None 
-
-    # 🌟 class Config မှ model_config သို့ ပြောင်းလဲခြင်း (schedule_id ပျောက်ဆုံးမှု မဖြစ်စေရန်)
     model_config = {"from_attributes": True}
 
 
