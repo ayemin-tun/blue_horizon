@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const OverviewPage: React.FC = () => {
   
   return (
-    <div className="p-6">
+    <div className="p-5">
       {/* Title & Description */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-950">Overview Panel</h1>
