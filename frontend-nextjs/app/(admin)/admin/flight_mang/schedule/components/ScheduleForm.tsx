@@ -8,6 +8,8 @@ import RouteSelect from "./RouteSelect";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import ScheduleFormPreview from "./ScheduleFormPreview";
+import { useFlightsQuery } from "@/services/flightService";
+import { useRoutesQuery } from "@/services/routeService";
 
 interface ScheduleFormProps {
   initialData?: Schedule | null;
@@ -46,6 +48,15 @@ export default function ScheduleForm({
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const { data: flightsRes } = useFlightsQuery(1, 100, "");
+  const { data: routesRes } = useRoutesQuery(1, 100, "");
+
+  const flightsList = (flightsRes?.data as any)?.flights || [];
+  const routesList = (routesRes?.data as any) || [];
+
+  const selectedFlightObj = flightsList.find((f: any) => f.flight_id === form.flight_id);
+  const selectedRouteObj = routesList.find((r: any) => r.route_id === form.route_id);
 
   // Handle Strings & Numbers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -102,19 +113,18 @@ export default function ScheduleForm({
       setErrors(newErrors);
       return;
     }
+    console.log("Selected Route Object:", selectedRouteObj);
 
     setErrors({});
     onSubmit(form);
   };
 
   return (
-
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      
+
       {/* Right Side: Preview Field */}
       <div className="hidden lg:block lg:col-span-5 lg:sticky lg:top-4 space-y-3">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:block">Real-time Preview</p>
-
 
         {form.flight_id > 0 || form.route_id > 0 ? (
           <ScheduleFormPreview
@@ -125,6 +135,9 @@ export default function ScheduleForm({
             arrivalTime={form.arrival_time}
             economyPrice={form.economy_price}
             businessPrice={form.business_price}
+            flightNo={selectedFlightObj?.flight_no}
+            airlineName={selectedFlightObj?.airline?.airline_name || selectedFlightObj?.airline_name}
+            routeDetails={selectedRouteObj?.route_details || (selectedRouteObj ? `${selectedRouteObj.departure_city} ➔ ${selectedRouteObj.arrival_city}` : undefined)}
           />
         ) : (
           <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center min-h-55">
@@ -355,9 +368,6 @@ export default function ScheduleForm({
           </button>
         </div>
       </form>
-
-
-
     </div>
   );
 }

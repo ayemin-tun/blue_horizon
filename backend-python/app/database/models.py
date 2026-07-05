@@ -71,6 +71,11 @@ class FlightInstance(Base):
     economy_seats_occupied = Column(Integer, default=0)
     business_seats_occupied = Column(Integer, default=0)
     
+    base_departure_time = Column(String, nullable=False)
+    base_arrival_time = Column(String, nullable=False)
+    base_economy_price = Column(Numeric(10, 2), nullable=False)
+    base_business_price = Column(Numeric(10, 2), nullable=False)
+
     # Dynamic Promotion / Discount Override
     override_economy_price = Column(Numeric(10, 2), nullable=True, default=None)
     override_business_price = Column(Numeric(10, 2), nullable=True, default=None)
