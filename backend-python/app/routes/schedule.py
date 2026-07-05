@@ -17,12 +17,10 @@ from app.routes.schedule_instance_utils import (
 
 router = APIRouter(prefix="/api/schedules", tags=["Schedules"])
 
-# --- UNIFIED RESPONSE SCHEMA 
-class ApiResponse(BaseModel):
-    success: bool  
-    message: str
-    data: Optional[Any] = None
-    error: Optional[dict] = None
+
+from app.schemas.schedules_instance_schema import InstanceUpdate 
+from app.schemas.schedules_schema import ApiResponse
+
 
 
 # ─── BUSINESS LOGIC HELPER ──────────────────────────────────────────────────
