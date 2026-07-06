@@ -128,8 +128,8 @@ export default function SchedulePage() {
                         type="button"
                         onClick={() => setShowFilterMenu(!showFilterMenu)}
                         className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-xl transition ${routeId || flightType
-                                ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' // Filter တစ်ခုခုရှိနေရင် active color ပြရန်
-                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                            ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' // Filter တစ်ခုခုရှိနေရင် active color ပြရန်
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                             }`}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
@@ -138,14 +138,18 @@ export default function SchedulePage() {
                             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse inline-block" />
                         )}
                     </button>
-
-                    {/* 🌟 Dropdown Box  */}
+                    {/* Dropdown Box (Mobile: Bottom Sheet / Desktop: Right-aligned Popover) */}
                     {showFilterMenu && (
                         <>
-                            <div className="fixed inset-0 z-10" onClick={() => setShowFilterMenu(false)} />
+                            {/* Backdrop click close */}
+                            <div className="fixed inset-0 z-40 bg-slate-950/20 sm:bg-transparent backdrop-blur-xs sm:backdrop-blur-none" onClick={() => setShowFilterMenu(false)} />
+                            <div className="fixed bottom-0 left-0 right-0 z-50 w-full rounded-t-3xl bg-white p-6 shadow-2xl border-t border-slate-100 
+                        animate-in slide-in-from-bottom duration-200
+                        sm:absolute sm:bottom-auto sm:top-full sm:left-auto sm:right-0 sm:w-72 sm:rounded-2xl sm:border sm:p-4 sm:shadow-xl sm:animate-in sm:fade-in sm:slide-in-from-top-2">
 
-                            <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-150 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150 space-y-4">
-                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden" />
+
+                                <div className="flex justify-between items-center pb-3 border-b border-slate-100 sm:pb-2">
                                     <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Filter Options</span>
                                     {(routeId || flightType) && (
                                         <button
@@ -161,36 +165,47 @@ export default function SchedulePage() {
                                     )}
                                 </div>
 
-                                {/* 🗺️ Route Filter Section */}
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs font-semibold text-slate-500">Route</label>
-                                    <RouteFilter
-                                        value={routeId}
-                                        onChange={(val) => {
-                                            setRouteId(val);
-                                            setPage(1);
-                                        }}
-                                    />
-                                </div>
+                                <div className="space-y-4 pt-3 sm:pt-0 sm:space-y-4 sm:mt-4">
 
-                                {/* ✈️ Flight Type Filter Section */}
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs font-semibold text-slate-500">Flight Type</label>
-                                    <div className="relative">
-                                        <select
-                                            value={flightType || ""}
-                                            onChange={(e) => {
-                                                setFlightType(e.target.value || '');
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-slate-500">Route</label>
+                                        <RouteFilter
+                                            value={routeId}
+                                            onChange={(val) => {
+                                                setRouteId(val);
                                                 setPage(1);
                                             }}
-                                            className="w-full px-3 py-2 text-sm text-slate-900 border border-slate-200 rounded-xl bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer appearance-none"
-                                        >
-                                            <option value="">All Flight Types</option>
-                                            <option value="OUTBOUND">OUTBOUND</option>
-                                            <option value="INBOUND">INBOUND</option>
-                                        </select>
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs">▼</span>
+                                        />
                                     </div>
+
+                                    {/* ✈️ Flight Type Filter Section */}
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-slate-500">Flight Type</label>
+                                        <div className="relative">
+                                            <select
+                                                value={flightType || ""}
+                                                onChange={(e) => {
+                                                    setFlightType(e.target.value || '');
+                                                    setPage(1);
+                                                }}
+                                                className="w-full px-3 py-2.5 sm:py-2 text-sm text-slate-900 border border-slate-200 rounded-xl bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer appearance-none"
+                                            >
+                                                <option value="">All Flight Types</option>
+                                                <option value="OUTBOUND">OUTBOUND</option>
+                                                <option value="INBOUND">INBOUND</option>
+                                            </select>
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs">▼</span>
+                                        </div>
+                                    </div>
+
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowFilterMenu(false)}
+                                        className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition sm:hidden mt-2"
+                                    >
+                                        Apply Filters
+                                    </button>
                                 </div>
                             </div>
                         </>
