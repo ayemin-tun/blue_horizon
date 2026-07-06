@@ -39,6 +39,15 @@ def fmt_dt(d: datetime) -> str:
     return d.strftime("%Y-%m-%d %H:%M:%S")
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 0. PURGE OLD TRANSACTIONS (Enforce Clean Slate)
+# ─────────────────────────────────────────────────────────────────────────────
+print("→ CLEARING OLD DATA (Transactions & Schedules) ...")
+tables_to_clear = ["BOOKING_PASSENGERS", "PASSENGERS", "BOOKINGS", "FLIGHT_INSTANCE", "ROUTE_SCHEDULE"]
+for t in tables_to_clear:
+    cur.execute(f"DELETE FROM {t}")
+conn.commit()
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 1. USERS  –  3 agents  (admin already exists)
 # ─────────────────────────────────────────────────────────────────────────────
 print("→ USERS ...")
@@ -166,38 +175,41 @@ flight_ids.setdefault("BH-101", 1)
 # ─────────────────────────────────────────────────────────────────────────────
 print("-> ROUTE_SCHEDULE ...")
 
+# Data format: (route_key, flight_no, out_dep, out_arr, in_dep, in_arr, eco_price, biz_price)
+# Note: INBOUND departure times are strictly >= 3 hours (180 mins) after OUTBOUND arrival time
 schedules_data = [
-    (("Yangon",   "Mandalay"),  "BH-101",  "08:30", "10:00", 150000, 250000),
-    (("Yangon",   "NayPyiTaw"), "BH-202",  "09:00", "10:15", 120000, 200000),
-    (("Yangon",   "Heho"),      "MNA-301", "11:00", "12:20", 130000, 210000),
-    (("Mandalay", "Heho"),      "AB-401",  "13:00", "14:00", 100000, 180000),
+    (("Yangon",   "Mandalay"),  "BH-101", "08:30", "10:00", "13:30", "15:00", 150000, 250000),
+    (("Yangon",   "NayPyiTaw"), "BH-202", "09:00", "10:15", "13:30", "14:45", 120000, 200000),
+    (("Yangon",   "Heho"),      "MNA-301","11:00", "12:20", "15:30", "16:50", 130000, 210000),
+    (("Mandalay", "Heho"),      "AB-401", "13:00", "14:00", "17:30", "18:30", 100000, 180000),
 ]
 
-schedule_ids = {}
-for rkey, flight_no, dep, arr, eco, biz in schedules_data:
+schedule_ids = {} # maps to (route_key, type)
+for rkey, flight_no, o_dep, o_arr, i_dep, i_arr, eco, biz in schedules_data:
     r_id = route_ids[rkey]
     f_id = flight_ids[flight_no]
+    
+    # OUTBOUND
     cur.execute(
-        "SELECT schedule_id FROM ROUTE_SCHEDULE "
-        "WHERE route_id=? AND flight_id=? AND is_deleted=0",
-        (r_id, f_id)
+        "INSERT INTO ROUTE_SCHEDULE "
+        "(route_id,flight_id,departure_time,arrival_time,economy_price,business_price,flight_type,is_deleted) "
+        "VALUES (?,?,?,?,?,?,'OUTBOUND',0)",
+        (r_id, f_id, o_dep, o_arr, eco, biz)
     )
-    row = cur.fetchone()
-    if row:
-        schedule_ids[rkey] = row["schedule_id"]
-        print(f"   skip schedule {rkey}")
-    else:
-        cur.execute(
-            "INSERT INTO ROUTE_SCHEDULE "
-            "(route_id,flight_id,departure_time,arrival_time,economy_price,business_price,flight_type,is_deleted) "
-            "VALUES (?,?,?,?,?,?,'OUTBOUND',0)",
-            (r_id, f_id, dep, arr, eco, biz)
-        )
-        schedule_ids[rkey] = cur.lastrowid
-        print(f"   inserted schedule {rkey} -> id={schedule_ids[rkey]}")
+    schedule_ids[(rkey, 'OUTBOUND')] = cur.lastrowid
+    
+    # INBOUND
+    cur.execute(
+        "INSERT INTO ROUTE_SCHEDULE "
+        "(route_id,flight_id,departure_time,arrival_time,economy_price,business_price,flight_type,is_deleted) "
+        "VALUES (?,?,?,?,?,?,'INBOUND',0)",
+        (r_id, f_id, i_dep, i_arr, eco, biz)
+    )
+    schedule_ids[(rkey, 'INBOUND')] = cur.lastrowid
+    
+    print(f"   inserted 2 schedules for {rkey} (OUTBOUND & INBOUND)")
 
 conn.commit()
-schedule_ids.setdefault(("Yangon", "Mandalay"), 1)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. FLIGHT_INSTANCE  –  instances spread over past 60 days
@@ -206,51 +218,67 @@ print("-> FLIGHT_INSTANCE ...")
 
 BASE = datetime.now()
 
-sched_meta = {
-    schedule_ids[("Yangon",   "Mandalay")]:  ("08:30","10:00", 150000, 250000, 120),
-    schedule_ids[("Yangon",   "NayPyiTaw")]: ("09:00","10:15", 120000, 200000, 100),
-    schedule_ids[("Yangon",   "Heho")]:      ("11:00","12:20", 130000, 210000,  90),
-    schedule_ids[("Mandalay", "Heho")]:      ("13:00","14:00", 100000, 180000,  80),
-}
+# Map schedule_id to meta data based on schedules_data
+sched_meta = {}
+for rkey, flight_no, o_dep, o_arr, i_dep, i_arr, eco, biz in schedules_data:
+    seats = 0
+    for name, f_no, s in flights_data:
+        if f_no == flight_no:
+            seats = s
+            break
+            
+    out_id = schedule_ids[(rkey, 'OUTBOUND')]
+    in_id = schedule_ids[(rkey, 'INBOUND')]
+    sched_meta[out_id] = (o_dep, o_arr, eco, biz, seats)
+    sched_meta[in_id] = (i_dep, i_arr, eco, biz, seats)
 
 instance_ids = {}
-
-# Fetch existing instances to avoid duplicates
-cur.execute("SELECT instance_id, schedule_id, flight_date FROM FLIGHT_INSTANCE WHERE is_deleted=0")
-for row in cur.fetchall():
-    instance_ids[(row["schedule_id"], row["flight_date"])] = row["instance_id"]
-
 new_instance_count = 0
+
 for sched_id, (dep, arr, eco, biz, seats) in sched_meta.items():
-    for day_offset in range(-45, 16, 3):   # every 3 days = ~20 instances per route
+    # Past 60 days to Future 30 days
+    for day_offset in range(-60, 31, 2):
         d = BASE + timedelta(days=day_offset)
         date_str = fmt_date(d)
-        key = (sched_id, date_str)
-        if key in instance_ids:
-            continue
+        
+        # Determine Status
+        status = "SCHEDULED"
+        if day_offset < 0:
+            status = random.choice(["DEPARTED", "DEPARTED", "CANCELLED"])
+            
         month = d.month
-        if month == 4:
-            eco_occ = int(seats * 0.85 * random.uniform(0.9, 1.0))
-            biz_occ = int(10 * random.uniform(0.8, 1.0))
-        elif month in (6, 7):
-            eco_occ = int(seats * 0.30 * random.uniform(0.7, 1.0))
-            biz_occ = int(5 * random.uniform(0.4, 0.8))
+        if status == "CANCELLED":
+            eco_occ = 0
+            biz_occ = 0
         else:
-            eco_occ = int(seats * 0.60 * random.uniform(0.6, 1.0))
-            biz_occ = int(8 * random.uniform(0.5, 1.0))
+            if month == 4:
+                eco_occ = int(seats * 0.85 * random.uniform(0.9, 1.0))
+                biz_occ = int(10 * random.uniform(0.8, 1.0))
+            elif month in (6, 7):
+                eco_occ = int(seats * 0.30 * random.uniform(0.7, 1.0))
+                biz_occ = int(5 * random.uniform(0.4, 0.8))
+            else:
+                eco_occ = int(seats * 0.60 * random.uniform(0.6, 1.0))
+                biz_occ = int(8 * random.uniform(0.5, 1.0))
 
-        eco_occ = max(0, min(eco_occ, seats - 10))
-        biz_occ = max(0, min(biz_occ, 10))
+            eco_occ = max(0, min(eco_occ, seats - 10))
+            biz_occ = max(0, min(biz_occ, 10))
+
+        # Random overrides for future scheduled flights (10% chance)
+        o_eco, o_biz = None, None
+        if status == "SCHEDULED" and random.random() < 0.1:
+            o_eco = round(eco * 0.9, 2)
+            o_biz = round(biz * 0.9, 2)
 
         cur.execute(
             "INSERT INTO FLIGHT_INSTANCE "
             "(schedule_id,flight_date,economy_seats_occupied,business_seats_occupied,"
             "base_departure_time,base_arrival_time,base_economy_price,base_business_price,"
-            "status,is_deleted) "
-            "VALUES (?,?,?,?,?,?,?,?,'SCHEDULED',0)",
-            (sched_id, date_str, eco_occ, biz_occ, dep, arr, eco, biz)
+            "override_economy_price,override_business_price,status,is_deleted) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,0)",
+            (sched_id, date_str, eco_occ, biz_occ, dep, arr, eco, biz, o_eco, o_biz, status)
         )
-        instance_ids[key] = cur.lastrowid
+        instance_ids[(sched_id, date_str)] = cur.lastrowid
         new_instance_count += 1
 
 conn.commit()
@@ -275,14 +303,17 @@ GENDERS = ["Male","Female"]
 TYPES = ["ADULT","ADULT","ADULT","CHILD"]
 STATUSES = ["CONFIRMED","CONFIRMED","CONFIRMED","CONFIRMED","CANCELLED"]
 
+# Only book on instances that are NOT CANCELLED
+cur.execute("SELECT instance_id FROM FLIGHT_INSTANCE WHERE status != 'CANCELLED'")
+valid_instances = [row['instance_id'] for row in cur.fetchall()]
+
 agent_list = list(agent_ids.values())
-all_instances = list(instance_ids.values())
 
 new_booking_count = 0
 new_pax_count = 0
 
 for i in range(350):
-    inst_id = random.choice(all_instances)
+    inst_id = random.choice(valid_instances)
     booking_dt = BASE - timedelta(
         days=random.randint(0, 60),
         hours=random.randint(0, 23),
