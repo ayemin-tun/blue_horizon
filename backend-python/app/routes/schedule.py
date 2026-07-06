@@ -8,15 +8,19 @@ from datetime import datetime, timedelta
 from app.database.database import get_db
 from app.database import models
 from app.schemas.schedules_schema import ScheduleCreate 
+from app.routes.schedule_instance_utils import (
+    generate_30_days_instances, 
+    sync_future_instances_on_update, 
+    clean_future_instances_on_delete,
+    reactivate_and_sync_future_instances
+)
 
 router = APIRouter(prefix="/api/schedules", tags=["Schedules"])
 
-# --- UNIFIED RESPONSE SCHEMA 
-class ApiResponse(BaseModel):
-    success: bool  
-    message: str
-    data: Optional[Any] = None
-    error: Optional[dict] = None
+
+from app.schemas.schedules_instance_schema import InstanceUpdate 
+from app.schemas.schedules_schema import ApiResponse
+
 
 
 # ─── BUSINESS LOGIC HELPER ──────────────────────────────────────────────────
@@ -287,6 +291,8 @@ def create_schedule(data: ScheduleCreate, db: Session = Depends(get_db)):
             existing_deleted_match.business_price = data.business_price
             existing_deleted_match.is_deleted = 0
 
+            reactivate_and_sync_future_instances(db,existing_deleted_match)
+
             db.commit()
             db.refresh(existing_deleted_match)
 
@@ -307,6 +313,13 @@ def create_schedule(data: ScheduleCreate, db: Session = Depends(get_db)):
 
             new_schedule = models.RouteSchedule(**data.model_dump())
             db.add(new_schedule)
+
+            #🛠️ ADDED: Flush to generate the schedule_id from DB before passing to utility
+            db.flush() 
+
+            # 🛠️ ADDED: Generate 30 days instances for the newly created schedule
+            generate_30_days_instances(db, new_schedule)
+
             db.commit()
             db.refresh(new_schedule)
 
@@ -371,6 +384,8 @@ def update_schedule(id: int, data: ScheduleCreate, db: Session = Depends(get_db)
         schedule.economy_price = data.economy_price
         schedule.business_price = data.business_price
 
+        sync_future_instances_on_update(db, id, schedule)
+
         db.commit()
         db.refresh(schedule)
 
@@ -397,8 +412,30 @@ def delete_schedule(id: int, db: Session = Depends(get_db)):
                 "data": None,
                 "error": {"code": "SCHEDULE_NOT_FOUND", "details": f"Active schedule with ID {id} does not exist or has already been deleted."}
             }
+        
+        tomorrow = datetime.now() + timedelta(days=1)
+        extended_future_dates = [(tomorrow + timedelta(days=i)).strftime("%d/%m/%Y") for i in range(90)]
 
+        has_active_bookings = db.query(models.FlightInstance).filter(
+            models.FlightInstance.schedule_id == id,
+            models.FlightInstance.flight_date.in_(extended_future_dates),
+            models.FlightInstance.is_deleted == 0,
+            (models.FlightInstance.economy_seats_occupied > 0) | (models.FlightInstance.business_seats_occupied > 0)
+        ).first()
+
+        if has_active_bookings:
+            return {
+                "success": False,
+                "message": "Cannot delete schedule",
+                "data": None,
+                "error": {
+                    "code": "ACTIVE_BOOKINGS_EXIST",
+                    "details": f"This schedule has active passenger bookings in upcoming flights (e.g., on {has_active_bookings.flight_date}). Please manage or refund passengers before deleting."
+                }
+            }
+        
         schedule.is_deleted = 1
+        clean_future_instances_on_delete(db, id)
         db.commit()
 
         return {"success": True, "message": "Schedule deleted successfully", "data": None, "error": None}

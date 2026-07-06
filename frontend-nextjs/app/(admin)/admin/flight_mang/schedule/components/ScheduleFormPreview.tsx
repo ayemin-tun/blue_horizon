@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useSchedulesQuery } from "@/services/scheduleService";
 import { ArrowRight, Plane } from "lucide-react";
 
 interface SchedulePreviewProps {
@@ -12,6 +11,9 @@ interface SchedulePreviewProps {
     arrivalTime: string;
     economyPrice: number;
     businessPrice: number;
+    flightNo?: string;
+    airlineName?: string;
+    routeDetails?: string;
 }
 
 export default function ScheduleFormPreview({
@@ -22,20 +24,15 @@ export default function ScheduleFormPreview({
     arrivalTime,
     economyPrice,
     businessPrice,
+    flightNo,       
+    airlineName,    
+    routeDetails,  
 }: SchedulePreviewProps) {
-
-    const { data: apiResponse } = useSchedulesQuery(1, 100, "");
-    const rawSchedules: any[] = (apiResponse?.data as any)?.schedules || [];
-
-    const matchedFlight = rawSchedules.find((s) => s.flight_id === flightId);
-    const matchedRoute = rawSchedules.find((s) => s.route_id === routeId);
-
 
     if (!flightId && !routeId && !departureTime && !arrivalTime && !economyPrice && !businessPrice) {
         return null;
     }
 
-    // Time formatting helper (e.g. 14:30 -> 02:30 PM)
     const formatDisplayTime = (timeStr: string) => {
         if (!timeStr) return "—:—";
         try {
@@ -50,15 +47,15 @@ export default function ScheduleFormPreview({
 
     return (
         <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 text-xs space-y-3 relative overflow-hidden">
-
             {/* Header Line */}
             <div className="flex items-center justify-between border-b border-blue-100/70 pb-2">
                 <div className="flex items-center gap-1.5">
                     <Plane className="w-3.5 h-3.5 text-blue-900" />
                     <p className="text-blue-900 font-bold text-[13px]">Schedule Preview</p>
                 </div>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase ${flightType === "OUTBOUND" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
-                    }`}>
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase ${
+                    flightType === "OUTBOUND" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
+                }`}>
                     {flightType}
                 </span>
             </div>
@@ -67,19 +64,22 @@ export default function ScheduleFormPreview({
             <div className="flex justify-between items-start">
                 <div>
                     <p className="text-slate-400 font-medium text-[10px] uppercase">Flight Number</p>
-                    <p className="font-mono font-bold text-slate-900 text-sm">{matchedFlight?.flight_no || "—"}</p>
+                    {/* 🛠️ နေရာဟောင်းတွေမှာ တိုက်ရိုက် ပြောင်းထည့် */}
+                    <p className="font-mono font-bold text-slate-900 text-sm">{flightNo || "—"}</p> 
                 </div>
                 <div className="text-right">
                     <p className="text-slate-400 font-medium text-[10px] uppercase">Airline</p>
-                    <p className="text-slate-800 font-semibold">{matchedFlight?.airline_name || "—"}</p>
+                    {/* 🛠️ နေရာဟောင်းတွေမှာ တိုက်ရိုက် ပြောင်းထည့် */}
+                    <p className="text-slate-800 font-semibold">{airlineName || "—"}</p> 
                 </div>
             </div>
 
-            {/* Route & Timings (Ticket Layout Style) */}
+            {/* Route & Timings */}
             <div className="bg-white/80 border border-slate-100 rounded-xl p-3 flex items-center justify-between shadow-sm">
                 <div className="space-y-1">
+                    {/* 🛠️ */}
                     <p className="text-[11px] font-bold text-slate-800">
-                        {matchedRoute?.route_details?.split("➔")[0]?.trim() || "Departure Point"}
+                        {routeDetails?.split("➔")[0]?.trim() || "Departure Point"}
                     </p>
                     <p className="font-mono font-bold text-blue-600 text-[13px]">
                         {formatDisplayTime(departureTime)}
@@ -93,7 +93,7 @@ export default function ScheduleFormPreview({
 
                 <div className="space-y-1 text-right">
                     <p className="text-[11px] font-bold text-slate-800">
-                        {matchedRoute?.route_details?.split("➔")[1]?.trim() || "Arrival Point"}
+                        {routeDetails?.split("➔")[1]?.trim() || "Arrival Point"}
                     </p>
                     <p className="font-mono font-bold text-blue-600 text-[13px]">
                         {formatDisplayTime(arrivalTime)}
