@@ -27,3 +27,13 @@ __pycache__/
 # Operating system files
 .DS_Store
 Thumbs.db
+
+*.csv
+*.txt
+
+# Executables
+backend-cobol/bin
+
+# Docx
+*.docx
+generate_docx.py
