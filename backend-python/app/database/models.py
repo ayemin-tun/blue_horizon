@@ -43,3 +43,45 @@ class Flight(Base):
 
     # Relationships
     airline = relationship("Airline")
+
+class RouteSchedule(Base):
+    __tablename__ = "ROUTE_SCHEDULE"
+
+    schedule_id = Column(Integer, primary_key=True, autoincrement=True)
+    route_id = Column(Integer, ForeignKey("ROUTES.route_id"), nullable=False)
+    flight_id = Column(Integer, ForeignKey("FLIGHTS.flight_id"), nullable=False)
+    departure_time = Column(String, nullable=False)   # e.g., "08:30"
+    arrival_time = Column(String, nullable=False)     # e.g., "10:00"
+    economy_price = Column(Numeric(10, 2), nullable=False)
+    business_price = Column(Numeric(10, 2), nullable=False)
+    flight_type = Column(String(10), nullable=False, default="OUTBOUND") #OUTBOUND,INBOUND
+    is_deleted = Column(Integer, default=0)
+
+    # Relationships
+    route = relationship("Route")
+    flight = relationship("Flight")
+
+
+class FlightInstance(Base):
+    __tablename__ = "FLIGHT_INSTANCE"
+
+    instance_id = Column(Integer, primary_key=True, autoincrement=True)
+    schedule_id = Column(Integer, ForeignKey("ROUTE_SCHEDULE.schedule_id"), nullable=False)
+    flight_date = Column(String, nullable=False)      # e.g., "03/07/2026"
+    economy_seats_occupied = Column(Integer, default=0)
+    business_seats_occupied = Column(Integer, default=0)
+    
+    base_departure_time = Column(String, nullable=False)
+    base_arrival_time = Column(String, nullable=False)
+    base_economy_price = Column(Numeric(10, 2), nullable=False)
+    base_business_price = Column(Numeric(10, 2), nullable=False)
+
+    # Dynamic Promotion / Discount Override
+    override_economy_price = Column(Numeric(10, 2), nullable=True, default=None)
+    override_business_price = Column(Numeric(10, 2), nullable=True, default=None)
+    
+    status = Column(String, default="SCHEDULED")      # SCHEDULED, DEPARTED, CANCELLED
+    is_deleted = Column(Integer, default=0)
+
+    # 🔗 Relationships
+    schedule = relationship("RouteSchedule")

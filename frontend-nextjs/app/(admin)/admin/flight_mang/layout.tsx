@@ -16,8 +16,7 @@ export default function FlightManagementLayout({
     { name: 'Airline', href: '/admin/flight_mang' },
     { name: 'Route', href: '/admin/flight_mang/route' },
     { name: 'Flight', href: '/admin/flight_mang/flight' },
-    { name: 'Route Schedule', href:'/admin/flight_mang/route_schedule'},
-    { name: 'Today Schedule', href:'/admin/flight_mang/today_schedule'},
+    { name: 'Schedule', href:'/admin/flight_mang/schedule'},
   ];
 
   return (

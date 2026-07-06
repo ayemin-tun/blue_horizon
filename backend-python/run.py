@@ -15,6 +15,8 @@ from app.routes.airline import router as airline_router
 from app.routes.route import router as route_router
 from app.routes.flight import router as flight_router
 from app.routes.agent import router as agent_router
+from app.routes.schedule import router as schedule_router
+from app.routes.schedule_instance import router as schedule_instance_router
 
 # Close Docs url in fast api 
 app = FastAPI(
@@ -37,6 +39,10 @@ app.include_router(airline_router)
 app.include_router(route_router)
 app.include_router(flight_router)
 app.include_router(agent_router)
+app.include_router(schedule_router)
+app.include_router(schedule_instance_router)
+
+
 # Define user name and password 
 security = HTTPBasic()
 SWAGGER_USER = "bh_admin"
