@@ -303,7 +303,7 @@ def update_schedule_instance(id: int, data: InstanceUpdate, db: Session = Depend
                 "success": False,
                 "message": "Pricing update rejected",
                 "data": None,
-                "error": {"code": "FLIGHT_CANCELLED", "details": "Cannot update pricing for a cancelled flight."}
+                "error": {"code": "FLIGHT_CANCELLED", "details": "Cannot update pricing for a cancelled flight.Please make this to scheduled first before updating the price."}
             }
 
         if data.override_economy_price is not None:

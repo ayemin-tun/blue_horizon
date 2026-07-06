@@ -16,7 +16,7 @@ import { toast } from "@/services/store/alertStore";
 export default function SchedulePage() {
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
-    const LIMIT = 5;
+    const LIMIT = 8;
 
     const formatDateForApi = (dateStr: string) => {
         if (!dateStr) return undefined;
