@@ -357,7 +357,7 @@ def resolve_password_request(
     background_tasks: BackgroundTasks, 
     db: Session = Depends(get_db)
 ):
-    # 1. Password Request ကို ရှာခြင်း
+    # Find Password Request Record by ID and Ensure it's Not Deleted
     request_record = db.query(models.PasswordResetRequest).filter(
         models.PasswordResetRequest.id == request_id,
         models.PasswordResetRequest.is_deleted == 0
@@ -369,17 +369,17 @@ def resolve_password_request(
     if request_record.status.upper() == "RESOLVED":
         return {"success": False, "message": "Already resolved", "error": {"code": "ALREADY_RESOLVED"}}
 
-    # 2. Database ထဲမှာ ရှိတဲ့ User ကို ရှာခြင်း
+    # Search User in db
     db_user = db.query(models.User).filter(
         models.User.email == request_record.email,
         models.User.is_deleted == 0
     ).first()
 
-    # **အရေးကြီးချက်**: Database မှာ user မရှိရင် လုံးဝ Email မပို့ပါနဲ့
+    
     if not db_user:
         return {"success": False, "message": "User not found in database", "error": {"code": "USER_NOT_FOUND"}}
 
-    # 3. Email လိပ်စာ မှန်/မမှန် စစ်ဆေးခြင်း (Deliverability)
+    # check email address is correct format 
     try:
         validate_email(db_user.email, check_deliverability=True)
     except EmailNotValidError:
@@ -389,7 +389,7 @@ def resolve_password_request(
             "error": {"code": "INVALID_EMAIL", "details": "The recipient email is not reachable."}
         }
 
-    # 4. Password Update လုပ်ခြင်း
+    # 4. Password Update 
     hashed_pwd = get_password_hash(payload.new_password)
     db_user.password = hashed_pwd
     request_record.status = "RESOLVED"
@@ -399,7 +399,7 @@ def resolve_password_request(
     db.refresh(db_user)
     db.refresh(request_record)
 
-    # 5. Email ပို့ခြင်း (Background Task နဲ့ ပို့ပါ)
+    #Email send with background task
     background_tasks.add_task(
         send_email_notification, 
         email=db_user.email, 
@@ -409,6 +409,6 @@ def resolve_password_request(
 
     return {
         "success": True,
-        "message": "Password reset successfully and email notification queued.",
+        "message": "Password reset successfully and email notification send to request email.",
         "data": {"request_id": request_record.id, "email": db_user.email}
     }
