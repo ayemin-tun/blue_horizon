@@ -37,7 +37,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
     },
     {
       id: "schedule",
-      label: "Today Schedule",
+      label: "Active Schedule",
       path: "/admin/today_schedule",
       icon: (
         <svg className="w-4 h-4 relative " viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
