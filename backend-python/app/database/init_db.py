@@ -169,6 +169,17 @@ def init_database():
         FOREIGN KEY (admin_id) REFERENCES USERS(user_id)
     )''')
 
+    # 9. PASSWORD_RESET_REQUESTS Table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS PASSWORD_RESET_REQUESTS (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        status TEXT CHECK(status IN ('PENDING', 'RESOLVED')) DEFAULT 'PENDING' NOT NULL, 
+        is_deleted INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )''')
+
     # ---------------------------------------------------------
     # 🚀 Insert Mock Data
     # ---------------------------------------------------------
