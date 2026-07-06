@@ -30,11 +30,6 @@ export interface PaginatedAirlineResponse {
   pagination: PaginationInfo;
 }
 
-// Auth Header Helper
-function authHeader(): Record<string, string> {
-  const token = useAuthStore.getState().getValidToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 
 // --1. get Mutation hook (Get) --
@@ -58,7 +53,7 @@ export function useCreateAirlineMutation() {
   
   return useMutation({
     mutationFn: (payload: AirlinePayload) => 
-      api.post<Airline>('/api/airlines/', payload, { headers: authHeader() }),
+      api.post<Airline>('/api/airlines/', payload, { requiresAuth: true }),
     onSuccess: (res) => {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ['airlines'], exact: false });
@@ -73,7 +68,7 @@ export function useUpdateAirlineMutation() {
   
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: AirlinePayload }) => 
-      api.put<Airline>(`/api/airlines/${id}`, payload, { headers: authHeader() }),
+      api.put<Airline>(`/api/airlines/${id}`, payload, { requiresAuth: true }),
     onSuccess: (res) => {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ['airlines'], exact: false });
@@ -88,7 +83,7 @@ export function useDeleteAirlineMutation() {
   
   return useMutation({
     mutationFn: (id: number) => 
-      api.delete<null>(`/api/airlines/${id}`, { headers: authHeader() }),
+      api.delete<null>(`/api/airlines/${id}`, { requiresAuth: true }),
     onSuccess: (res) => {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ['airlines'], exact: false });
