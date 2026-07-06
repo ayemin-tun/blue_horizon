@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status,Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Any, Optional
@@ -38,7 +38,7 @@ def register_user(user_data: RegisterSchema, db: Session = Depends(get_db)):
     #check email is already register
     db_user = db.query(models.User).filter(
         models.User.email == user_data.email,
-        models.User.is_deleted == 0 # 🌟 ဒီတစ်လိုင်း တိုးပေးပါ
+        models.User.is_deleted == 0
     ).first()
     
     if db_user:
@@ -230,73 +230,81 @@ def forgot_password_request(request_data: ForgotPasswordSchema, db: Session = De
 
 @router.get("/admin/password-requests", response_model=ApiResponse)
 def get_all_password_requests(
-    page: int = 1, 
+    skip: int = 0, 
     limit: int = 10, 
-    status: Optional[str] = None,
-    search: Optional[str] = None, 
+    status: Optional[str] = Query(None),
+    search: Optional[str] = Query(None), 
     db: Session = Depends(get_db)
 ):
-    pending_count = db.query(models.PasswordResetRequest).filter(
-        models.PasswordResetRequest.status == "PENDING",
-        models.PasswordResetRequest.is_deleted == 0
-    ).count()
-
-    resolved_count = db.query(models.PasswordResetRequest).filter(
-        models.PasswordResetRequest.status == "RESOLVED",
-        models.PasswordResetRequest.is_deleted == 0
-    ).count()
-
-    base_query = db.query(models.PasswordResetRequest, models.User.username).\
+    try:
+        # Base Query
+        base_query = db.query(models.PasswordResetRequest, models.User.username, models.User.phone_no).\
         outerjoin(models.User, (models.User.email == models.PasswordResetRequest.email) & (models.User.is_deleted == 0)).\
         filter(models.PasswordResetRequest.is_deleted == 0)
 
-    if status:
-        # Normalize status input to uppercase for case-insensitive filtering
-        # Examples: 'pending', 'Pending', 'PENDING' -> all become 'PENDING'
-        # Examples: 'resolved', 'Resolved', 'RESOLVED' -> all become 'RESOLVED'
-        formatted_status = status.strip().upper()
-        base_query = base_query.filter(models.PasswordResetRequest.status == formatted_status)
-    if search:
-        base_query = base_query.filter(
-            (models.PasswordResetRequest.email.contains(search)) |
-            (models.User.username.contains(search))
-        )
+        # Apply Filters
+        if status:
+            base_query = base_query.filter(models.PasswordResetRequest.status == status.strip().upper())
+            
+        if search:
+            search_filter = f"%{search.strip()}%"
+            base_query = base_query.filter(
+                (models.PasswordResetRequest.email.like(search_filter)) | 
+                (models.User.username.like(search_filter))
+            )
 
-    total_items = base_query.count()
-    offset = (page - 1) * limit
-    
-    results = base_query.order_by(models.PasswordResetRequest.id.desc()).offset(offset).limit(limit).all()
+        # Metrics Calculation
+        total_pending = db.query(models.PasswordResetRequest).filter(models.PasswordResetRequest.status == "PENDING", models.PasswordResetRequest.is_deleted == 0).count()
+        total_resolved = db.query(models.PasswordResetRequest).filter(models.PasswordResetRequest.status == "RESOLVED", models.PasswordResetRequest.is_deleted == 0).count()
+        
+        # Filtered Total Count (for pagination)
+        total_items = base_query.count()
+        
+        # Fetch Paginated Data
+        requests = base_query.order_by(models.PasswordResetRequest.id.desc()).offset(skip).limit(limit).all()
 
-    formatted_list = []
-    for request, username in results:
-        formatted_list.append({
-            "id": request.id,
-            "email": request.email,
-            "username": username or "Unknown Agent",
-            "status": request.status,
-            "created_at": request.created_at,
-            "updated_at": request.updated_at
-        })
+        # Data Mapping
+        formatted_requests = [
+            {
+                "id": req.id,
+                "email": req.email,
+                "username": user_name or "Unknown Agent",
+                "phone_no": phone_no or "-", 
+                "status": req.status,
+                "created_at": req.created_at.strftime("%d/%m/%Y %H:%M") if req.created_at else "-",
+                "updated_at": req.updated_at.strftime("%d/%m/%Y %H:%M") if req.updated_at else "-"
+            } for req, user_name, phone_no in requests
+        ]
 
-    return {
-        "success": True,
-        "message": "Password requests retrieved successfully",
-        "data": {
-            "requests": formatted_list,
-            "metrics": {
-                "total_pending": pending_count,
-                "total_resolved": resolved_count,
-                "total_all": pending_count + resolved_count
+        return {
+            "success": True,
+            "message": "Password requests retrieved successfully",
+            "data": {
+                "metrics": {
+                    "total_pending": total_pending,
+                    "total_resolved": total_resolved,
+                    "total_all": total_pending + total_resolved
+                },
+                "requests": formatted_requests,
+                "pagination": {
+                    "total": total_items, 
+                    "skip": skip,
+                    "limit": limit
+                }
             },
-            "pagination": {
-                "page": page,
-                "limit": limit,
-                "total_items": total_items
-            }
-        },
-        "error": None
-    }
+            "error": None
+        }
 
+    except Exception as e:
+        return {
+            "success": False,
+            "message": "Failed to fetch password requests",
+            "data": None,
+            "error": {
+                "code": "SERVER_ERROR",
+                "details": str(e)
+            }
+        }
 
 @router.get("/admin/password-requests/{request_id}", response_model=ApiResponse)
 def get_password_request_detail(request_id: int, db: Session = Depends(get_db)):
@@ -323,6 +331,7 @@ def get_password_request_detail(request_id: int, db: Session = Depends(get_db)):
         "updated_at": request.updated_at,
         "user_details": {
             "username": user.username if user else "Unknown Agent",
+            "phone_no": user.phone_no if user else '-',
             "role": user.role if user else None,
             "status": user.status if user else None,
             "joined_date": user.joined_date if user else None
@@ -336,6 +345,7 @@ def get_password_request_detail(request_id: int, db: Session = Depends(get_db)):
         "error": None
     }
 # --- Request Schema for Resolving Password ---
+
 class ResolvePasswordSchema(BaseModel):
     new_password: str
 
@@ -395,6 +405,8 @@ def resolve_password_request(
 
     # 5. Commit all changes to the database atomically
     db.commit()
+    db.refresh(db_user) 
+    db.refresh(request_record)
 
     return {
         "success": True,

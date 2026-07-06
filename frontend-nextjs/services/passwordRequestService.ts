@@ -6,6 +6,7 @@ export interface PasswordRequest {
   id: number;
   email: string;
   username: string;
+  phone_no: string;
   status: 'PENDING' | 'RESOLVED';
   created_at: string;
   updated_at: string;
@@ -21,12 +22,12 @@ export interface PaginatedPasswordResponse {
   success: boolean;
   message: string;
   data: {
-    requests: PasswordRequest[];
     metrics: PasswordMetrics;
+    requests: PasswordRequest[];
     pagination: {
-      page: number;
+      total: number;
+      skip: number;
       limit: number;
-      total_items: number;
     };
   };
   error: any;
@@ -41,25 +42,32 @@ export const usePasswordRequestsQuery = (page: number, limit: number, search: st
   return useQuery({
     queryKey: ['passwordRequests', page, limit, search, status],
     queryFn: async () => {
-      let url = `/admin/password-requests?page=${page}&limit=${limit}`;
-      if (status) url += `&status=${status}`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-
-      const response = await api.get(url, { headers: authHeader() });
-      return response as PaginatedPasswordResponse;
+      const skip = (page - 1) * limit;
+      let url = `/api/admin/password-requests?skip=${skip}&limit=${limit}&search=${encodeURIComponent(search)}`;
+      if (status) {
+        url += `&status=${encodeURIComponent(status)}`;
+      }
+      const response = await api.get(url);
+      return response;
     },
   });
 };
+
+// ─── 2. Resolve Password Request Mutation (PATCH) ──────────────────────────
+export interface ResolvePasswordPayload {
+  new_password: string;
+}
 
 export function useResolvePasswordRequestMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, new_password }: { id: number; new_password: string }) =>
-      api.patch(`/admin/password-requests/${id}/resolve`, { new_password }, { headers: authHeader() }),
+    mutationFn: ({ id, payload }: { id: number; payload: ResolvePasswordPayload }) =>
+      api.patch(`/api/admin/password-requests/${id}/resolve`, payload, { headers: authHeader() }),
+    
     onSuccess: (res) => {
       if (res.success) {
-        queryClient.invalidateQueries({ queryKey: ['passwordRequests'], exact: false });
+         queryClient.invalidateQueries({ queryKey: ['passwordRequests'], exact: false });
       }
     },
   });
