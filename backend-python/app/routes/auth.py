@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Depends, status,Query
+from fastapi import APIRouter, BackgroundTasks, Depends, status,Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Any, Optional
-
+from email_validator import validate_email, EmailNotValidError
 from app.database.database import get_db
 from app.database import models
 from app.utils.auth_utils import get_password_hash, verify_password, create_access_token
 from datetime import datetime
-
+from app.utils.reset_email_sender import send_email_notification
 router = APIRouter(
     prefix="/api",
     tags=["Authentication"]
@@ -354,68 +354,61 @@ class ResolvePasswordSchema(BaseModel):
 def resolve_password_request(
     request_id: int, 
     payload: ResolvePasswordSchema, 
+    background_tasks: BackgroundTasks, 
     db: Session = Depends(get_db)
 ):
-    # 1. Find the password reset request by ID and check if it's active
+    # 1. Password Request ကို ရှာခြင်း
     request_record = db.query(models.PasswordResetRequest).filter(
         models.PasswordResetRequest.id == request_id,
         models.PasswordResetRequest.is_deleted == 0
     ).first()
 
-    # If the request record doesn't exist
     if not request_record:
-        return {
-            "success": False,
-            "message": "Action failed",
-            "data": None,
-            "error": {"code": "REQUEST_NOT_FOUND", "details": "The password request ID does not exist."}
-        }
+        return {"success": False, "message": "Request ID not found", "error": {"code": "REQUEST_NOT_FOUND"}}
 
-    # If the request has already been resolved before
     if request_record.status.upper() == "RESOLVED":
-        return {
-            "success": False,
-            "message": "Action failed",
-            "data": None,
-            "error": {"code": "REQUEST_ALREADY_RESOLVED", "details": "This request has already been processed and resolved."}
-        }
+        return {"success": False, "message": "Already resolved", "error": {"code": "ALREADY_RESOLVED"}}
 
-    # 2. Find the user associated with this request's email
+    # 2. Database ထဲမှာ ရှိတဲ့ User ကို ရှာခြင်း
     db_user = db.query(models.User).filter(
         models.User.email == request_record.email,
         models.User.is_deleted == 0
     ).first()
 
-    # If the user is missing or deleted in the database
+    # **အရေးကြီးချက်**: Database မှာ user မရှိရင် လုံးဝ Email မပို့ပါနဲ့
     if not db_user:
+        return {"success": False, "message": "User not found in database", "error": {"code": "USER_NOT_FOUND"}}
+
+    # 3. Email လိပ်စာ မှန်/မမှန် စစ်ဆေးခြင်း (Deliverability)
+    try:
+        validate_email(db_user.email, check_deliverability=True)
+    except EmailNotValidError:
         return {
-            "success": False,
-            "message": "Action failed",
-            "data": None,
-            "error": {"code": "USER_NOT_FOUND", "details": "The user associated with this email was not found."}
+            "success": False, 
+            "message": "Invalid email address detected", 
+            "error": {"code": "INVALID_EMAIL", "details": "The recipient email is not reachable."}
         }
 
-    # 3. Hash the new password provided by Admin and update the user record
+    # 4. Password Update လုပ်ခြင်း
     hashed_pwd = get_password_hash(payload.new_password)
     db_user.password = hashed_pwd
-
-    # 4. Update the request status to RESOLVED and capture the timestamp
     request_record.status = "RESOLVED"
     request_record.updated_at = datetime.now()
 
-    # 5. Commit all changes to the database atomically
     db.commit()
-    db.refresh(db_user) 
+    db.refresh(db_user)
     db.refresh(request_record)
+
+    # 5. Email ပို့ခြင်း (Background Task နဲ့ ပို့ပါ)
+    background_tasks.add_task(
+        send_email_notification, 
+        email=db_user.email, 
+        username=db_user.username,
+        temp_password=payload.new_password
+    )
 
     return {
         "success": True,
-        "message": "Password has been successfully reset and request marked as RESOLVED.",
-        "data": {
-            "request_id": request_record.id,
-            "email": request_record.email,
-            "status": request_record.status,
-            "updated_at": request_record.updated_at
-        },
-        "error": None
+        "message": "Password reset successfully and email notification queued.",
+        "data": {"request_id": request_record.id, "email": db_user.email}
     }
