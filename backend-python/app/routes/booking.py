@@ -1,0 +1,96 @@
+from fastapi import APIRouter, Depends, status, HTTPException
+from sqlalchemy.orm import Session
+from app.database.database import get_db
+from app.database import models
+from typing import List
+from app.schemas.booking_schema import ApiResponse
+from datetime import datetime
+
+router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
+
+"""
+Search Flight API
+-----------------
+This endpoint allows users to search for available flight instances based on the travel date, 
+departure city, and arrival city. 
+
+Business Logic applied:
+1. Filters flights based on provided search criteria and active status.
+2. If the search date is today, it filters out flights that have already departed.
+3. Excludes flights where the total number of occupied seats reaches or exceeds total capacity.
+4. Calculates flight duration based on departure and arrival times.
+"""
+
+@router.get("/search", response_model=ApiResponse)
+def search_flights(
+    date: str,
+    departure_city: str,
+    arrival_city: str,
+    db: Session = Depends(get_db)
+):
+    # for case sensitive join use like 
+    results = db.query(
+        models.FlightInstance, models.RouteSchedule, models.Route, models.Flight, models.Airline
+    ).join(models.RouteSchedule, models.FlightInstance.schedule_id == models.RouteSchedule.schedule_id
+    ).join(models.Route, models.RouteSchedule.route_id == models.Route.route_id
+    ).join(models.Flight, models.RouteSchedule.flight_id == models.Flight.flight_id
+    ).join(models.Airline, models.Flight.airline_id == models.Airline.airline_id
+    ).filter(
+        models.FlightInstance.flight_date == date.strip(),
+        models.Route.departure_city.ilike(departure_city.strip()),
+        models.Route.arrival_city.ilike(arrival_city.strip()),
+        models.FlightInstance.is_deleted == 0,
+        models.FlightInstance.status == 'SCHEDULED'
+    ).all()
+
+    flight_data = []
+    now = datetime.now()
+    today_str = now.strftime("%d/%m/%Y")
+
+    for instance, schedule, route, flight, airline in results:
+        # A. Time Check
+        if instance.flight_date == today_str:
+            departure_time = datetime.strptime(instance.base_departure_time, "%H:%M").time()
+            if departure_time < now.time():
+                continue
+
+        # B. Seat Check
+        total_seats = flight.total_seats
+        occupied = instance.economy_seats_occupied + instance.business_seats_occupied
+        if occupied >= total_seats:
+            continue
+
+        # C. Duration Calculation (Using base times from instance)
+        fmt = "%H:%M"
+        d_time = datetime.strptime(instance.base_departure_time, fmt)
+        a_time = datetime.strptime(instance.base_arrival_time, fmt)
+        duration = a_time - d_time
+        duration_str = str(duration)
+
+        # D. Append Data
+        flight_data.append({
+            "airline_name": airline.airline_name,
+            "flight_no": flight.flight_no,
+            "departure_time": instance.base_departure_time,
+            "arrival_time": instance.base_arrival_time,
+            "duration": duration_str,
+            "departure_city": route.departure_city,
+            "arrival_city": route.arrival_city,
+            "economy_price": instance.override_economy_price or instance.base_economy_price,
+            "business_price": instance.override_business_price or instance.base_business_price,
+            "seats_available": max(0, total_seats - occupied)
+        })
+
+    # Response Logic
+    if not flight_data:
+        return ApiResponse(
+            success=False, 
+            message="No flights found", 
+            data=[]
+        )
+
+    return ApiResponse(
+        success=True, 
+        message="Flights found", 
+        data=flight_data
+        )
