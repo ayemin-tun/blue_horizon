@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import RouteSelect from "./RouteSelect";
 import { useCitiesQuery } from "@/services/BookingService";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuthStore } from "@/services/store/authStore";
+import { toast } from "@/services/store/alertStore";
 
 interface FlightSearchFormProps {
   variant?: "vertical" | "horizontal";
@@ -13,6 +15,7 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
   const { data, isLoading } = useCitiesQuery();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const authStore = useAuthStore();
 
   const getTodayDate = () => {
     return new Date().toISOString().split("T")[0];
@@ -60,6 +63,24 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ── Auth check ──────────────────────────────────────────────────────
+    const token = authStore.getValidToken();
+    const role = authStore.role;
+
+    if (!token) {
+      toast.error("Please log in to search and book flights.");
+      router.push("/login");
+      return;
+    }
+
+    if (role === "admin") {
+      toast.warning("Admins cannot book flights. Redirecting to dashboard.");
+      router.push("/admin/dashboard");
+      return;
+    }
+
+    // ── Proceed to search ──────────────────────────────────────────────
     const formattedDate = departureDate.split("-").reverse().join("/");
     const query = new URLSearchParams({
       date: formattedDate,

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react"; 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { FlightResult } from "@/services/BookingService";
+import { useBookingStore } from "@/services/store/bookingStore";
 
 interface FlightCardProps {
   flight: FlightResult;
-  onBook?: (flight: FlightResult) => void;
-  onBusinessSelect?: (flight: FlightResult) => void;
 }
 
 // Duration formatter
@@ -18,9 +18,16 @@ export const formatDuration = (duration: string) => {
   return parts.join(" ") || duration;
 };
 
-export default function FlightCard({ flight, onBook, onBusinessSelect }: FlightCardProps) {
+export default function FlightCard({ flight }: FlightCardProps) {
   const lowSeats = flight.seats_available <= 5;
-  const [isDetailOpen, setIsDetailOpen] = useState(false); 
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const router = useRouter();
+  const setFlight = useBookingStore((s) => s.setFlight);
+
+  const handleBook = (seatClass: "economy" | "business") => {
+    setFlight(flight, seatClass);
+    router.push("/choose-seat");
+  };
 
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 sm:p-6 hover:shadow-md transition space-y-4">
@@ -74,8 +81,7 @@ export default function FlightCard({ flight, onBook, onBusinessSelect }: FlightC
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Economy</p>
               <p className="text-lg font-bold text-blue-900 mt-0.5">MMK {flight.economy_price.toLocaleString()}</p>
             </div>
-            <p className={`text-[10px] font-bold mt-1 px-2 py-0.5 rounded sm:bg-transparent ${lowSeats ? "text-amber-600 bg-amber-50" : "text-emerald-600 bg-emerald-50"
-              }`}>
+            <p className={`text-[10px] font-bold mt-1 px-2 py-0.5 rounded sm:bg-transparent ${lowSeats ? "text-amber-600 bg-amber-50" : "text-emerald-600 bg-emerald-50"}`}>
               {flight.seats_available} seats left
             </p>
           </div>
@@ -83,13 +89,13 @@ export default function FlightCard({ flight, onBook, onBusinessSelect }: FlightC
           {/* Action Buttons */}
           <div className="w-full sm:w-36 shrink-0 flex flex-row sm:flex-col gap-2">
             <button
-              onClick={() => onBook?.(flight)}
+              onClick={() => handleBook("economy")}
               className="flex-1 sm:w-full bg-blue-900 text-white font-bold py-2.5 rounded-md text-[10px] uppercase hover:bg-blue-950 transition tracking-wider active:scale-95"
             >
               Book
             </button>
             <button
-              onClick={() => onBusinessSelect?.(flight)}
+              onClick={() => handleBook("business")}
               className="flex-1 sm:w-full border border-blue-900 text-blue-900 font-bold rounded-md py-2 sm:py-1.5 text-[10px] uppercase hover:bg-blue-50 transition tracking-wider active:scale-95"
             >
               Business <span className="sm:block lg:inline block font-medium">({flight.business_price.toLocaleString()})</span>
@@ -101,8 +107,7 @@ export default function FlightCard({ flight, onBook, onBusinessSelect }: FlightC
 
       {/* Flight Detail Panel */}
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${isDetailOpen ? "max-h-40 opacity-100 border-t border-slate-100 pt-4 mt-4" : "max-h-0 opacity-0"
-          }`}
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${isDetailOpen ? "max-h-40 opacity-100 border-t border-slate-100 pt-4 mt-4" : "max-h-0 opacity-0"}`}
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
           {/* flight date */}
@@ -142,7 +147,7 @@ export default function FlightCard({ flight, onBook, onBusinessSelect }: FlightC
       <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
         <button
           type="button"
-          onClick={() => setIsDetailOpen(!isDetailOpen)} // နှိပ်ရင် ပြောင်းမယ်
+          onClick={() => setIsDetailOpen(!isDetailOpen)}
           className="text-xs font-semibold text-blue-900 hover:text-blue-950 transition flex items-center gap-1.5 select-none"
         >
           Flight Detail
