@@ -1,4 +1,5 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, status,Query
+from fastapi import APIRouter, BackgroundTasks, Depends, status, Query, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Any, Optional
@@ -138,6 +139,39 @@ def login_user(login_data: LoginSchema, db: Session = Depends(get_db)):
         },
         "error": None
     }
+
+
+# --- 3. SWAGGER OAUTH2 TOKEN ENDPOINT ---
+# This endpoint is required for Swagger UI's built-in "Authorize" button to work.
+# It accepts form-encoded username/password and returns the standard OAuth2 token response.
+@router.post("/token", include_in_schema=False)
+def swagger_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    """OAuth2-compatible token endpoint used by Swagger UI Authorize button.
+    Username field = email, Password field = password."""
+    db_user = db.query(models.User).filter(
+        models.User.email == form_data.username,
+        models.User.is_deleted == 0
+    ).first()
+
+    if not db_user or not verify_password(form_data.password, db_user.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if db_user.status != "ACTIVE":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive. Contact the administrator.",
+        )
+
+    access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role})
+    return {"access_token": access_token, "token_type": "bearer"}
+
 
 # =====================================================================
 #  NEW CODES FOR FORGOT PASSWORD 

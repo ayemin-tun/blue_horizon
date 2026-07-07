@@ -64,8 +64,15 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
 async def get_documentation(username: str = Depends(get_current_username)):
     return get_swagger_ui_html(
         openapi_url="/openapi.json",
-        title="Blue Horizon - Secured Swagger UI"
+        title="Blue Horizon - Secured Swagger UI",
+        oauth2_redirect_url="/docs/oauth2-redirect",
+        swagger_ui_parameters={"persistAuthorization": True},
     )
+
+@app.get("/docs/oauth2-redirect", include_in_schema=False)
+async def swagger_oauth2_redirect(username: str = Depends(get_current_username)):
+    from fastapi.openapi.docs import get_swagger_ui_oauth2_redirect_html
+    return get_swagger_ui_oauth2_redirect_html()
 
 @app.get("/openapi.json", include_in_schema=False)
 async def get_open_api_endpoint(username: str = Depends(get_current_username)):
