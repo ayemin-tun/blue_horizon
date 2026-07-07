@@ -6,6 +6,24 @@ import { useCitiesQuery } from "@/services/BookingService";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/services/store/authStore";
 import { toast } from "@/services/store/alertStore";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+// ─── Helpers: departureDate is stored as "YYYY-MM-DD" string ──────────────
+function parseDateString(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+function formatDateString(date: Date | null): string {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 interface FlightSearchFormProps {
   variant?: "vertical" | "horizontal";
@@ -17,8 +35,18 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
   const searchParams = useSearchParams();
   const authStore = useAuthStore();
 
+  // NOTE: Avoid `new Date().toISOString()` here — it converts to UTC first,
+  // which rolls the date back by one day for timezones ahead of UTC
+  // (e.g. Myanmar/Singapore, UTC+6:30 / +8) whenever UTC midnight hasn't
+  // happened yet even though it's already "tomorrow" locally. Build the
+  // string from local date parts instead so it always matches the user's
+  // wall-clock date.
   const getTodayDate = () => {
-    return new Date().toISOString().split("T")[0];
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   };
 
   const parseUrlDate = (urlDate: string | null) => {
@@ -103,13 +131,19 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
       }`}
     >
       {/* Departure Date Input */}
-      <div className={isHorizontal ? "w-[20%]" : "w-full"}>
+      <div className={`departure-date-field ${isHorizontal ? "w-[20%]" : "w-full"}`}>
         <label className="block text-xs font-bold text-slate-800 mb-2">Departure Date</label>
-        <input
-          type="date"
-          value={departureDate}
-          min={getTodayDate()}
-          onChange={(e) => setDepartureDate(e.target.value)}
+        <DatePicker
+          selected={parseDateString(departureDate)}
+          onChange={(date: Date | null) => setDepartureDate(formatDateString(date))}
+          minDate={parseDateString(getTodayDate()) ?? undefined}
+          dateFormat="dd/MM/yyyy"
+          placeholderText="Select date"
+          showMonthDropdown
+          showYearDropdown
+          dropdownMode="select"
+          wrapperClassName="w-full"
+          autoComplete="off"
           className="w-full border border-slate-200 rounded-md p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-800"
         />
       </div>

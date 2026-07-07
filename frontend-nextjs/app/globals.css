@@ -24,3 +24,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Add this to your global CSS (e.g. globals.css) so the DatePicker
+   input fills its wrapper and matches the other form fields exactly. */
+
+.dob-field .react-datepicker-wrapper {
+  width: 100%;
+  display: block;
+}
+
+.dob-field .react-datepicker__input-container {
+  width: 100%;
+}
+
+.dob-field .react-datepicker__input-container input {
+  width: 100%;
+}

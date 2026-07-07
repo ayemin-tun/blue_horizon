@@ -2,7 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { useBookingStore, PassengerInfo } from "@/services/store/bookingStore";
+
+// ─── Helpers: PassengerInfo.dob is stored as "YYYY-MM-DD" string ──────────
+function parseDob(dob: string): Date | null {
+  if (!dob) return null;
+  const [y, m, d] = dob.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+function formatDob(date: Date | null): string {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 // ─── Single Passenger Form Card ───────────────────────────────────────────
 interface PassengerFormProps {
@@ -69,17 +87,25 @@ function PassengerForm({ index, seatLabel, value, onChange }: PassengerFormProps
           />
         </div>
 
-        {/* Date of Birth */}
-        <div>
+        {/* Date of Birth — react-datepicker (fixes Safari native date input bugs) */}
+        <div className="dob-field">
           <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
             Date of Birth <span className="text-rose-500">*</span>
           </label>
-          <input
-            type="date"
-            value={value.dob}
-            max={new Date().toISOString().split("T")[0]}
-            onChange={(e) => handleField("dob", e.target.value)}
+          <DatePicker
+            selected={parseDob(value.dob)}
+            onChange={(date: Date | null) => handleField("dob", formatDob(date))}
+            maxDate={new Date()}
+            placeholderText="Select date"
+            dateFormat="dd/MM/yyyy"
+            showYearDropdown
+            showMonthDropdown
+            dropdownMode="select"
+            yearDropdownItemNumber={100}
+            scrollableYearDropdown
+            wrapperClassName="w-full"
             className={inputClass}
+            autoComplete="off"
           />
         </div>
 
@@ -108,6 +134,7 @@ function PassengerForm({ index, seatLabel, value, onChange }: PassengerFormProps
           <input
             type="tel"
             placeholder="e.g. 09-XXXXXXXXX"
+            autoComplete="off"
             value={value.phone}
             onChange={(e) => handleField("phone", e.target.value)}
             className={inputClass}
