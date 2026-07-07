@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database import models
@@ -40,14 +40,16 @@ Business Logic applied:
 4. Calculates flight duration based on departure and arrival times.
 """
 
-@router.get("/search", response_model=ApiResponse)
+@router.get("/search") 
 def search_flights(
     date: str,
     departure_city: str,
     arrival_city: str,
+    skip: int = Query(0, ge=0),   
+    limit: int = Query(5, ge=1),  
     db: Session = Depends(get_db)
 ):
-    # for case sensitive join use like 
+    # 1. Database Query
     results = db.query(
         models.FlightInstance, models.RouteSchedule, models.Route, models.Flight, models.Airline
     ).join(models.RouteSchedule, models.FlightInstance.schedule_id == models.RouteSchedule.schedule_id
@@ -62,7 +64,7 @@ def search_flights(
         models.FlightInstance.status == 'SCHEDULED'
     ).all()
 
-    flight_data = []
+    all_filtered_flights = [] 
     now = datetime.now()
     today_str = now.strftime("%d/%m/%Y")
 
@@ -79,15 +81,15 @@ def search_flights(
         if occupied >= total_seats:
             continue
 
-        # C. Duration Calculation (Using base times from instance)
+        # C. Duration Calculation
         fmt = "%H:%M"
         d_time = datetime.strptime(instance.base_departure_time, fmt)
         a_time = datetime.strptime(instance.base_arrival_time, fmt)
         duration = a_time - d_time
         duration_str = str(duration)
 
-        # D. Append Data
-        flight_data.append({
+        # D. Append to Array
+        all_filtered_flights.append({
             "airline_name": airline.airline_name,
             "flight_no": flight.flight_no,
             "departure_time": instance.base_departure_time,
@@ -95,21 +97,33 @@ def search_flights(
             "duration": duration_str,
             "departure_city": route.departure_city,
             "arrival_city": route.arrival_city,
+            "flight_date": instance.flight_date,
             "economy_price": instance.override_economy_price or instance.base_economy_price,
             "business_price": instance.override_business_price or instance.base_business_price,
             "seats_available": max(0, total_seats - occupied)
         })
 
-    # Response Logic
-    if not flight_data:
-        return ApiResponse(
-            success=False, 
-            message="No flights found", 
-            data=[]
-        )
+    
+    total_count = len(all_filtered_flights)
 
-    return ApiResponse(
-        success=True, 
-        message="Flights found", 
-        data=flight_data
-        )
+   
+    paginated_flights = all_filtered_flights[skip : skip + limit]
+
+    if not paginated_flights:
+        return {
+            "success": False, 
+            "message": "No flights found", 
+            "data": [],
+            "pagination": {"total": total_count, "skip": skip, "limit": limit}
+        }
+
+    return {
+        "success": True, 
+        "message": "Flights found", 
+        "data": paginated_flights,
+        "pagination": {
+            "total": total_count,
+            "skip": skip,
+            "limit": limit
+        }
+    }

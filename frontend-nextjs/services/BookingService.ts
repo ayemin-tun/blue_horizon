@@ -26,6 +26,7 @@ export interface FlightResult {
   duration: string;
   departure_city: string;
   arrival_city: string;
+  flight_date:string;
   economy_price: number;
   business_price: number;
   seats_available: number;
@@ -37,19 +38,21 @@ export interface FlightSearchResponse {
   data: FlightResult[];
 }
 
-export interface SearchParams {
+interface SearchParams {
   date: string;
   departure_city: string;
   arrival_city: string;
+  skip?: number;  
+  limit?: number;
 }
 
-// ─── Search Mutation Hook ────────────────────────────────────────────────
 export const useSearchFlightsMutation = () => {
   return useMutation<FlightSearchResponse, Error, SearchParams>({
     mutationFn: async (params: SearchParams) => {
-      const { date, departure_city, arrival_city } = params;
+      const { date, departure_city, arrival_city, skip = 0, limit = 5 } = params; 
+
       const response = await api.get(
-        `/api/bookings/search?date=${encodeURIComponent(date)}&departure_city=${encodeURIComponent(departure_city)}&arrival_city=${encodeURIComponent(arrival_city)}`
+        `/api/bookings/search?date=${encodeURIComponent(date)}&departure_city=${encodeURIComponent(departure_city)}&arrival_city=${encodeURIComponent(arrival_city)}&skip=${skip}&limit=${limit}`
       );
       return (response as unknown) as FlightSearchResponse;
     },
