@@ -182,6 +182,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 from app.database import models
+from app.utils.auth_utils import get_current_user
 
 class ForgotPasswordSchema(BaseModel):
     email: EmailStr
@@ -268,6 +269,7 @@ def get_all_password_requests(
     limit: int = 10, 
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None), 
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     try:
@@ -341,7 +343,9 @@ def get_all_password_requests(
         }
 
 @router.get("/admin/password-requests/{request_id}", response_model=ApiResponse)
-def get_password_request_detail(request_id: int, db: Session = Depends(get_db)):
+def get_password_request_detail(request_id: int,
+                                current_user: models.User = Depends(get_current_user),
+                                  db: Session = Depends(get_db)):
     
     result = db.query(models.PasswordResetRequest, models.User).\
         outerjoin(models.User, (models.User.email == models.PasswordResetRequest.email) & (models.User.is_deleted == 0)).\
@@ -389,6 +393,7 @@ def resolve_password_request(
     request_id: int, 
     payload: ResolvePasswordSchema, 
     background_tasks: BackgroundTasks, 
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     # Find Password Request Record by ID and Ensure it's Not Deleted
