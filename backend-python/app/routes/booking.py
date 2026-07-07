@@ -8,6 +8,25 @@ from datetime import datetime
 
 router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
 
+@router.get("/cities")
+def get_cities(db: Session = Depends(get_db)):
+    routes = db.query(models.Route.departure_city, models.Route.arrival_city).all()
+    
+    cities = set()
+    for r in routes:
+        cities.add(r.departure_city)
+        cities.add(r.arrival_city)
+    
+    all_cities = sorted(list(cities))
+    
+    target_city = "Yangon"
+    if target_city in all_cities:
+        all_cities.remove(target_city)    
+        all_cities.insert(0, target_city) 
+    
+    return {"success": True, "cities": all_cities}
+
+
 """
 Search Flight API
 -----------------
