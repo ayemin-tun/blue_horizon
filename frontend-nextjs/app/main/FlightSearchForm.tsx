@@ -35,12 +35,6 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
   const searchParams = useSearchParams();
   const authStore = useAuthStore();
 
-  // NOTE: Avoid `new Date().toISOString()` here — it converts to UTC first,
-  // which rolls the date back by one day for timezones ahead of UTC
-  // (e.g. Myanmar/Singapore, UTC+6:30 / +8) whenever UTC midnight hasn't
-  // happened yet even though it's already "tomorrow" locally. Build the
-  // string from local date parts instead so it always matches the user's
-  // wall-clock date.
   const getTodayDate = () => {
     const now = new Date();
     const y = now.getFullYear();
@@ -92,7 +86,6 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ── Auth check ──────────────────────────────────────────────────────
     const token = authStore.getValidToken();
     const role = authStore.role;
 
@@ -108,7 +101,6 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
       return;
     }
 
-    // ── Proceed to search ──────────────────────────────────────────────
     const formattedDate = departureDate.split("-").reverse().join("/");
     const query = new URLSearchParams({
       date: formattedDate,
@@ -124,14 +116,16 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
   return (
     <form
       onSubmit={handleSearch}
-      className={`bg-white rounded-xl shadow-lg border border-slate-100 transition-all ${
+      /* 💡 ဓာတ်ပုံထဲကပြဿနာကို ဖြေရှင်းရန် Mobile မှာ ဒေါင်လိုက်သွားပြီး 
+         Desktop (md:) ရောက်မှ ဘေးတိုက်တန်းစီဖို့ `flex-col md:flex-row` သုံးပေးထားပါတယ် */
+      className={`bg-white rounded-xl shadow-md border border-slate-100 transition-all ${
         isHorizontal 
-          ? "p-5 flex flex-row items-end gap-4 w-full justify-between" 
-          : "p-8 space-y-6 flex flex-col"
+          ? "p-4 md:p-5 flex flex-col md:flex-row md:items-end gap-4 w-full" 
+          : "p-6 md:p-8 space-y-6 flex flex-col"
       }`}
     >
-      {/* Departure Date Input */}
-      <div className={`departure-date-field ${isHorizontal ? "w-[20%]" : "w-full"}`}>
+      {/* ── ၁။ Departure Date Input ── */}
+      <div className={`departure-date-field w-full ${isHorizontal ? "md:w-[22%]" : "w-full"}`}>
         <label className="block text-xs font-bold text-slate-800 mb-2">Departure Date</label>
         <DatePicker
           selected={parseDateString(departureDate)}
@@ -144,12 +138,12 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
           dropdownMode="select"
           wrapperClassName="w-full"
           autoComplete="off"
-          className="w-full border border-slate-200 rounded-md p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-800"
+          className="w-full border border-slate-200 rounded-md p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-800 bg-white"
         />
       </div>
 
-      {/* Locations Section */}
-      <div className={`flex items-end gap-3 ${isHorizontal ? "flex-1" : "w-full"}`}>
+      {/* ── ၂။ Locations Section (From, Swap, To) ── */}
+      <div className={`flex items-end gap-2 sm:gap-3 w-full ${isHorizontal ? "md:flex-1" : "w-full"}`}>
         {/* From Input */}
         <div className="flex-1">
           <RouteSelect
@@ -161,11 +155,11 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
         </div>
 
         {/* Swap Button */}
-        <div className="pb-1.5">
+        <div className="pb-1">
           <button
             type="button"
             onClick={handleSwapLocations}
-            className="border border-slate-200 text-blue-900 rounded-full w-8 h-8 flex items-center justify-center hover:bg-slate-50 transition active:scale-95 text-sm font-bold"
+            className="border border-slate-200 text-blue-900 rounded-full w-9 h-9 flex items-center justify-center hover:bg-slate-50 transition active:scale-95 text-base font-bold shrink-0 bg-white shadow-sm"
           >
             ⇄
           </button>
@@ -182,11 +176,11 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
         </div>
       </div>
 
-      {/* Submit Button */}
-      <div className={isHorizontal ? "w-[15%] pb-0.5" : "pt-2 w-full"}>
+      {/* ── ၃။ Submit Button ── */}
+      <div className={`w-full ${isHorizontal ? "md:w-[15%] md:pb-0.5" : "pt-2"}`}>
         <button
           type="submit"
-          className="w-full bg-blue-900 hover:bg-blue-950 text-white font-semibold py-3 rounded-md text-xs tracking-widest uppercase transition shadow"
+          className="w-full bg-blue-900 hover:bg-blue-950 text-white font-semibold py-3 rounded-md text-xs tracking-widest uppercase transition shadow-sm cursor-pointer"
         >
           Search
         </button>

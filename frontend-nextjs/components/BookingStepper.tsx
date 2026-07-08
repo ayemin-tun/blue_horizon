@@ -20,28 +20,18 @@ export default function BookingStepper() {
   const currentStep =
     steps.find((step) => step.paths.some((p) => pathname.startsWith(p)))?.id || 1;
 
-  // ─── 💡 Real-time ခလုတ်နှိပ်ခွင့် စစ်ဆေးခြင်း Logic ───
+  // ─── 💡 Real-time ခလုတ်နှိပ်ခွက် စစ်ဆေးခြင်း Logic ───
   const checkIsClickable = (stepId: number) => {
-    // ၁။ လက်ရှိရောက်နေတဲ့ စာမျက်နှာ အဆင့်ဆိုရင် အမြဲနှိပ်လို့ရရမယ်
     if (stepId === currentStep) return true;
-    
-    // ၂။ Step 1 (Select Flight) ကိုတော့ ဘယ်အချိန်ဖြစ်ဖြစ် အမြဲတမ်း ပြန်နှိပ်ခွင့်ပေးမယ်
     if (stepId === 1) return true;
-
-    // ၃။ Step 2 (Choose Seat) ကို သွားဖို့အတွက် Store ထဲမှာ Flight ရွေးထားပြီးသား ဖြစ်ရမယ်
     if (stepId === 2) return !!selectedFlight;
-
-    // ၄။ Step 3 (Fill Info) ကို သွားဖို့အတွက် Seat ရွေးချယ်မှု ရှိထားပြီးသား ဖြစ်ရမယ်
     if (stepId === 3) return !!selectedFlight && selectedSeats.length > 0;
-
-    // ၅။ Step 4 (Generate Ticket) ကို သွားဖို့အတွက် Passenger Form ဖြည့်ပြီးသား ဖြစ်ရမယ်
     if (stepId === 4) {
       const isFormValid = passengers.length > 0 && passengers.every(
         (p) => p.name?.trim() && p.nrc?.trim() && p.dob && p.gender && p.phone?.trim()
       );
       return !!selectedFlight && selectedSeats.length > 0 && isFormValid;
     }
-
     return false;
   };
 
@@ -66,11 +56,11 @@ export default function BookingStepper() {
   };
 
   return (
-    <div className="w-full bg-white border border-slate-100 rounded-xl px-8 py-5 flex items-center justify-between select-none shadow-sm mb-6">
+    <div className="w-full bg-white border border-slate-100 rounded-xl px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between select-none shadow-sm mb-6">
       {steps.map((step, index) => {
         const isActive = step.id === currentStep;
         const isCompleted = step.id < currentStep;
-        const isClickable = checkIsClickable(step.id); // <-- Store data အပေါ်မူတည်ပြီး Dynamic စစ်မယ်
+        const isClickable = checkIsClickable(step.id);
 
         return (
           <div key={step.id} className="flex items-center flex-1 last:flex-none">
@@ -78,15 +68,16 @@ export default function BookingStepper() {
               <button
                 type="button"
                 onClick={() => handleStepClick(step.id)}
-                className="flex items-center gap-3 cursor-pointer group text-left focus:outline-none"
+                title={step.label} // Mobile မှာ label ပုန်းနေချိန် နှိပ်ရင် ဘာ step လဲသိအောင် tooltip ပြပေးခြင်း
+                className="flex items-center gap-2 sm:gap-3 cursor-pointer group text-left focus:outline-none"
               >
                 <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shrink-0 ${
                     isCompleted
                       ? "bg-blue-900 text-white"
                       : isActive
                       ? "bg-blue-100 text-blue-900 ring-2 ring-blue-900/30"
-                      : "bg-blue-50 text-blue-900 border border-blue-100 hover:bg-blue-100" // နှိပ်လို့ရတဲ့ ရှေ့ဆင့်/နောက်ဆင့်တွေကို အရောင်လင်းပေးထားမယ်
+                      : "bg-blue-50 text-blue-900 border border-blue-100 hover:bg-blue-100"
                   }`}
                 >
                   {isCompleted ? (
@@ -107,8 +98,9 @@ export default function BookingStepper() {
                     step.id
                   )}
                 </div>
+                {/* 💡 Mobile မှာ စာသားဖျောက်ထားပြီး `sm:` (Desktop) မှ ဖော်ပေးရန် `hidden sm:inline` သုံးထားပါတယ် */}
                 <span
-                  className={`text-xs font-semibold tracking-wide transition-colors ${
+                  className={`hidden sm:inline text-xs font-semibold tracking-wide transition-colors whitespace-nowrap ${
                     isActive
                       ? "text-blue-900 border-b-2 border-blue-900 pb-0.5"
                       : "text-slate-600 group-hover:text-blue-900"
@@ -118,11 +110,15 @@ export default function BookingStepper() {
                 </span>
               </button>
             ) : (
-              <div className="flex items-center gap-3 opacity-40 cursor-not-allowed">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500">
+              <div 
+                className="flex items-center gap-2 sm:gap-3 opacity-40 cursor-not-allowed"
+                title={step.label}
+              >
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500 shrink-0">
                   {step.id}
                 </div>
-                <span className="text-xs font-semibold tracking-wide text-slate-400">
+                {/* 💡 Mobile မှာ စာသားဖျောက်ရန် */}
+                <span className="hidden sm:inline text-xs font-semibold tracking-wide text-slate-400 whitespace-nowrap">
                   {step.label}
                 </span>
               </div>
@@ -131,7 +127,7 @@ export default function BookingStepper() {
             {/* Connecting line */}
             {index < steps.length - 1 && (
               <div
-                className={`flex-1 mx-5 h-px transition-colors ${
+                className={`flex-1 mx-2 sm:mx-5 h-px transition-colors ${
                   step.id < currentStep ? "bg-blue-900/30" : "bg-slate-200"
                 }`}
               />

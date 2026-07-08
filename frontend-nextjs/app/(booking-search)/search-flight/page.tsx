@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSearchFlightsMutation } from "@/services/BookingService";
 import FlightCard from "./components/FlightCard";
-import FlightSearchForm from "../main/FlightSearchForm";
 import Pagination from "@/components/Pagination";
+import FlightSearchForm from "@/app/main/FlightSearchForm";
 
 export default function TicketBookingPage() {
   const searchParams = useSearchParams();

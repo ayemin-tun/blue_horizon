@@ -19,3 +19,26 @@ export const formatDisplayTime = (timeStr: string | undefined | null): string =>
     return timeStr; 
   }
 };
+
+export const formatDuration = (duration: string) => {
+  const [h, m] = duration.split(":").map(Number);
+  const parts = [];
+  if (h) parts.push(`${h}h`);
+  if (m) parts.push(`${m}min`);
+  return parts.join(" ") || duration;
+};
+
+export const  parseDob = (dob: string): Date | null => {
+  if (!dob) return null;
+  const [y, m, d] = dob.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+export const formatDob = (date: Date | null): string => {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}

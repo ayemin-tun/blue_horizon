@@ -3,42 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBookingStore } from "@/services/store/bookingStore";
-import { formatDuration } from "@/app/search-flight/components/FlightCard";
-
-// ─── Ticket ID Generator ────────────────────────────────────────────────
-function generateTicketId(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let id = "BH-";
-  for (let i = 0; i < 8; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return id;
-}
-
-// ─── Barcode-style visual strip ─────────────────────────────────────────
-function BarcodeStrip({ value }: { value: string }) {
-  // Generate deterministic bar widths from the ticket ID
-  const bars = value
-    .split("")
-    .map((c) => c.charCodeAt(0))
-    .flatMap((code) => [
-      1 + (code % 3),
-      1 + ((code * 7) % 2),
-      1 + ((code * 13) % 3),
-    ]);
-
-  return (
-    <div className="flex items-end gap-px h-12 overflow-hidden">
-      {bars.map((w, i) => (
-        <div
-          key={i}
-          style={{ width: `${w * 2}px`, height: `${60 + ((i * 17) % 20)}%` }}
-          className="bg-blue-900 rounded-sm shrink-0"
-        />
-      ))}
-    </div>
-  );
-}
+import { formatDuration } from "@/utils/timeHelper";
+import { generateTicketId, saveTicketToLocalStorage } from "@/utils/ticketHelper"; 
+import BarcodeStrip from "./components/BarcodeStrip";
 
 // ─── Main Page ────────────────────────────────────────────────────────────
 export default function GenerateTicketPage() {
@@ -57,6 +24,9 @@ export default function GenerateTicketPage() {
   const generatedRef = useRef(false);
   const [isVisible, setIsVisible] = useState(false);
   const [showJson, setShowJson] = useState(false);
+  
+  // UI တွင် JSON Preview ပြသရန် scope သီးသန့် state သတ်မှတ်ခြင်း
+  const [backendPayload, setBackendPayload] = useState<any>(null);
 
   // Redirect guard
   useEffect(() => {
@@ -65,67 +35,33 @@ export default function GenerateTicketPage() {
     }
   }, [selectedFlight, passengers, router]);
 
-  // Generate ticket ID once on mount and persist to store + localStorage
+  // ─── 💡 Ticket ID Generator & LocalStorage Sync (Cleaner Effect) ───
   useEffect(() => {
     if (generatedRef.current) return;
     generatedRef.current = true;
 
     const existingId = useBookingStore.getState().ticketId;
-    let id: string;
+    let id = existingId || generateTicketId();
 
-    if (existingId) {
-      id = existingId;
-    } else {
-      id = generateTicketId();
+    if (!existingId) {
       setTicketId(id);
     }
 
-    const currentFlight = useBookingStore.getState().selectedFlight;
-    const currentClass = useBookingStore.getState().seatClass;
-    const currentSeats = useBookingStore.getState().selectedSeats;
-    const currentPassengers = useBookingStore.getState().passengers;
-    const currentPrice = currentClass === "business" ? currentFlight?.business_price ?? 0 : currentFlight?.economy_price ?? 0;
+    // Helper ကို တစ်ချက်တည်း လှမ်းခေါ်ပြီး အလိုအလျောက် သိမ်းဆည်းစေခြင်း ✨
+    const payload = saveTicketToLocalStorage(id);
+    setBackendPayload(payload);
 
-    // Full booking summary JSON payload (Backend ready)
-    const bookingData = {
-      ticket_id: id,
-      flight_no: currentFlight?.flight_no,
-      airline_name: currentFlight?.airline_name,
-      departure_city: currentFlight?.departure_city,
-      arrival_city: currentFlight?.arrival_city,
-      departure_time: currentFlight?.departure_time,
-      arrival_time: currentFlight?.arrival_time,
-      flight_date: currentFlight?.flight_date,
-      seat_class: currentClass,
-      seat_count: currentPassengers.length,
-      total_price: currentPrice * currentPassengers.length,
-      passengers: currentPassengers.map((p, idx) => ({
-        name: p.name,
-        nrc: p.nrc,
-        dob: p.dob,
-        gender: p.gender,
-        phone: p.phone,
-        seat: currentSeats[idx] || "Auto-Assigned"
-      })),
-      booked_at: new Date().toISOString(),
-    };
-
-    const existing = JSON.parse(
-      localStorage.getItem("bluehorizon-tickets") || "[]"
-    );
-    // Avoid duplicates
-    if (!existing.find((b: { ticket_id: string }) => b.ticket_id === id)) {
-      existing.push(bookingData);
-      localStorage.setItem("bluehorizon-tickets", JSON.stringify(existing));
-    }
-
-    // Animate in
+    // Animate in animation trigger
     setTimeout(() => setIsVisible(true), 100);
   }, [setTicketId]);
 
-  const handleBookAnother = () => {
-    reset();
-    router.push("/");
+
+  const handleBackToInfo = () => {
+    router.push("/fill-info");
+  };
+
+  const handleIssueTicket = () => {
+    alert("Ticket Issued Successfully!");
   };
 
   if (!selectedFlight || !ticketId) return null;
@@ -137,7 +73,7 @@ export default function GenerateTicketPage() {
   const totalPrice = price * seatCount;
 
   const formattedDate = selectedFlight.flight_date
-    ? new Date(selectedFlight.flight_date).toLocaleDateString("en-GB", {
+    ? new Date(selectedFlight.flight_date.split("/").reverse().join("-")).toLocaleDateString("en-GB", {
         weekday: "short",
         day: "2-digit",
         month: "short",
@@ -145,36 +81,13 @@ export default function GenerateTicketPage() {
       })
     : "N/A";
 
-  const backendPayload = {
-    ticket_id: ticketId,
-    flight_no: selectedFlight.flight_no,
-    airline_name: selectedFlight.airline_name,
-    departure_city: selectedFlight.departure_city,
-    arrival_city: selectedFlight.arrival_city,
-    departure_time: selectedFlight.departure_time,
-    arrival_time: selectedFlight.arrival_time,
-    flight_date: selectedFlight.flight_date,
-    seat_class: seatClass,
-    seat_count: seatCount,
-    total_price: totalPrice,
-    passengers: passengers.map((p, idx) => ({
-      name: p.name,
-      nrc: p.nrc,
-      dob: p.dob,
-      gender: p.gender,
-      phone: p.phone,
-      seat: selectedSeats[idx] || "Auto-Assigned"
-    })),
-    booked_at: new Date().toISOString()
-  };
-
   return (
     <div
       className={`space-y-6 transition-all duration-700 ${
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
     >
-      {/* Success Banner */}
+      {/* Ticket Generate Banner */}
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-6 py-4 flex items-center gap-4 print:hidden">
         <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
           <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -182,16 +95,15 @@ export default function GenerateTicketPage() {
           </svg>
         </div>
         <div>
-          <p className="text-sm font-bold text-emerald-800">Booking Confirmed!</p>
+          <p className="text-sm font-bold text-emerald-800">Ticket Generated!</p>
           <p className="text-xs text-emerald-600 mt-0.5">
-            Your ticket has been generated and saved. Please keep your ticket ID safe.
+           "Ready to fly! Please verify your information below. Once confirmed, click 'Issue Ticket' to finalize your booking."
           </p>
         </div>
       </div>
 
       {/* ── Boarding Pass Card ──────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-md overflow-hidden">
-
         {/* Top: Dark Header */}
         <div className="bg-blue-900 px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -260,8 +172,8 @@ export default function GenerateTicketPage() {
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Seats</p>
             <div className="flex flex-wrap gap-1 mt-0.5">
-              {selectedSeats.map((s) => (
-                <span key={s} className="text-[10px] font-bold bg-blue-900 text-white px-2.5 py-0.5 rounded-full">
+              {selectedSeats.map((s, idx) => (
+                <span key={idx} className="text-[10px] font-bold bg-blue-900 text-white px-2.5 py-0.5 rounded-full">
                   Assigned at Check-in
                 </span>
               ))}
@@ -337,14 +249,14 @@ export default function GenerateTicketPage() {
         >
           <span className="flex items-center gap-2">
             <span className="font-mono text-emerald-400">{"{ }"}</span>
-            Backend API Booking JSON Payload (Future Use)
+            Backend API Booking JSON Payload
           </span>
           <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
             {showJson ? "Hide JSON ▲" : "Show JSON ▼"}
           </span>
         </button>
 
-        {showJson && (
+        {showJson && backendPayload && (
           <div className="border-t border-slate-800 p-6 bg-slate-950 font-mono text-[11px] text-slate-300 leading-relaxed overflow-x-auto max-h-[350px]">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80">
               <span className="text-[10px] text-slate-500">Method: POST /api/bookings</span>
@@ -373,7 +285,7 @@ export default function GenerateTicketPage() {
         <p className="text-amber-700">• Ticket ID: <strong className="text-amber-800">{ticketId}</strong></p>
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons
       <div className="flex flex-col sm:flex-row gap-4 pb-8 print:hidden">
         <button
           onClick={() => window.print()}
@@ -392,6 +304,22 @@ export default function GenerateTicketPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
           Book Another Flight
+        </button>
+      </div> */}
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 pb-8">
+        <button
+          onClick={handleBackToInfo}
+          className="w-full flex-1 py-3.5 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-slate-50 transition flex items-center justify-center gap-2"
+        >
+          Back
+        </button>
+        <button
+          onClick={handleIssueTicket}
+          className="flex-1 py-3.5 bg-blue-900 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-blue-950 transition active:scale-95 flex items-center justify-center gap-2"
+        >
+          Issuse Ticket
         </button>
       </div>
     </div>

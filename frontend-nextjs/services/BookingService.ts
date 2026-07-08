@@ -19,6 +19,7 @@ export const useCitiesQuery = () => {
 
 // ─── Search Flight API Interface ──────────────────────────────────────────
 export interface FlightResult {
+  flight_instance_id: number;
   airline_name: string;
   flight_no: string;
   departure_time: string;
@@ -30,6 +31,8 @@ export interface FlightResult {
   economy_price: number;
   business_price: number;
   seats_available: number;
+  economy_seats_available: number; 
+  business_seats_available: number;
 }
 
 export interface FlightSearchResponse {

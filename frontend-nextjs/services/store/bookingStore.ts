@@ -1,6 +1,22 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { FlightResult } from "@/services/BookingService";
+
+export interface FlightResult {
+  flight_instance_id: number; 
+  airline_name: string;
+  flight_no: string;
+  departure_time: string;
+  arrival_time: string;
+  duration: string;
+  departure_city: string;
+  arrival_city: string;
+  flight_date: string;
+  economy_price: number;
+  business_price: number;
+  seats_available: number;
+  economy_seats_available?: number; 
+  business_seats_available?: number;
+}
 
 // ─── Passenger Info ────────────────────────────────────────────────────────
 export interface PassengerInfo {
@@ -70,10 +86,13 @@ export const useBookingStore = create<BookingState>()(
       setSeats: (count, seats) =>
         set((state) => {
           // Preserve existing passenger data when going back/forward
-          const existing = state.passengers;
+          const existing = state.passengers || [];
           const passengers: PassengerInfo[] = Array.from(
             { length: count },
-            (_, i) => existing[i] ?? emptyPassenger()
+            (_, i) => {
+              const current = existing[i];
+              return current && current.name !== undefined ? current : emptyPassenger();
+            }
           );
           return { seatCount: count, selectedSeats: seats, passengers };
         }),

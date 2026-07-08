@@ -39,7 +39,6 @@ Business Logic applied:
 3. Excludes flights where the total number of occupied seats reaches or exceeds total capacity.
 4. Calculates flight duration based on departure and arrival times.
 """
-
 @router.get("/search") 
 def search_flights(
     date: str,
@@ -68,6 +67,9 @@ def search_flights(
     now = datetime.now()
     today_str = now.strftime("%d/%m/%Y")
 
+    # ─── 💡 Business Capacity ကို ပုံသေ ၂၀ သတ်မှတ်ခြင်း ───
+    FIXED_BUSINESS_CAPACITY = 20
+
     for instance, schedule, route, flight, airline in results:
         # A. Time Check
         if instance.flight_date == today_str:
@@ -75,10 +77,18 @@ def search_flights(
             if departure_time < now.time():
                 continue
 
-        # B. Seat Check
+        # ─── 💡 B. Class အလိုက် Capacity နှင့် Available Seat တွက်ချက်ခြင်း ───
         total_seats = flight.total_seats
-        occupied = instance.economy_seats_occupied + instance.business_seats_occupied
-        if occupied >= total_seats:
+        
+        # ၁။ Business အတွက် စုစုပေါင်း ၂၀ ထဲက လက်ရှိ Occupied ကိုနှုတ်မယ်
+        business_available = max(0, FIXED_BUSINESS_CAPACITY - instance.business_seats_occupied)
+        
+        # ၂။ Economy အတွက် ကျန်တဲ့ ခုံအရေအတွက် (Total - 20) ထဲကမှ လက်ရှိ Occupied ကိုနှုတ်မယ်
+        total_economy_capacity = total_seats - FIXED_BUSINESS_CAPACITY
+        economy_available = max(0, total_economy_capacity - instance.economy_seats_occupied)
+
+        # ၃။ အကယ်၍ ခုံနှစ်ခုလုံး (Economy ရော Business ရော) လုံးဝ ပြည့်နေပြီဆိုမှ ဒီ Flight ကို ချန်လှပ်ခဲ့မယ်
+        if economy_available <= 0 and business_available <= 0:
             continue
 
         # C. Duration Calculation
@@ -90,6 +100,7 @@ def search_flights(
 
         # D. Append to Array
         all_filtered_flights.append({
+            "flight_instance_id": instance.instance_id, # 💡 Frontend အတွက် Foreign Key ID ထည့်ပေးထားပါတယ်
             "airline_name": airline.airline_name,
             "flight_no": flight.flight_no,
             "departure_time": instance.base_departure_time,
@@ -100,13 +111,15 @@ def search_flights(
             "flight_date": instance.flight_date,
             "economy_price": instance.override_economy_price or instance.base_economy_price,
             "business_price": instance.override_business_price or instance.base_business_price,
-            "seats_available": max(0, total_seats - occupied)
+            
+            # ─── 💡 Frontend ဘက်မှာ အလွယ်တကူ စစ်ဆေးသုံးစွဲနိုင်အောင် Key သီးသန့်စီ ထုတ်ပေးလိုက်ပါတယ် ───
+            "economy_seats_available": economy_available,
+            "business_seats_available": business_available,
+            # မူလ UI တွေ မပျက်အောင် စုစုပေါင်း လက်ကျန်ခုံကိုပါ ပေါင်းပြပေးထားပါမယ်
+            "seats_available": economy_available + business_available 
         })
 
-    
     total_count = len(all_filtered_flights)
-
-   
     paginated_flights = all_filtered_flights[skip : skip + limit]
 
     if not paginated_flights:

@@ -4,22 +4,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FlightResult } from "@/services/BookingService";
 import { useBookingStore } from "@/services/store/bookingStore";
+import { formatDuration } from "@/utils/timeHelper";
 
 interface FlightCardProps {
   flight: FlightResult;
 }
 
-// Duration formatter
-export const formatDuration = (duration: string) => {
-  const [h, m] = duration.split(":").map(Number);
-  const parts = [];
-  if (h) parts.push(`${h}h`);
-  if (m) parts.push(`${m}min`);
-  return parts.join(" ") || duration;
-};
-
 export default function FlightCard({ flight }: FlightCardProps) {
-  const lowSeats = flight.seats_available <= 5;
+
+  const isEconomyLow = flight.economy_seats_available <= 5;
+  const isBusinessLow = flight.business_seats_available <= 3; //business warning
+
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const router = useRouter();
   const setFlight = useBookingStore((s) => s.setFlight);
@@ -29,6 +24,8 @@ export default function FlightCard({ flight }: FlightCardProps) {
     router.push("/choose-seat");
   };
 
+  console.log("Selected Flight Instance ID:", flight.flight_instance_id); // Debugging console
+  
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 sm:p-6 hover:shadow-md transition space-y-4">
       {/* Main Row Container */}
@@ -76,29 +73,50 @@ export default function FlightCard({ flight }: FlightCardProps) {
         <div className="flex flex-col sm:flex-row items-center justify-between lg:justify-end gap-6 pt-3 lg:pt-0 border-t border-slate-50 lg:border-none w-full lg:w-auto">
 
           {/* Price Box */}
-          <div className="w-full sm:w-36 text-left sm:text-center shrink-0 flex sm:flex-col justify-between items-center sm:justify-center">
+          <div className="w-full sm:w-44 text-left sm:text-center shrink-0 flex sm:flex-col justify-between items-center sm:justify-center">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Economy</p>
               <p className="text-lg font-bold text-blue-900 mt-0.5">MMK {flight.economy_price.toLocaleString()}</p>
             </div>
-            <p className={`text-[10px] font-bold mt-1 px-2 py-0.5 rounded sm:bg-transparent ${lowSeats ? "text-amber-600 bg-amber-50" : "text-emerald-600 bg-emerald-50"}`}>
-              {flight.seats_available} seats left
+            {/* 💡 Economy ရဲ့ လက်ကျန်ခုံကို သီးသန့်ခွဲပြခြင်း */}
+            <p className={`text-[10px] font-bold mt-1 px-2 py-0.5 rounded sm:bg-transparent ${isEconomyLow ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50"}`}>
+              {flight.economy_seats_available} economy seats left
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="w-full sm:w-36 shrink-0 flex flex-row sm:flex-col gap-2">
+          <div className="w-full sm:w-44 shrink-0 flex flex-row sm:flex-col gap-2">
+            {/* Economy Book Button */}
             <button
               onClick={() => handleBook("economy")}
-              className="flex-1 sm:w-full bg-blue-900 text-white font-bold py-2.5 rounded-md text-[10px] uppercase hover:bg-blue-950 transition tracking-wider active:scale-95"
+              disabled={flight.economy_seats_available <= 0}
+              className={`flex-1 sm:w-full font-bold py-2.5 rounded-md text-[10px] uppercase transition tracking-wider active:scale-95 ${
+                flight.economy_seats_available <= 0
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed active:scale-100"
+                  : "bg-blue-900 text-white hover:bg-blue-950"
+              }`}
             >
-              Book
+              {flight.economy_seats_available <= 0 ? "Sold Out" : "Book Economy"}
             </button>
+            
+            {/* Business Book Button */}
             <button
               onClick={() => handleBook("business")}
-              className="flex-1 sm:w-full border border-blue-900 text-blue-900 font-bold rounded-md py-2 sm:py-1.5 text-[10px] uppercase hover:bg-blue-50 transition tracking-wider active:scale-95"
+              disabled={flight.business_seats_available <= 0}
+              className={`flex-1 sm:w-full border font-bold rounded-md py-2 sm:py-1.5 text-[10px] uppercase transition tracking-wider active:scale-95 flex flex-col items-center justify-center ${
+                flight.business_seats_available <= 0
+                  ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed active:scale-100"
+                  : "border-blue-900 text-blue-900 hover:bg-blue-50"
+              }`}
             >
-              Business <span className="sm:block lg:inline block font-medium">({flight.business_price.toLocaleString()})</span>
+              <span>
+                {flight.business_seats_available <= 0 ? "Business Sold Out" : "Book Business"}
+              </span>
+              {flight.business_seats_available > 0 && (
+                <span className="text-[9px] font-medium text-slate-500 lowercase">
+                  ({flight.business_price.toLocaleString()} MMK • {flight.business_seats_available} left)
+                </span>
+              )}
             </button>
           </div>
 
