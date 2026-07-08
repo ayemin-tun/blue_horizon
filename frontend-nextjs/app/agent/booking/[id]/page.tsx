@@ -1,170 +1,212 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
-import Navbar from '@/components/Navbar';
-import Link from 'next/link';
-import { User } from 'lucide-react';
-import logoImg from '@/public/logo.png';
-import { useParams } from 'next/navigation';
+import React from "react";
+import { useParams, useRouter } from "next/navigation";
+import Navbar from "@/components/Navbar";
+import { useBookingDetailQuery } from "@/services/BookingService";
+import { useAuthStore } from "@/services/store/authStore"; // 🟢 1. Import Auth Store
+import {
+    Plane,
+    Calendar,
+    Ticket,
+    ArrowLeft,
+    User,
+    Phone,
+    CreditCard,
+    Clock,
+    IdCard,
+    X,
+} from "lucide-react";
 
-const bookingsData = [
-    { id: 1, date: 'Sunday, June 24', type: 'One-Way', ticketId: 'FB-NQ23230221', flightClass: 'Economy', destination: 'RGN_MDY', airline: 'Blue Horizon Airlines', status: 'Confirmed', price: '300,000 MMK', routeFrom: 'Yangon', routeTo: 'Mandalay', flightNo: 'BH-101', country: 'Myanmar', duration: '1hr(s) 30 min(s)', depTime: '9:00 AM', arrTime: '10:30 AM', passenger: { name: 'Daw May Thu', passport: 'MJI04930', phone: '+95 912789430', address: 'Kamayut, Yangon', nationality: 'Myanmar', gender: 'Male' } },
-    { id: 2, date: 'Sunday, June 21', type: 'One-Way', ticketId: 'FB-NQ23230321', flightClass: 'Economy', destination: 'MDY_RGN', airline: 'Blue Horizon Airlines', status: 'Confirmed', price: '300,000 MMK', routeFrom: 'Yangon', routeTo: 'Mandalay', flightNo: 'BH-101', country: 'Myanmar', duration: '1hr(s) 30 min(s)', depTime: '9:00 AM', arrTime: '10:30 AM', passenger: { name: 'U Lwin Maung', passport: 'MJI04930', phone: '+95 912789430', address: 'Kamayut, Yangon', nationality: 'Myanmar', gender: 'Male' } },
-    { id: 3, date: 'Sunday, June 21', type: 'One-Way', ticketId: 'FB-NQ23230322', flightClass: 'Economy', destination: 'MDY_RGN', airline: 'Blue Horizon Airlines', status: 'Cancel', price: '300,000 MMK', routeFrom: 'Yangon', routeTo: 'Mandalay', flightNo: 'BH-101', country: 'Myanmar', duration: '1hr(s) 30 min(s)', depTime: '9:00 AM', arrTime: '10:30 AM', passenger: { name: 'U Kyaw Min', passport: 'MJI04930', phone: '+95 912789430', address: 'Kamayut, Yangon', nationality: 'Myanmar', gender: 'Male' } },
-    { id: 4, date: 'Sunday, June 21', type: 'One-Way', ticketId: 'FB-NQ23230323', flightClass: 'Economy', destination: 'MDY_RGN', airline: 'Blue Horizon Airlines', status: 'Cancel', price: '300,000 MMK', routeFrom: 'Yangon', routeTo: 'Mandalay', flightNo: 'BH-101', country: 'Myanmar', duration: '1hr(s) 30 min(s)', depTime: '9:00 AM', arrTime: '10:30 AM', passenger: { name: 'Daw Hsu Hlaing Win', passport: 'MJI04930', phone: '+95 912789430', address: 'Kamayut, Yangon', nationality: 'Myanmar', gender: 'Male' } },
-];
+function formatCleanDate(dateStr: string) {
+    if (!dateStr) return "";
+    if (dateStr.includes("T")) {
+        return dateStr.replace("T", " ").replace(/\.\d+Z$/, "").substring(0, 16);
+    }
+    return dateStr;
+}
 
-export default function BookingDetails() {
+export default function BookingDetailPage() {
     const params = useParams();
-    const bookingId = Number(params?.id);
-    const booking = bookingsData.find((b) => b.id === bookingId) || bookingsData[1];
+    const router = useRouter();
+    const bookingId = params?.id as string;
+
+    // 🟢 2. Extract current logged-in user's ID from Zustand Store
+    const currentUserId = useAuthStore((state) => state.userId);
+
+    const { data: response, isLoading, isError, error } = useBookingDetailQuery(bookingId);
+
+    const booking = response?.data;
+    const isConfirmed = booking?.status?.toLowerCase() === "confirmed";
+
+    // ─── Loading State ─────────────────────────────────────────────
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
+                <Navbar />
+                <div className="flex-1 flex items-center justify-center text-xs font-semibold text-slate-500">
+                    Loading booking details...
+                </div>
+            </div>
+        );
+    }
+
+    // ─── Error / Not Found State ───────────────────────────────────
+    if (isError || !response?.success || !booking) {
+        const message = error?.message || response?.error?.details || response?.message || "This booking could not be found.";
+        return (
+            <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
+                <Navbar />
+                <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                    <p className="text-xs font-semibold text-rose-500">{message}</p>
+                    <button
+                        onClick={() => router.back()}
+                        className="flex items-center gap-1.5 text-xs font-bold text-[#1e3a8a] hover:underline"
+                    >
+                        <ArrowLeft size={13} />
+                        Go back
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // 🟢 3. SECURITY GUARD: IDOR Prevention
+    // Check if the booking record actually belongs to the currently logged-in Agent
+    // String conversion enforces strict equality checking across data types
+    const bookingOwnerId = booking.user_id ? String(booking.user_id) : "";
+    const authenticatedId = currentUserId ? String(currentUserId) : "";
+
+    if (bookingOwnerId !== authenticatedId) {
+        return (
+            <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
+                <Navbar />
+                <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                    <div className="p-3 bg-rose-50 rounded-full text-rose-500">
+                        <X size={24} className="hidden" /> {/* Optional Icon */}
+                    </div>
+                    <p className="text-xs font-bold text-rose-500 uppercase tracking-wider">Access Denied</p>
+                    <p className="text-xs text-slate-500 font-medium">You do not have authorization to view this booking record.</p>
+                    <button
+                        onClick={() => router.push('/agent/booking')}
+                        className="mt-2 flex items-center gap-1.5 text-xs font-bold text-[#1e3a8a] hover:underline"
+                    >
+                        <ArrowLeft size={13} />
+                        Return to My Bookings
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    const { flight_details, passengers } = booking;
 
     return (
-        <div className="min-h-screen bg-[#fcfcfc] font-sans text-gray-800 pb-12">
+        <div className="min-h-screen bg-[#fcfcfc] font-sans text-gray-800 pb-16">
             <Navbar />
 
-            <main className="max-w-[1150px] mx-auto px-4 mt-6 sm:mt-8">
-                {/* Breadcrumbs */}
-                <div className="text-sm mb-6 flex items-center gap-1">
-                    <Link href="/" className="text-gray-400 font-medium hover:text-gray-600 transition-colors">Home</Link>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-[#1e3a8a] font-bold">Booking Details</span>
-                </div>
-
-                {/* Layout Container */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+            {/* Page Header Area */}
+            <div className="bg-white border-b border-gray-100 py-6 mb-8">
+                <div className="max-w-[900px] mx-auto px-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-xs font-medium text-gray-400 mb-2">
+                            <span onClick={() => router.push('/agent/booking')} className="hover:text-gray-600 cursor-pointer transition-colors">Manage Booking</span>
+                            <span className="text-gray-300">/</span>
+                            <span className="text-gray-600">Booking Detail</span>
+                        </div>
+                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Booking Specifications</h1>
+                    </div>
                     
-                    {/* Left Side Panel: Booking Details */}
-                    <div className="lg:col-span-3 bg-white border border-gray-200 rounded-lg shadow-sm p-5 sm:p-7">
-                        
-                        {/* Header Row: DATE Right Side */}
-                        <div className="flex flex-row justify-between items-center border-b border-gray-200 pb-4 mb-5">
-                            <h2 className="text-base font-bold text-gray-800">Booking Details</h2>
-                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider text-right">
-                                DATE : <span className="text-gray-800">{booking.date}</span>
-                            </p>
-                        </div>
+                    <button
+                        onClick={() => router.back()}
+                        className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 border border-gray-200 px-3 py-2 rounded-lg shadow-sm transition-all self-start md:self-auto"
+                    >
+                        <ArrowLeft size={14} className="text-slate-500" />
+                        Back to History
+                    </button>
+                </div>
+            </div>
 
-                        {/* ⚡ Flight Identifier Section - flex justify-between Use */}
-                        <div className="flex flex-row justify-between items-start mb-6 w-full">
-                            {/* Left: Logo Box */}
-                            <div className="w-24 h-24 shrink-0 bg-[#e0f2fe]/50 rounded-xl flex items-center justify-center p-3">
-                                <Image 
-                                    src={logoImg} 
-                                    alt="Airline Logo" 
-                                    width={100} 
-                                    height={100} 
-                                    className="object-contain"
-                                />
+            <main className="max-w-[900px] mx-auto px-4">
+                {/* ... Rest of your UI JSX remains completely untouched ... */}
+                <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 md:p-8">
+                    {/* Ticket Code and Content */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 rounded-xl bg-blue-50/80 flex items-center justify-center shrink-0">
+                                <Ticket size={20} className="text-[#1e3a8a]" />
                             </div>
-
-                            {/* Right: Top Info List */}
-                            <div className="flex flex-col gap-3 text-[13px] max-w-xs w-full pt-0.5">
-                                <div className="flex gap-2">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Flight No</span>
-                                    <span className="text-gray-900 font-bold">: {booking.flightNo}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Airline</span>
-                                    <span className="text-gray-900 font-semibold">: {booking.airline}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Country</span>
-                                    <span className="text-gray-900 font-semibold">: {booking.country}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Ticket ID</span>
-                                    <span className="text-[#1d4ed8] font-bold">: {booking.ticketId}</span>
-                                </div>
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ticket Code</p>
+                                <p className="text-lg font-bold text-slate-900 leading-tight">{booking.ticket_code}</p>
                             </div>
                         </div>
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold uppercase ${isConfirmed ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isConfirmed ? "bg-emerald-500" : "bg-rose-500"}`} />
+                            {booking.status}
+                        </span>
+                    </div>
 
-                        <hr className="border-gray-200 mb-6" />
+                    {/* Flight Info Card */}
+                    <div className="bg-slate-50/60 border border-slate-100 rounded-xl p-5 md:p-6 mb-8">
+                        <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center shrink-0">
+                                    <Plane size={13} className="text-[#1e3a8a]" />
+                                </div>
+                                <span className="text-[12px] font-bold text-slate-600">{flight_details.airline_name}</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-[11px] font-semibold text-slate-400">{flight_details.flight_no}</span>
+                            </div>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white border border-slate-100 text-slate-600 font-bold uppercase text-[10px]">{booking.seat_class} Class</span>
+                        </div>
 
-                        {/* ⚡ Bottom Specific Route & Time Metrics */}
-                        <div className="flex flex-col items-end w-full">
-                            <div className="space-y-4 text-[13px] max-w-xs w-full">
-                                {/* Route Row */}
-                                <div className="flex gap-2 items-center">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Route</span>
-                                    <div className="flex items-center gap-2 text-gray-900 font-semibold">
-                                        <span>:</span>
-                                        <span className="bg-[#e0f2fe] text-[#0369a1] font-bold px-4 py-1 rounded-full text-xs">
-                                            {booking.routeFrom}
-                                        </span>
-                                        <span className="text-gray-400 font-bold text-sm">⇄</span>
-                                        <span className="bg-[#e0f2fe] text-[#0369a1] font-bold px-4 py-1 rounded-full text-xs">
-                                            {booking.routeTo}
-                                        </span>
+                        {/* Route */}
+                        <div className="flex items-center gap-4 mb-5">
+                            <div className="text-left">
+                                <p className="text-slate-900 font-bold text-xl leading-none">{flight_details.departure_city}</p>
+                                <p className="text-[11px] text-slate-400 font-semibold mt-2">{flight_details.departure_time}</p>
+                            </div>
+                            <div className="flex-1 flex items-center gap-1.5 px-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
+                                <span className="flex-1 border-t border-dashed border-slate-300" />
+                                <Plane size={14} className="text-[#1e3a8a] rotate-90 shrink-0" />
+                                <span className="flex-1 border-t border-dashed border-slate-300" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#1e3a8a] shrink-0" />
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[#1e3a8a] font-bold text-xl leading-none">{flight_details.arrival_city}</p>
+                                <p className="text-[11px] text-slate-400 font-semibold mt-2">{flight_details.arrival_time}</p>
+                            </div>
+                        </div>
+
+                        {/* Meta */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-x-6 gap-y-2 text-[11px] text-slate-500 font-medium pt-4 border-t border-slate-200/70">
+                            <span className="flex items-center gap-1.5"><Calendar size={12} className="text-slate-400" />Flight date: <span className="text-slate-700 font-semibold">{flight_details.flight_date}</span></span>
+                            <span className="flex items-center gap-1.5"><Clock size={12} className="text-slate-400" />Booked: <span className="text-slate-700 font-semibold">{formatCleanDate(booking.booking_date)}</span></span>
+                            <span className="flex items-center gap-1.5"><CreditCard size={12} className="text-slate-400" />Total price: <span className="text-slate-700 font-bold text-sm text-[#1e3a8a]">{booking.total_price.toLocaleString()} MMK</span></span>
+                        </div>
+                    </div>
+
+                    {/* Passengers */}
+                    <div>
+                        <h2 className="text-sm font-bold text-[#1e3a8a] mb-4 flex items-center gap-2 uppercase tracking-wide"><User size={15} />Passengers ({passengers.length})</h2>
+                        <div className="flex flex-col gap-3">
+                            {passengers.map((p, idx) => (
+                                <div key={p.passenger_id} className="border border-slate-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 bg-white hover:bg-slate-50/40 transition-colors">
+                                    <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 text-[11px] font-bold text-[#1e3a8a]">{idx + 1}</div>
+                                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                                        <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Name</p><p className="text-xs font-semibold text-slate-800">{p.name}</p></div>
+                                        <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1"><IdCard size={10} /> NRC</p><p className="text-xs font-semibold text-slate-800">{p.nrc}</p></div>
+                                        <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Date of Birth</p><p className="text-xs font-semibold text-slate-800">{p.dob}</p></div>
+                                        <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Gender</p><p className="text-xs font-semibold text-slate-800">{p.gender}</p></div>
+                                        <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1"><Phone size={10} /> Phone</p><p className="text-xs font-semibold text-slate-800">{p.phone}</p></div>
+                                        <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Seat</p><p className="text-xs font-semibold text-slate-800">{p.seat}</p></div>
                                     </div>
                                 </div>
-
-                                <div className="flex gap-2">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Departure Time</span>
-                                    <span className="text-gray-800 font-semibold">: {booking.depTime}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Arrival Time</span>
-                                    <span className="text-gray-800 font-semibold">: {booking.arrTime}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Duration</span>
-                                    <span className="text-gray-800 font-semibold">: {booking.duration}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Seat Class</span>
-                                    <span className="text-gray-800 font-semibold">: {booking.flightClass}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Status</span>
-                                    <span className={`font-bold ${booking.status === 'Confirmed' ? 'text-[#059669]' : 'text-[#dc2626]'}`}>
-                                        : {booking.status}
-                                    </span>
-                                </div>
-                                <div className="flex gap-2 pt-1">
-                                    <span className="text-gray-500 font-medium min-w-[100px]">Total Price</span>
-                                    <span className="text-gray-900 font-bold">: {booking.price}</span>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
-
-                    {/* Right Side Panel: Passenger Information */}
-                    <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg shadow-sm p-5 sm:p-7 w-full">
-                        <div className="flex items-center gap-2 pb-4 mb-5 border-b border-gray-100 text-gray-800">
-                            <User size={18} className="text-gray-700" />
-                            <h2 className="text-base font-bold">Passenger Information</h2>
-                        </div>
-
-                        <div className="space-y-4 text-[13px]">
-                            <div className="flex gap-2">
-                                <span className="text-gray-500 font-medium min-w-[100px]">Name</span>
-                                <span className="text-gray-800 font-semibold break-all sm:break-normal">: {booking.passenger.name}</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <span className="text-gray-500 font-medium min-w-[100px]">Passport No</span>
-                                <span className="text-gray-800 font-semibold">: {booking.passenger.passport}</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <span className="text-gray-500 font-medium min-w-[100px]">Phone No</span>
-                                <span className="text-gray-800 font-semibold">: {booking.passenger.phone}</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <span className="text-gray-500 font-medium min-w-[100px]">Address</span>
-                                <span className="text-gray-800 font-semibold break-all sm:break-normal">: {booking.passenger.address}</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <span className="text-gray-500 font-medium min-w-[100px]">Nationality</span>
-                                <span className="text-gray-800 font-semibold">: {booking.passenger.nationality}</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <span className="text-gray-500 font-medium min-w-[100px]">Gender</span>
-                                <span className="text-gray-800 font-semibold">: {booking.passenger.gender}</span>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </main>
         </div>
