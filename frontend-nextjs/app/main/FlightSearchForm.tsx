@@ -1,92 +1,190 @@
-"use client"
+"use client";
 
-import { useState } from "react";
-export default function FlightSearchForm(){
+import { useEffect, useState } from "react";
+import RouteSelect from "./RouteSelect";
+import { useCitiesQuery } from "@/services/BookingService";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuthStore } from "@/services/store/authStore";
+import { toast } from "@/services/store/alertStore";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
-    const [departureDate, setDepartureDate] = useState("20/06/2026");
-      const [fromLocation, setFromLocation] = useState("Yangon (RGN)");
-      const [toLocation, setToLocation] = useState("Mandalay (MDY)");
-    
-      const handleSwapLocations = () => {
-        const temp = fromLocation;
-        setFromLocation(toLocation);
-        setToLocation(temp);
-      };
-    
-      const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        alert(`Searching flights from ${fromLocation} to ${toLocation}...`);
-      };
+// ─── Helpers: departureDate is stored as "YYYY-MM-DD" string ──────────────
+function parseDateString(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
 
-    return (
-        <div className="max-w-2xl mx-auto px-4 -mt-36 relative z-30">
-        <form
-          onSubmit={handleSearch}
-          className="bg-white rounded-xl p-8 shadow-lg border border-slate-100 space-y-6"
-        >
-          <div className="w-full">
-            <label className="block text-xs font-bold text-slate-800 mb-2">Depature Date</label>
-            <input
-              type="date"
-              value={departureDate}
-              onChange={(e) => setDepartureDate(e.target.value)}
-              className="w-full border border-slate-200 rounded-md p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-800"
-            />
-          </div>
+function formatDateString(date: Date | null): string {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
-          <div className="flex items-end gap-3 w-full">
+interface FlightSearchFormProps {
+  variant?: "vertical" | "horizontal";
+}
 
-            {/* From Input */}
-            <div className="flex-1 relative">
-              <label className="block text-xs font-bold text-slate-800 mb-2">From</label>
-              <select
-                value={fromLocation}
-                onChange={(e) => setFromLocation(e.target.value)}
-                className="w-full border border-slate-200 bg-white rounded-md p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-800 appearance-none pr-8 font-medium"
-              >
-                <option>Yangon (RGN)</option>
-                <option>Mandalay (MDY)</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center pt-6 text-slate-800 text-[10px]">▼</div>
-            </div>
+export default function FlightSearchForm({ variant = "vertical" }: FlightSearchFormProps) {
+  const { data, isLoading } = useCitiesQuery();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const authStore = useAuthStore();
 
-            {/* ⇄ Swap Button (တစ်လိုင်းတည်းမှာ တန်းစီပြီး အဝိုင်းလေး ဝင်နေမည့်အပိုင်း) */}
-            <div className="pb-1.5">
-              <button
-                type="button"
-                onClick={handleSwapLocations}
-                className="border border-slate-200 text-blue-900 rounded-full w-8 h-8 flex items-center justify-center shadow-sm hover:bg-slate-50 transition active:scale-95 text-sm font-bold"
-              >
-                ⇄
-              </button>
-            </div>
+  const getTodayDate = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
 
-            {/* To Input */}
-            <div className="flex-1 relative">
-              <label className="block text-xs font-bold text-slate-800 mb-2">To</label>
-              <select
-                value={toLocation}
-                onChange={(e) => setToLocation(e.target.value)}
-                className="w-full border border-slate-200 bg-white rounded-md p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-800 appearance-none pr-8 font-medium"
-              >
-                <option>Mandalay (MDY)</option>
-                <option>Yangon (RGN)</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center pt-6 text-slate-800 text-[10px]">▼</div>
-            </div>
+  const parseUrlDate = (urlDate: string | null) => {
+    if (!urlDate) return getTodayDate();
+    const parts = urlDate.split("/");
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return getTodayDate();
+  };
 
-          </div>
+  const [cities, setCities] = useState<string[]>([]);
+  const [fromLocation, setFromLocation] = useState(searchParams.get("from") || "");
+  const [toLocation, setToLocation] = useState(searchParams.get("to") || "");
+  const [departureDate, setDepartureDate] = useState(parseUrlDate(searchParams.get("date")));
 
-          {/* SEARCH Button (အပြာရောင် ခလုတ်အကြီးကြီး) */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              className="w-full bg-blue-900 hover:bg-blue-950 text-white font-semibold py-3 rounded-md text-xs tracking-widest uppercase transition shadow"
-            >
-              Search
-            </button>
-          </div>
-        </form>
+  useEffect(() => {
+    if (data?.success) {
+      setCities(data.cities);
+      if (!searchParams.get("from")) setFromLocation(data.cities[0]);
+      if (!searchParams.get("to")) setToLocation(data.cities[1] || data.cities[0]);
+    }
+  }, [data, searchParams]);
+
+  useEffect(() => {
+    const urlFrom = searchParams.get("from");
+    const urlTo = searchParams.get("to");
+    const urlDate = searchParams.get("date");
+
+    if (urlFrom) setFromLocation(urlFrom);
+    if (urlTo) setToLocation(urlTo);
+    if (urlDate) setDepartureDate(parseUrlDate(urlDate));
+  }, [searchParams]);
+
+  if (isLoading) return <div>Loading...</div>;
+
+  const handleSwapLocations = () => {
+    const temp = fromLocation;
+    setFromLocation(toLocation);
+    setToLocation(temp);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const token = authStore.getValidToken();
+    const role = authStore.role;
+
+    if (!token) {
+      toast.error("Please log in to search and book flights.");
+      router.push("/login");
+      return;
+    }
+
+    if (role === "admin") {
+      toast.warning("Admins cannot book flights. Redirecting to dashboard.");
+      router.push("/admin");
+      return;
+    }
+
+    const formattedDate = departureDate.split("-").reverse().join("/");
+    const query = new URLSearchParams({
+      date: formattedDate,
+      from: fromLocation,
+      to: toLocation
+    }).toString();
+
+    router.push(`/search-flight?${query}`);
+  };
+
+  const isHorizontal = variant === "horizontal";
+
+  return (
+    <form
+      onSubmit={handleSearch}
+      /* 💡 ဓာတ်ပုံထဲကပြဿနာကို ဖြေရှင်းရန် Mobile မှာ ဒေါင်လိုက်သွားပြီး 
+         Desktop (md:) ရောက်မှ ဘေးတိုက်တန်းစီဖို့ `flex-col md:flex-row` သုံးပေးထားပါတယ် */
+      className={`bg-white rounded-xl shadow-md border border-slate-100 transition-all ${
+        isHorizontal 
+          ? "p-4 md:p-5 flex flex-col md:flex-row md:items-end gap-4 w-full" 
+          : "p-6 md:p-8 space-y-6 flex flex-col"
+      }`}
+    >
+      {/* ── ၁။ Departure Date Input ── */}
+      <div className={`departure-date-field w-full ${isHorizontal ? "md:w-[22%]" : "w-full"}`}>
+        <label className="block text-xs font-bold text-slate-800 mb-2">Departure Date</label>
+        <DatePicker
+          selected={parseDateString(departureDate)}
+          onChange={(date: Date | null) => setDepartureDate(formatDateString(date))}
+          minDate={parseDateString(getTodayDate()) ?? undefined}
+          dateFormat="dd/MM/yyyy"
+          placeholderText="Select date"
+          showMonthDropdown
+          showYearDropdown
+          dropdownMode="select"
+          wrapperClassName="w-full"
+          autoComplete="off"
+          className="w-full border border-slate-200 rounded-md p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-800 bg-white"
+        />
       </div>
-    )
+
+      {/* ── ၂။ Locations Section (From, Swap, To) ── */}
+      <div className={`flex items-end gap-2 sm:gap-3 w-full ${isHorizontal ? "md:flex-1" : "w-full"}`}>
+        {/* From Input */}
+        <div className="flex-1">
+          <RouteSelect
+            label="From"
+            value={fromLocation}
+            onChange={setFromLocation}
+            cities={cities}
+          />
+        </div>
+
+        {/* Swap Button */}
+        <div className="pb-1">
+          <button
+            type="button"
+            onClick={handleSwapLocations}
+            className="border border-slate-200 text-blue-900 rounded-full w-9 h-9 flex items-center justify-center hover:bg-slate-50 transition active:scale-95 text-base font-bold shrink-0 bg-white shadow-sm"
+          >
+            ⇄
+          </button>
+        </div>
+
+        {/* To Input */}
+        <div className="flex-1">
+          <RouteSelect
+            label="To"
+            value={toLocation}
+            onChange={setToLocation}
+            cities={cities}
+          />
+        </div>
+      </div>
+
+      {/* ── ၃။ Submit Button ── */}
+      <div className={`w-full ${isHorizontal ? "md:w-[15%] md:pb-0.5" : "pt-2"}`}>
+        <button
+          type="submit"
+          className="w-full bg-blue-900 hover:bg-blue-950 text-white font-semibold py-3 rounded-md text-xs tracking-widest uppercase transition shadow-sm cursor-pointer"
+        >
+          Search
+        </button>
+      </div>
+    </form>
+  );
 }

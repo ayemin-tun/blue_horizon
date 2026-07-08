@@ -18,6 +18,21 @@ class User(Base):
     joined_date = Column(String, nullable=True) 
     is_deleted = Column(Integer, default=0, nullable=False)
 
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.sql import func
+
+class PasswordResetRequest(Base):
+    __tablename__ = "PASSWORD_RESET_REQUESTS" # အစ်ကိုတို့ Style အတိုင်း Table နာမည်ကို အကြီးပေးထားပါတယ်
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, nullable=False)
+    status = Column(String, default="PENDING", nullable=False) # စီနီယာမှာတဲ့အတိုင်း Default 'PENDING'
+    is_deleted = Column(Integer, default=0, nullable=False)    # User table အတိုင်း Integer (0 = active, 1 = deleted)
+    
+    # Request တောင်းတဲ့အချိန်နဲ့ Update ဖြစ်တဲ့အချိန်ကို ဖမ်းရန်
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
 class Airline(Base):
     __tablename__ = 'AIRLINES'
     airline_id = Column(Integer, primary_key=True, index=True)
@@ -85,3 +100,44 @@ class FlightInstance(Base):
 
     # 🔗 Relationships
     schedule = relationship("RouteSchedule")
+
+    # ─── 📊 BOOKING RELATED MODELS TO BE ADDED ────────────────────────────────
+
+class Booking(Base):
+    __tablename__ = "BOOKINGS"
+
+    booking_id = Column(Integer, primary_key=True, autoincrement=True)
+    ticket_code = Column(String, unique=True, nullable=False) 
+    user_id = Column(Integer, ForeignKey("USERS.user_id"), nullable=False)
+    instance_id = Column(Integer, ForeignKey("FLIGHT_INSTANCE.instance_id"), nullable=False)
+    booking_date = Column(String, nullable=False)            
+    total_price = Column(Numeric(10, 2), nullable=False)
+    seat_class = Column(String, nullable=False,default="ECONOMY")               # 'economy' or 'business'
+    status = Column(String, default="CONFIRMED", nullable=False)
+
+    # 🔗 Relationships (Optional but helpful for querying)
+    user = relationship("User")
+    instance = relationship("FlightInstance")
+
+class Passenger(Base):
+    __tablename__ = "PASSENGERS"
+
+    passenger_id = Column(Integer, primary_key=True, autoincrement=True)
+    full_name = Column(String, nullable=False)               
+    date_of_birth = Column(String, nullable=False)            
+    Gender = Column(String, nullable=False)                   
+    phone_no = Column(String, nullable=False)
+    nrc = Column(String, nullable=True)                      
+
+
+class BookingPassenger(Base):
+    __tablename__ = "BOOKING_PASSENGERS"
+
+    bp_id = Column(Integer, primary_key=True, autoincrement=True)
+    booking_id = Column(Integer, ForeignKey("BOOKINGS.booking_id"), nullable=False)
+    passenger_id = Column(Integer, ForeignKey("PASSENGERS.passenger_id"), nullable=False)
+    seat_no = Column(String, default="Airport Check-in", nullable=False) # Standard default text
+
+    # 🔗 Relationships
+    booking = relationship("Booking")
+    passenger = relationship("Passenger")

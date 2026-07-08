@@ -11,6 +11,8 @@ import { toast } from "@/services/store/alertStore";
 import RouteFilter from "./components/RouteFilter";
 import Modal from "@/components/Modal";
 import ScheduleForm from "./components/ScheduleForm";
+import { FilterModal } from "@/components/FilterModal";
+import { ActiveFilters } from "@/components/ActiveFilter";
 
 export default function SchedulePage() {
     const [search, setSearch] = useState('');
@@ -96,6 +98,12 @@ export default function SchedulePage() {
         });
     };
 
+    const activeFilters = [
+        routeId && { label: `Route: ${routeId}`, onRemove: () => setRouteId('') },
+        flightType && { label: `Type: ${flightType}`, onRemove: () => setFlightType('') },
+        search && { label: `"${search}"`, onRemove: () => setSearch('') }
+    ].filter(Boolean) as { label: string, onRemove: () => void }[];
+
     return (
         <div className="max-w-5xl mx-auto">
             {/* ── Header ── */}
@@ -121,80 +129,45 @@ export default function SchedulePage() {
             {/* ── Status Dropdown and Searchbox ── */}
             <div className="flex justify-end items-center gap-3 mb-6 w-full relative">
 
-                {/*  Filter Popover Container */}
+                {/* Left: Filter Toggle Button */}
                 <div className="relative">
-                    {/* Filter Toggle Button */}
                     <button
-                        type="button"
-                        onClick={() => setShowFilterMenu(!showFilterMenu)}
-                        className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-xl transition ${routeId || flightType
-                                ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' // Filter တစ်ခုခုရှိနေရင် active color ပြရန်
-                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        onClick={() => setShowFilterMenu(true)}
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-xl transition ${(routeId || flightType)
+                                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                : 'bg-white border-slate-200 text-slate-700'
                             }`}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
                         Filters
-                        {(routeId || flightType) && (
-                            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse inline-block" />
-                        )}
+                        {(routeId || flightType) && <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse inline-block" />}
                     </button>
 
-                    {/* 🌟 Dropdown Box  */}
-                    {showFilterMenu && (
-                        <>
-                            <div className="fixed inset-0 z-10" onClick={() => setShowFilterMenu(false)} />
-
-                            <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-150 rounded-2xl shadow-xl p-4 z-20 animate-in fade-in slide-in-from-top-2 duration-150 space-y-4">
-                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Filter Options</span>
-                                    {(routeId || flightType) && (
-                                        <button
-                                            onClick={() => {
-                                                setRouteId('');
-                                                setFlightType('');
-                                                setPage(1);
-                                            }}
-                                            className="text-[11px] font-semibold text-blue-600 hover:underline"
-                                        >
-                                            Clear All
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* 🗺️ Route Filter Section */}
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs font-semibold text-slate-500">Route</label>
-                                    <RouteFilter
-                                        value={routeId}
-                                        onChange={(val) => {
-                                            setRouteId(val);
-                                            setPage(1);
-                                        }}
-                                    />
-                                </div>
-
-                                {/* ✈️ Flight Type Filter Section */}
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs font-semibold text-slate-500">Flight Type</label>
-                                    <div className="relative">
-                                        <select
-                                            value={flightType || ""}
-                                            onChange={(e) => {
-                                                setFlightType(e.target.value || '');
-                                                setPage(1);
-                                            }}
-                                            className="w-full px-3 py-2 text-sm text-slate-900 border border-slate-200 rounded-xl bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer appearance-none"
-                                        >
-                                            <option value="">All Flight Types</option>
-                                            <option value="OUTBOUND">OUTBOUND</option>
-                                            <option value="INBOUND">INBOUND</option>
-                                        </select>
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs">▼</span>
-                                    </div>
-                                </div>
+                    <FilterModal
+                        isOpen={showFilterMenu}
+                        onClose={() => setShowFilterMenu(false)}
+                        hasActiveFilters={!!(routeId || flightType)}
+                        onClear={() => { setRouteId(''); setFlightType(''); setPage(1); }}
+                    >
+                        <div className="space-y-4">
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-semibold text-slate-500">Route</label>
+                                <RouteFilter value={routeId} onChange={(val) => { setRouteId(val); setPage(1); }} />
                             </div>
-                        </>
-                    )}
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-semibold text-slate-500">Flight Type</label>
+                                <select
+                                    value={flightType}
+                                    onChange={(e) => { setFlightType(e.target.value); setPage(1); }}
+                                    className="w-full pl-4 pr-10 py-2.5 text-sm text-slate-900 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer appearance-none [-webkit-appearance:none] [-moz-appearance:none]"
+                                >
+                                    <option value="">All Flight Types</option>
+                                    <option value="OUTBOUND">OUTBOUND</option>
+                                    <option value="INBOUND">INBOUND</option>
+                                </select>
+                            </div>
+                        </div>
+                    </FilterModal>
                 </div>
 
                 {/* 🔍 Search Input Box */}
@@ -216,6 +189,8 @@ export default function SchedulePage() {
 
 
             </div>
+
+            <ActiveFilters items={activeFilters} />
 
             <ScheduleTable
                 schedules={schedules}
