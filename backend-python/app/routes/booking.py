@@ -252,6 +252,8 @@ def create_booking(payload: CreateBookingRequest, db: Session = Depends(get_db))
             "error": {"code": "INTERNAL_SERVER_ERROR", "details": str(e)}
         }
     
+from sqlalchemy import case, func
+
 @router.get("/admin/all")
 def get_all_bookings_for_admin(
     search: str = Query(None, description="Search by Ticket Code, Departure City, or Arrival City"),
@@ -262,11 +264,25 @@ def get_all_bookings_for_admin(
     db: Session = Depends(get_db)
 ):
     """
-    Admin Endpoint: Retrieves all bookings across the entire system with optional 
-    search parameters and structural status/class filters.
+    Admin Endpoint: Retrieves all bookings across the entire system with global dashboard metrics,
+    optional search parameters, and functional status/class filters.
     """
     try:
-        # Base query with multi-table joins
+        # ─── 1. COMPUTE GLOBAL DASHBOARD METRICS ────────────────────────────
+        # 🟢 Filter မသက်ရောက်ခင် တစ်ကျောင်းလုံးမှာရှိတဲ့ Booking Metrics အစစ်အမှန်ကို ရှာဖွေတွက်ချက်မယ်
+        metrics_query = db.query(
+            func.count(models.Booking.booking_id).label("total"),
+            func.count(case((func.lower(models.Booking.status) == "confirmed", 1))).label("confirmed"),
+            func.count(case((func.lower(models.Booking.status) == "cancelled", 1))).label("cancelled")
+        ).first()
+
+        metrics_data = {
+            "total_booking": metrics_query.total or 0,
+            "confirmed_booking": metrics_query.confirmed or 0,
+            "cancelled_booking": metrics_query.cancelled or 0
+        }
+
+        # ─── 2. BASE PAGINATED LIST QUERY ───────────────────────────────────
         query = db.query(
             models.Booking, models.FlightInstance, models.RouteSchedule, models.Route, models.Flight, models.Airline
         ).join(models.FlightInstance, models.Booking.instance_id == models.FlightInstance.instance_id
@@ -292,8 +308,8 @@ def get_all_bookings_for_admin(
                 (models.Route.arrival_city.ilike(search_val))
             )
 
-        # Execute total count computation after filter application
-        total_count = query.count()
+        # Total count for the currently filtered query (used for pagination layout)
+        filtered_total_count = query.count()
         results = query.order_by(models.Booking.booking_id.desc()).offset(skip).limit(limit).all()
 
         formatted_bookings = []
@@ -333,21 +349,32 @@ def get_all_bookings_for_admin(
                 "passengers": passengers_list
             })
 
+        # ─── 3. RETURN RESPONSE STRUCTURE ───────────────────────────────────
         return {
             "success": True,
             "message": "All bookings retrieved successfully for Admin",
-            "data": formatted_bookings,
-            "pagination": {"total": total_count, "skip": skip, "limit": limit}
+            "data": {
+                "metrics": metrics_data, 
+                "bookings": formatted_bookings,
+                "pagination": {
+                    "total": filtered_total_count,
+                    "skip": skip,
+                    "limit": limit
+                }
+            },
+            "error": None
         }
     except Exception as e:
         return {
             "success": False,
             "message": "Failed to retrieve admin bookings",
-            "data": [],
+            "data": {
+                "metrics": {"total_booking": 0, "confirmed_booking": 0, "cancelled_booking": 0},
+                "bookings": [],
+                "pagination": {"total": 0, "skip": skip, "limit": limit}
+            },
             "error": {"code": "INTERNAL_SERVER_ERROR", "details": str(e)}
         }
-
-
 @router.get("/agent/my-bookings")
 def get_agent_bookings(
     user_id: str = Query(..., description="The ID of the current logged-in agent"),

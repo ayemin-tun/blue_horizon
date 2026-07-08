@@ -57,7 +57,7 @@ export default function BookingCard({ booking }: BookingCardProps) {
                         <div className="flex-1 flex items-center gap-1.5 px-1 min-w-[60px] max-w-[140px]">
                             <span className="h-1.5 w-1.5 rounded-full bg-slate-300 shrink-0" />
                             <span className="flex-1 border-t border-dashed border-slate-300" />
-                            <Plane size={13} className="text-[#1e3a8a] rotate-90 shrink-0" />
+                            <Plane size={13} className="text-[#1e3a8a] rotate-45 shrink-0" />
                             <span className="flex-1 border-t border-dashed border-slate-300" />
                             <span className="h-1.5 w-1.5 rounded-full bg-[#1e3a8a] shrink-0" />
                         </div>

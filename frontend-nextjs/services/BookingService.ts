@@ -138,15 +138,23 @@ export interface BookingRecord {
   flight_details: FlightDetails;
   passengers: BookedPassenger[];
 }
+export interface BookingMetrics {
+  total_booking: number;
+  confirmed_booking: number;
+  cancelled_booking: number;
+}
 
 export interface FetchBookingsResponse {
   success: boolean;
   message: string;
-  data: BookingRecord[];
-  pagination: {
-    total: number;
-    skip: number;
-    limit: number;
+  data: {
+    metrics?: BookingMetrics; 
+    bookings: BookingRecord[];
+    pagination: {
+      total: number;
+      skip: number;
+      limit: number;
+    };
   };
 }
 
@@ -162,7 +170,7 @@ interface FetchAgentBookingsParams extends FetchBookingsParams {
   user_id: string;       
 }
 
-// ─── 1. Fixed Admin Bookings Query Hook ──────────────────────────────────
+
 export const useAdminBookingsQuery = (params: FetchBookingsParams = {}) => {
   const { search = "", status = "", seat_class = "", skip = 0, limit = 10 } = params;
 
@@ -170,7 +178,6 @@ export const useAdminBookingsQuery = (params: FetchBookingsParams = {}) => {
     queryKey: ['adminBookings', search, status, seat_class, skip, limit],
     queryFn: async () => {
       let url = `/api/bookings/admin/all?skip=${skip}&limit=${limit}`;
-      // 🟢 Fixed: Changed .strip() to native JavaScript .trim()
       if (search) url += `&search=${encodeURIComponent(search.trim())}`;
       if (status) url += `&status=${encodeURIComponent(status.trim())}`;
       if (seat_class) url += `&seat_class=${encodeURIComponent(seat_class.trim())}`;
