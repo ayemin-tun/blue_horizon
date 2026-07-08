@@ -21,20 +21,19 @@ export default function ChooseSeatPage() {
   }, [selectedFlight, router]);
 
   // ─── 💡 Dynamic Seat Limit Logic Preparation ───
-  // ရွေးချယ်ထားတဲ့ Class အလိုက် Store ထဲက လက်ကျန်ခုံကို လှမ်းယူမယ်
   const availableSeats = selectedFlight
     ? seatClass === "business"
       ? selectedFlight.business_seats_available ?? 0
       : selectedFlight.economy_seats_available ?? 0
     : 0;
 
-  // တစ်ခါဝယ်ရင် အများဆုံး ၅ ခုံ သို့မဟုတ် လေယာဉ်ပေါ်ကျန်တဲ့ခုံ အရေအတွက်အတိုင်းပဲ အများဆုံး ကန့်သတ်မယ်
+  // limit 5 or last seat
   const allowedMaxSeats = Math.min(5, availableSeats);
 
   // Local state for passenger/seat count
   const [count, setCount] = useState(seatCount);
 
-  // အကယ်၍ လက်ရှိရွေးထားတဲ့ count က ကျန်တဲ့ခုံထက် များနေရင် (ဥပမာ- အဟောင်းက ၃ ခုံဖြစ်ပြီး အခုလေယာဉ်ပေါ် ၁ ခုံပဲကျန်တော့ရင်) ၁ ခုံအဖြစ် အလိုအလျောက် ညှိပေးမယ်
+  
   useEffect(() => {
     if (count > allowedMaxSeats && allowedMaxSeats > 0) {
       setCount(allowedMaxSeats);

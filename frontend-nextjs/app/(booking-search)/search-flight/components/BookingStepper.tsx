@@ -6,7 +6,7 @@ import { useBookingStore } from "@/services/store/bookingStore";
 export default function BookingStepper() {
   const pathname = usePathname();
   const router = useRouter();
-  const { selectedFlight } = useBookingStore(); // Store ထဲက selectedFlight ကို ယူမယ်
+  const { selectedFlight } = useBookingStore(); 
 
   const steps = [
     { id: 1, label: "Route Selection", paths: ["/search-flight"] },
@@ -17,10 +17,9 @@ export default function BookingStepper() {
 
   const currentStep = steps.find((step) => step.paths.includes(pathname))?.id || 1;
 
-  // ─── Click နှိပ်တဲ့အခါ သွားမယ့် လမ်းကြောင်း တွက်ချက်ခြင်း ───
   const handleStepClick = (stepId: number) => {
     if (stepId === 1) {
-      // ၁။ Route Selection ကို ပြန်သွားရင် Store ထဲမှာ ရွေးထားတာရှိရင် Query Param နဲ့ သွားမယ်
+      
       if (selectedFlight) {
         const date = encodeURIComponent(selectedFlight.flight_date);
         const from = encodeURIComponent(selectedFlight.departure_city);
@@ -42,7 +41,7 @@ export default function BookingStepper() {
     <div className="w-full bg-white border border-slate-100 rounded-xl px-8 py-5 flex items-center justify-between select-none">
       {steps.map((step, index) => {
         const isActive = step.id === currentStep;
-        const isClickable = step.id <= currentStep; // မိမိ လက်ရှိ ရောက်နေတဲ့ အဆင့်ထက် ငယ်တဲ့/တူတဲ့ အဆင့်တွေကိုပဲ နှိပ်ခွင့်ပေးမယ်
+        const isClickable = step.id <= currentStep; 
 
         return (
           <div key={step.id} className="flex items-center flex-1 last:flex-none">
@@ -50,7 +49,7 @@ export default function BookingStepper() {
             {isClickable ? (
               <button 
                 type="button"
-                onClick={() => handleStepClick(step.id)} // Link အစား function ကို တိုက်ရိုက် ခေါ်မယ်
+                onClick={() => handleStepClick(step.id)} 
                 className="flex items-center gap-3 cursor-pointer group text-left focus:outline-none"
               >
                 <div

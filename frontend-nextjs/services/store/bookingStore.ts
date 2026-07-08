@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface FlightResult {
-  flight_instance_id: number; 
+  flight_instance_id: number;
   airline_name: string;
   flight_no: string;
   departure_time: string;
@@ -14,7 +14,7 @@ export interface FlightResult {
   economy_price: number;
   business_price: number;
   seats_available: number;
-  economy_seats_available?: number; 
+  economy_seats_available?: number;
   business_seats_available?: number;
 }
 
@@ -42,6 +42,8 @@ interface BookingState {
 
   // Step 4 — Generated ticket
   ticketId: string | null;
+  isIssued: boolean;
+  setIsIssued: (status: boolean) => void;
 
   // ─── Actions ──────────────────────────────────────────────────────────
   setFlight: (flight: FlightResult, seatClass: "economy" | "business") => void;
@@ -102,7 +104,8 @@ export const useBookingStore = create<BookingState>()(
 
       // ── Step 4: Save ticket ID ────────────────────────────────────────
       setTicketId: (ticketId) => set({ ticketId }),
-
+      isIssued: false,
+      setIsIssued: (status) => set({ isIssued: status }),
       // ── Full reset ────────────────────────────────────────────────────
       reset: () =>
         set({
@@ -111,6 +114,7 @@ export const useBookingStore = create<BookingState>()(
           seatCount: 1,
           selectedSeats: [],
           passengers: [emptyPassenger()],
+          isIssued: false,
           ticketId: null,
         }),
     }),

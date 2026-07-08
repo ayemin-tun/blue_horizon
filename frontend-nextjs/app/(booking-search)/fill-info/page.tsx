@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import "react-datepicker/dist/react-datepicker.css";
 import { useBookingStore, PassengerInfo } from "@/services/store/bookingStore";
-import PassengerForm from "./componenst/PassengerForm"; // စာလုံးပေါင်းသတ်ပုံအမှန်အတိုင်း ထားရှိပေးထားပါသည်
+import PassengerForm from "./componenst/PassengerForm"; 
 
 // ─── Main Page ────────────────────────────────────────────────────────────
 export default function FillInfoPage() {
@@ -22,7 +22,7 @@ export default function FillInfoPage() {
   // Local form state — initialise from store (enables back-button pre-fill)
   const [forms, setForms] = useState<PassengerInfo[]>(passengers);
 
-  // 💡 Form တစ်ခုချင်းစီရဲ့ Validation Status ကို မှတ်ထားမယ့် Array State (Reset မဖြစ်အောင် ကာကွယ်ရန်)
+  // 💡 Form  Validation Status store and prevent Array State (Reset)
   const [formValidities, setFormValidities] = useState<boolean[]>([]);
 
   const updatePassenger = (index: number, updated: PassengerInfo) => {
@@ -33,7 +33,7 @@ export default function FillInfoPage() {
     });
   };
 
-  // 💡 Child (PassengerForm) က လှမ်းပို့လိုက်တဲ့ Validity ကို လက်ခံပြီး သိမ်းဆည်းခြင်း
+  // Store Validity from Child (PassengerForm)
   const handleFormValidate = (index: number, isValid: boolean) => {
     setFormValidities((prev) => {
       const next = [...prev];
@@ -42,12 +42,12 @@ export default function FillInfoPage() {
     });
   };
 
-  // 💡 ခရီးသည်အားလုံးရဲ့ Form အရေအတွက် ပြည့်စုံပြီး Format တွေပါ မှန်ကန်မှ ခလုတ်ကို ဖွင့်ပေးမည်
+  // formvalid check
   const isFormValid = 
     formValidities.length === forms.length && formValidities.every((v) => v === true);
 
   const handleContinue = () => {
-    if (!isFormValid) return; // Form မမှန်ရင် ရှေ့ဆက်မသွားစေရန် Guard ထားခြင်း
+    if (!isFormValid) return; 
     setPassengers(forms);
     router.push("/generate-ticket");
   };
@@ -92,7 +92,7 @@ export default function FillInfoPage() {
             seatLabel={selectedSeats[idx] ?? `Seat ${idx + 1}`}
             value={passenger}
             onChange={(updated) => updatePassenger(idx, updated)}
-            onValidate={handleFormValidate} // 💡 Child ဆီက validation ကို စောင့်ဖမ်းရန် လှမ်းထည့်ပေးလိုက်ခြင်း
+            onValidate={handleFormValidate} 
           />
         ))}
       </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { PassengerInfo } from "@/services/store/bookingStore";
 import { formatDob, parseDob } from "@/utils/timeHelper";
 import DatePicker from "react-datepicker";
-import NrcSelector from "./NrcSelector"; // 💡 Reusable Component ကို Import ယူခြင်း
+import NrcSelector from "./NrcSelector";
 
 interface PassengerFormProps {
   index: number;
@@ -39,7 +39,6 @@ export default function PassengerForm({ index, seatLabel, value, onChange, onVal
       if (date && date > new Date()) dobError = "Date of Birth cannot be in the future.";
     }
 
-    // NRC သည် လျှောက်ထားဆဲ ဖြစ်ရမယ် သို့မဟုတ် စာသား အရှည် ၁၀ လုံးထက်ကျော်ရမယ် (Format အမှန်ကို သိရှိရန်)
     const isNrcValid = value.nrc === "Applying" || (!!value.nrc && value.nrc.length >= 10);
     const isAllFieldsFilled = !!(value.name.trim() && value.dob && value.gender && value.phone.trim() && isNrcValid);
     const hasAnyError = !!(phoneError || dobError);
@@ -70,46 +69,69 @@ export default function PassengerForm({ index, seatLabel, value, onChange, onVal
           <input type="text" placeholder="e.g. Ko Aung Kyaw" value={value.name} onChange={(e) => handleField("name", e.target.value)} className={getInputClass("name")} />
         </div>
 
-        {/* ─── 💡 Reusable NrcSelector ကို ပြန်လည်သုံးစွဲခြင်း ─── */}
         <div className="sm:col-span-2">
-          <NrcSelector 
-            value={value.nrc} 
-            onChange={(compiledNrc) => handleField("nrc", compiledNrc)} 
+          <NrcSelector
+            value={value.nrc}
+            onChange={(compiledNrc) => handleField("nrc", compiledNrc)}
           />
         </div>
 
         {/* Date of Birth */}
         <div className="dob-field">
           <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Date of Birth *</label>
-          <DatePicker selected={parseDob(value.dob)} onChange={(date) => { handleField("dob", formatDob(date)); let msg = ""; if (date && date > new Date()) msg = "Date of Birth cannot be in the future."; setErrors(p => ({...p, dob: msg})); }} maxDate={new Date()} placeholderText="Select date" dateFormat="dd/MM/yyyy" showYearDropdown showMonthDropdown dropdownMode="select" yearDropdownItemNumber={100} scrollableYearDropdown wrapperClassName="w-full" className={getInputClass("dob")} autoComplete="off" />
+          <DatePicker
+            selected={parseDob(value.dob)}
+            onChange={(date: Date | null) => {
+              handleField("dob", formatDob(date)); let msg = "";
+              if (date && date > new Date()) msg = "Date of Birth cannot be in the future.";
+              setErrors(p => ({ ...p, dob: msg }));
+            }}
+            maxDate={new Date()}
+            placeholderText="Select date" dateFormat="dd/MM/yyyy" showYearDropdown showMonthDropdown dropdownMode="select" yearDropdownItemNumber={100} scrollableYearDropdown wrapperClassName="w-full" className={getInputClass("dob")} autoComplete="off" />
           {errors.dob && <p className="text-[10px] text-rose-500 font-semibold mt-1">⚠ {errors.dob}</p>}
         </div>
 
         {/* Gender */}
+        {/* Gender */}
         <div>
           <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Gender *</label>
-          <select value={value.gender} onChange={(e) => handleField("gender", e.target.value)} className={getInputClass("gender")}>
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
+          <div className="relative">
+            <select
+              value={value.gender}
+              onChange={(e) => handleField("gender", e.target.value)}
+              className={getInputClass("gender") + " appearance-none pr-8"}
+            >
+              <option value="">Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+            {/* custom arrow, same in every browser */}
+            <svg
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M5 7l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
         </div>
 
         {/* Phone */}
         <div className="sm:col-span-2">
           <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone Number *</label>
-          <input 
-            type="tel" 
-            placeholder="e.g. 09XXXXXXXXX" 
-            value={value.phone} 
-            onChange={(e) => handleField("phone", e.target.value)} 
+          <input
+            type="tel"
+            placeholder="e.g. 09XXXXXXXXX"
+            value={value.phone}
+            onChange={(e) => handleField("phone", e.target.value)}
             onBlur={(e) => {
               const phoneRegex = /^(09|\+959)\d{7,9}$/;
               const msg = phoneRegex.test(e.target.value.trim().replace(/[-\s]/g, "")) ? "" : "Invalid phone number.";
-              setErrors(p => ({...p, phone: msg}));
+              setErrors(p => ({ ...p, phone: msg }));
             }}
-            className={getInputClass("phone")} 
+            className={getInputClass("phone")}
           />
           {errors.phone && <p className="text-[10px] text-rose-500 font-semibold mt-1">⚠ {errors.phone}</p>}
         </div>

@@ -61,3 +61,46 @@ export const useSearchFlightsMutation = () => {
     },
   });
 };
+
+// ─── Create Booking API Interfaces ───────────────────────────────────────
+export interface PassengerPayload {
+  name: string;
+  nrc: string;
+  dob: string;
+  gender: string;
+  phone: string;
+}
+
+export interface CreateBookingPayload {
+  flight_instance_id: number;
+  user_id: number | null;
+  seat_class: string;
+  total_price: number;
+  passengers: PassengerPayload[];
+  booked_at: string;
+}
+
+export interface CreateBookingResponse {
+  success: boolean;
+  message: string;
+  data: {
+    booking_id: number;
+    ticket_id: string;
+    flight_instance_id: number;
+    seat_class: string;
+    total_price: number;
+    booked_at: string;
+    passengers: Array<PassengerPayload & { passenger_id: number; seat: string }>;
+  };
+  error: { code: string; details: string } | null;
+}
+
+export const useCreateBookingMutation = () => {
+  return useMutation<CreateBookingResponse, Error, CreateBookingPayload>({
+    mutationFn: async (payload: CreateBookingPayload) => {
+      // Assuming your api configuration client handles baseline URLs internally
+      const response = await api.post('/api/bookings', payload);
+      return (response as unknown) as CreateBookingResponse;
+    },
+  });
+};

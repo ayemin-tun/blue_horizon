@@ -6,9 +6,7 @@ import { useBookingStore } from "@/services/store/bookingStore";
 export default function BookingStepper() {
   const pathname = usePathname();
   const router = useRouter();
-  
-  // Zustand Store ထဲက ဒေတာ အခြေအနေတွေကို ယူမယ်
-  const { selectedFlight, selectedSeats, passengers } = useBookingStore();
+const { selectedFlight, selectedSeats, passengers, isIssued } = useBookingStore();
 
   const steps = [
     { id: 1, label: "Select Flight", paths: ["/search-flight"] },
@@ -20,8 +18,20 @@ export default function BookingStepper() {
   const currentStep =
     steps.find((step) => step.paths.some((p) => pathname.startsWith(p)))?.id || 1;
 
-  // ─── 💡 Real-time ခလုတ်နှိပ်ခွက် စစ်ဆေးခြင်း Logic ───
   const checkIsClickable = (stepId: number) => {
+
+    if (isIssued && stepId < 4) {
+      return false; 
+    }
+
+    if (stepId === currentStep) return true;
+
+    const isTicketAlreadyIssued = typeof window !== 'undefined' && !!localStorage.getItem("confirmed_ticket");
+
+    if (isTicketAlreadyIssued && stepId < 4) {
+      return false;
+    }
+
     if (stepId === currentStep) return true;
     if (stepId === 1) return true;
     if (stepId === 2) return !!selectedFlight;
@@ -35,7 +45,6 @@ export default function BookingStepper() {
     return false;
   };
 
-  // ─── Stepper ခလုတ်နှိပ်တဲ့အခါ သွားမယ့် လမ်းကြောင်း ───
   const handleStepClick = (stepId: number) => {
     if (stepId === 1) {
       if (selectedFlight) {
@@ -68,17 +77,16 @@ export default function BookingStepper() {
               <button
                 type="button"
                 onClick={() => handleStepClick(step.id)}
-                title={step.label} // Mobile မှာ label ပုန်းနေချိန် နှိပ်ရင် ဘာ step လဲသိအောင် tooltip ပြပေးခြင်း
+                title={step.label}
                 className="flex items-center gap-2 sm:gap-3 cursor-pointer group text-left focus:outline-none"
               >
                 <div
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shrink-0 ${
-                    isCompleted
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shrink-0 ${isCompleted
                       ? "bg-blue-900 text-white"
                       : isActive
-                      ? "bg-blue-100 text-blue-900 ring-2 ring-blue-900/30"
-                      : "bg-blue-50 text-blue-900 border border-blue-100 hover:bg-blue-100"
-                  }`}
+                        ? "bg-blue-100 text-blue-900 ring-2 ring-blue-900/30"
+                        : "bg-blue-50 text-blue-900 border border-blue-100 hover:bg-blue-100"
+                    }`}
                 >
                   {isCompleted ? (
                     <svg
@@ -98,38 +106,41 @@ export default function BookingStepper() {
                     step.id
                   )}
                 </div>
-                {/* 💡 Mobile မှာ စာသားဖျောက်ထားပြီး `sm:` (Desktop) မှ ဖော်ပေးရန် `hidden sm:inline` သုံးထားပါတယ် */}
+
                 <span
-                  className={`hidden sm:inline text-xs font-semibold tracking-wide transition-colors whitespace-nowrap ${
-                    isActive
+                  className={`hidden sm:inline text-xs font-semibold tracking-wide transition-colors whitespace-nowrap ${isActive
                       ? "text-blue-900 border-b-2 border-blue-900 pb-0.5"
                       : "text-slate-600 group-hover:text-blue-900"
-                  }`}
+                    }`}
                 >
                   {step.label}
                 </span>
               </button>
             ) : (
-              <div 
+              <div
                 className="flex items-center gap-2 sm:gap-3 opacity-40 cursor-not-allowed"
                 title={step.label}
               >
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold bg-slate-100 text-slate-500 shrink-0">
                   {step.id}
                 </div>
-                {/* 💡 Mobile မှာ စာသားဖျောက်ရန် */}
                 <span className="hidden sm:inline text-xs font-semibold tracking-wide text-slate-400 whitespace-nowrap">
                   {step.label}
                 </span>
               </div>
             )}
 
-            {/* Connecting line */}
+
+
             {index < steps.length - 1 && (
               <div
                 className={`flex-1 mx-2 sm:mx-5 h-px transition-colors ${
-                  step.id < currentStep ? "bg-blue-900/30" : "bg-slate-200"
-                }`}
+                  typeof window !== 'undefined' && localStorage.getItem("confirmed_ticket")
+                    ? "bg-slate-200"
+                    : step.id < currentStep
+                      ? "bg-blue-900/30"
+                      : "bg-slate-200"
+                  }`}
               />
             )}
           </div>

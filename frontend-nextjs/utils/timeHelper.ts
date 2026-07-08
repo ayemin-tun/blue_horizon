@@ -42,3 +42,25 @@ export const formatDob = (date: Date | null): string => {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+export const formatDisplayDate = (dateStr: string | undefined | null): string => {
+  if (!dateStr) return "N/A";
+  
+  try {
+    // "25/12/2026" -> ["25", "12", "2026"] -> "2026-12-25"
+    const standardDate = dateStr.split("/").reverse().join("-");
+    const dateObj = new Date(standardDate);
+    
+    if (isNaN(dateObj.getTime())) return dateStr;
+
+    return dateObj.toLocaleDateString("en-GB", {
+      weekday: "short", 
+      day: "2-digit", 
+      month: "short", 
+      year: "numeric",
+    });
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return dateStr;
+  }
+};

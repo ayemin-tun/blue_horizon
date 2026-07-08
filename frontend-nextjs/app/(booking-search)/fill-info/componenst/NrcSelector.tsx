@@ -101,7 +101,7 @@ export default function NrcSelector({ value, onChange }: NrcSelectorProps) {
 
       {isApplying ? (
         <div className="w-full bg-slate-50 border border-dashed border-slate-200 text-slate-500 text-xs py-3.5 px-4 rounded-lg font-semibold italic">
-          ✨ NRC will be registered as "Applying".
+          NRC will be registered as "Applying".
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">

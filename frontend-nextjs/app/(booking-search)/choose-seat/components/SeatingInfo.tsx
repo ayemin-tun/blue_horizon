@@ -4,7 +4,7 @@ export default function SeatingInfo() {
             <div>
                 <h2 className="text-lg font-bold text-blue-900">Airport Check-in Seating</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                    Blue Horizon follows a budget-airline style seat assignment process.
+                    Blue Horizon follows a airport check-in seating style seat assignment process.
                 </p>
             </div>
 
@@ -27,21 +27,21 @@ export default function SeatingInfo() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="border border-slate-100 rounded-xl p-5 hover:shadow-sm transition">
                     <div className="flex items-center gap-3 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">✓</span>
-                        <h5 className="text-xs font-bold text-slate-800 uppercase">No Selection Fee</h5>
+                        <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">👥</span>
+                        <h5 className="text-xs font-bold text-slate-800 uppercase">Group Seating</h5>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-relaxed">
-                        You won't be charged any additional seat selection fees. Seat allocation is completely free during check-in.
+                        Travelling with family or friends? Our counter agents will try their best to seat your group together, depending on availability.
                     </p>
                 </div>
 
                 <div className="border border-slate-100 rounded-xl p-5 hover:shadow-sm transition">
                     <div className="flex items-center gap-3 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">ℹ</span>
-                        <h5 className="text-xs font-bold text-slate-800 uppercase">Class Upgrade Benefits</h5>
+                        <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">⏱</span>
+                        <h5 className="text-xs font-bold text-slate-800 uppercase">First-Come Basis</h5>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-relaxed">
-                        Business class passengers are automatically reserved premium spacious seats on our front rows.
+                        Seats are assigned sequentially during check-in. Arriving earlier at the airport counter gives you a better chance for preferred spots.
                     </p>
                 </div>
             </div>
