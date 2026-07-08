@@ -97,7 +97,7 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
 
     if (role === "admin") {
       toast.warning("Admins cannot book flights. Redirecting to dashboard.");
-      router.push("/admin/dashboard");
+      router.push("/admin");
       return;
     }
 

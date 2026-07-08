@@ -5,6 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { useBookingDetailQuery } from "@/services/BookingService";
 import { useAuthStore } from "@/services/store/authStore"; // 🟢 1. Import Auth Store
+
+import Modal from "@/components/Modal";
+import { AlertTriangle } from "lucide-react";
+
 import {
     Plane,
     Calendar,
@@ -31,6 +35,7 @@ export default function BookingDetailPage() {
     const router = useRouter();
     const bookingId = params?.id as string;
 
+    const [showCancelModal, setShowCancelModal] = React.useState(false);
     // 🟢 2. Extract current logged-in user's ID from Zustand Store
     const currentUserId = useAuthStore((state) => state.userId);
 
@@ -116,7 +121,7 @@ export default function BookingDetailPage() {
                         </div>
                         <h1 className="text-xl font-bold text-slate-900 tracking-tight">Booking Specifications</h1>
                     </div>
-                    
+
                     <button
                         onClick={() => router.back()}
                         className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-50 border border-gray-200 px-3 py-2 rounded-lg shadow-sm transition-all self-start md:self-auto"
@@ -141,10 +146,24 @@ export default function BookingDetailPage() {
                                 <p className="text-lg font-bold text-slate-900 leading-tight">{booking.ticket_code}</p>
                             </div>
                         </div>
-                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold uppercase ${isConfirmed ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isConfirmed ? "bg-emerald-500" : "bg-rose-500"}`} />
-                            {booking.status}
-                        </span>
+
+                        <div className="flex items-center gap-3">
+                            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold uppercase ${isConfirmed ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isConfirmed ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                {booking.status}
+                            </span>
+
+                            {/* 🆕 Cancel Button — only show if still confirmed */}
+                            {isConfirmed && (
+                                <button
+                                    onClick={() => setShowCancelModal(true)}
+                                    className="flex items-center gap-1.5 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                                >
+                                    <X size={12} />
+                                    Cancel
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Flight Info Card */}
@@ -209,6 +228,29 @@ export default function BookingDetailPage() {
                     </div>
                 </div>
             </main>
+
+            {/* 🆕 Cancel Not Available Modal */}
+            <Modal
+                isOpen={showCancelModal}
+                onClose={() => setShowCancelModal(false)}
+                title="Cancel Booking"
+                maxWidth="md"
+            >
+                <div className="flex flex-col items-center text-center gap-4 py-2">
+                    <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
+                        <AlertTriangle size={26} className="text-amber-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-700">
+                        You can not made booking cancelled yet.
+                    </p>
+                    <button
+                        onClick={() => setShowCancelModal(false)}
+                        className="w-full py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition active:scale-[0.98]"
+                    >
+                        Okay, Got it
+                    </button>
+                </div>
+            </Modal>
         </div>
     );
 }

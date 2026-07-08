@@ -21,14 +21,23 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // ─── 2. AGENT ROUTES GUARD ──────────────────────────────────────────────
+  // ─── 2. AGENT & BOOKING FLOW ROUTES GUARD ────────────────────────────────
   // Secures corporate agent operations, dashboards, and discrete booking indices
-  if (pathname.startsWith('/agent')) {
+  // 🟢 Added: Grouped booking flow routes along with '/agent' paths
+  const isAgentRoute = pathname.startsWith('/agent');
+  const isBookingFlowRoute = [
+    '/search-flight',
+    '/choose-seat',
+    '/fill-info',
+    '/generate-ticket'
+  ].includes(pathname);
+
+  if (isAgentRoute || isBookingFlowRoute) {
     // Intercept anonymous traffic and redirect to authentication screen
     if (!token) {
       return NextResponse.redirect(new URL('/login?alert_action=unauthorized', request.url));
     }
-    // Enforce role separation; prevent other roles (e.g., admin) from executing agent actions
+    // Enforce role separation; prevent other roles (e.g., admin) from executing agent/booking actions
     if (role !== 'agent') {
       return NextResponse.redirect(new URL('/?alert_action=forbidden', request.url));
     }
@@ -50,8 +59,12 @@ export function proxy(request: NextRequest) {
 export const config = {
   // Registers active route matching targets to route through this middleware engine
   matcher: [
-    '/admin/:path*', // Captures all sub-routes nested within the admin domain
-    '/agent/:path*', // Captures all sub-routes nested within the agent profile scopes
+    '/admin/:path*',      // Captures all sub-routes nested within the admin domain
+    '/agent/:path*',      // Captures all sub-routes nested within the agent profile scopes
+    '/search-flight',     // 🟢 Captures the flight search page
+    '/choose-seat',       // 🟢 Captures the seat selection page
+    '/fill-info',         // 🟢 Captures the passenger info form
+    '/generate-ticket',   // 🟢 Captures the final ticket generation success page
     '/login',
     '/register'
   ],

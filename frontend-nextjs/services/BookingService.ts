@@ -127,10 +127,18 @@ export interface BookedPassenger {
   seat: string;
 }
 
+
+export interface AgentDetails {
+  user_id: number;
+  name: string;
+  email?: string;
+}
+
 export interface BookingRecord {
   booking_id: number;
   ticket_code: string;
-  user_id?: number | string; 
+  user_id?: number | string;
+  agent_details?: AgentDetails | null;   // 🆕
   booking_date: string;
   total_price: number;
   seat_class: string;

@@ -284,12 +284,14 @@ def get_all_bookings_for_admin(
 
         # ─── 2. BASE PAGINATED LIST QUERY ───────────────────────────────────
         query = db.query(
-            models.Booking, models.FlightInstance, models.RouteSchedule, models.Route, models.Flight, models.Airline
+            models.Booking, models.FlightInstance, models.RouteSchedule, models.Route, models.Flight, models.Airline, models.User
         ).join(models.FlightInstance, models.Booking.instance_id == models.FlightInstance.instance_id
         ).join(models.RouteSchedule, models.FlightInstance.schedule_id == models.RouteSchedule.schedule_id
         ).join(models.Route, models.RouteSchedule.route_id == models.Route.route_id
         ).join(models.Flight, models.RouteSchedule.flight_id == models.Flight.flight_id
-        ).join(models.Airline, models.Flight.airline_id == models.Airline.airline_id)
+        ).join(models.Airline, models.Flight.airline_id == models.Airline.airline_id).outerjoin(
+            models.User, models.Booking.user_id == models.User.user_id
+        )
 
         # Apply Status Filter
         if status:
@@ -313,7 +315,7 @@ def get_all_bookings_for_admin(
         results = query.order_by(models.Booking.booking_id.desc()).offset(skip).limit(limit).all()
 
         formatted_bookings = []
-        for booking, instance, schedule, route, flight, airline in results:
+        for booking, instance, schedule, route, flight, airline,agent in results:
             passenger_results = db.query(models.Passenger, models.BookingPassenger
             ).join(models.BookingPassenger, models.Passenger.passenger_id == models.BookingPassenger.passenger_id
             ).filter(models.BookingPassenger.booking_id == booking.booking_id).all()
@@ -332,6 +334,11 @@ def get_all_bookings_for_admin(
                 "booking_id": booking.booking_id,
                 "ticket_code": booking.ticket_code,
                 "user_id": booking.user_id,
+                "agent_details": {                          
+                    "user_id": agent.user_id,
+                    "name": agent.username,                 
+                    "email": agent.email,             
+                    } if agent else None,
                 "booking_date": booking.booking_date,
                 "total_price": float(booking.total_price),
                 "seat_class": booking.seat_class,
