@@ -134,7 +134,8 @@ def login_user(login_data: LoginSchema, db: Session = Depends(get_db)):
             "token_type": "bearer",
             "role": db_user.role,
             "username": db_user.username,
-            "email": db_user.email
+            "email": db_user.email,
+            "user_id":db_user.user_id
         },
         "error": None
     }

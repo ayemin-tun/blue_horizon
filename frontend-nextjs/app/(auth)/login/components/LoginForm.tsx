@@ -20,20 +20,20 @@ export default function LoginForm() {
   const [uiError, setUiError] = useState<string | null>(null);
   const loginMutation = useLoginMutation();
 
-      // Hadle serverside alert message from middleware.ts
-    const searchParams = useSearchParams();
-    const alertType = searchParams.get("alert_action");
-    useEffect(() => {
-        if (alertType === "unauthorized") {
-            toast.warning("You are not authorized, please login first");
-        } 
-         if (alertType === "forbidden") {
-            toast.warning("You are not authorized to access this page");
-        }
-        if (alertType === "already_logged_in") {
-            toast.warning("You are already login!");
-        }
-    }, [alertType]);
+  // Hadle serverside alert message from middleware.ts
+  const searchParams = useSearchParams();
+  const alertType = searchParams.get("alert_action");
+  useEffect(() => {
+    if (alertType === "unauthorized") {
+      toast.warning("You are not authorized, please login first");
+    }
+    if (alertType === "forbidden") {
+      toast.warning("You are not authorized to access this page");
+    }
+    if (alertType === "already_logged_in") {
+      toast.warning("You are already login!");
+    }
+  }, [alertType]);
 
   const router = useRouter();
   const handleLogin = async (e: React.FormEvent) => {
@@ -53,8 +53,9 @@ export default function LoginForm() {
         setAuth(
           (result.data as any)?.access_token,
           3600000,
-          (result.data as any).username || "Unknown user",
-          (result.data as any).role || "user"
+          (result.data as any).user_id || null,            // 1st: userId 
+          (result.data as any).username || "Unknown user", // 2nd: name (e.g., "amt")
+          (result.data as any).role || "​agent"              // 3rd: role (e.g., "agent")
         );
 
         if ((result.data as any).role == 'admin') {

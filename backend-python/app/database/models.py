@@ -100,3 +100,44 @@ class FlightInstance(Base):
 
     # 🔗 Relationships
     schedule = relationship("RouteSchedule")
+
+    # ─── 📊 BOOKING RELATED MODELS TO BE ADDED ────────────────────────────────
+
+class Booking(Base):
+    __tablename__ = "BOOKINGS"
+
+    booking_id = Column(Integer, primary_key=True, autoincrement=True)
+    ticket_code = Column(String, unique=True, nullable=False) 
+    user_id = Column(Integer, ForeignKey("USERS.user_id"), nullable=False)
+    instance_id = Column(Integer, ForeignKey("FLIGHT_INSTANCE.instance_id"), nullable=False)
+    booking_date = Column(String, nullable=False)            
+    total_price = Column(Numeric(10, 2), nullable=False)
+    seat_class = Column(String, nullable=False,default="ECONOMY")               # 'economy' or 'business'
+    status = Column(String, default="CONFIRMED", nullable=False)
+
+    # 🔗 Relationships (Optional but helpful for querying)
+    user = relationship("User")
+    instance = relationship("FlightInstance")
+
+class Passenger(Base):
+    __tablename__ = "PASSENGERS"
+
+    passenger_id = Column(Integer, primary_key=True, autoincrement=True)
+    full_name = Column(String, nullable=False)               
+    date_of_birth = Column(String, nullable=False)            
+    Gender = Column(String, nullable=False)                   
+    phone_no = Column(String, nullable=False)
+    nrc = Column(String, nullable=True)                      
+
+
+class BookingPassenger(Base):
+    __tablename__ = "BOOKING_PASSENGERS"
+
+    bp_id = Column(Integer, primary_key=True, autoincrement=True)
+    booking_id = Column(Integer, ForeignKey("BOOKINGS.booking_id"), nullable=False)
+    passenger_id = Column(Integer, ForeignKey("PASSENGERS.passenger_id"), nullable=False)
+    seat_no = Column(String, default="Airport Check-in", nullable=False) # Standard default text
+
+    # 🔗 Relationships
+    booking = relationship("Booking")
+    passenger = relationship("Passenger")
