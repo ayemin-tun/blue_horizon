@@ -64,3 +64,26 @@ export const formatDisplayDate = (dateStr: string | undefined | null): string =>
     return dateStr;
   }
 };
+
+export function formatBookingDateTime12H(dateStr: string): string {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+
+  if (isNaN(date.getTime())) return dateStr;
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const hoursStr = String(hours).padStart(2, '0');
+
+  // Output ပုံစံ: 08/07/2026 • 04:41 PM
+  return `${day}/${month}/${year} • ${hoursStr}:${minutes} ${ampm}`;
+}
