@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query,status
+import secrets
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database import models
 from typing import List
-from app.schemas.booking_schema import ApiResponse
+from app.schemas.booking_schema import ApiResponse,CreateBookingRequest
 from datetime import datetime
 
 router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
@@ -67,7 +68,7 @@ def search_flights(
     now = datetime.now()
     today_str = now.strftime("%d/%m/%Y")
 
-    # ─── 💡 Business Capacity ကို ပုံသေ ၂၀ သတ်မှတ်ခြင်း ───
+    #Business Capacity default 20 ───
     FIXED_BUSINESS_CAPACITY = 20
 
     for instance, schedule, route, flight, airline in results:
@@ -77,17 +78,14 @@ def search_flights(
             if departure_time < now.time():
                 continue
 
-        # ─── 💡 B. Class အလိုက် Capacity နှင့် Available Seat တွက်ချက်ခြင်း ───
+        # B. Class base Capacity and Available Seat Calculation
         total_seats = flight.total_seats
         
-        # ၁။ Business အတွက် စုစုပေါင်း ၂၀ ထဲက လက်ရှိ Occupied ကိုနှုတ်မယ်
         business_available = max(0, FIXED_BUSINESS_CAPACITY - instance.business_seats_occupied)
         
-        # ၂။ Economy အတွက် ကျန်တဲ့ ခုံအရေအတွက် (Total - 20) ထဲကမှ လက်ရှိ Occupied ကိုနှုတ်မယ်
         total_economy_capacity = total_seats - FIXED_BUSINESS_CAPACITY
         economy_available = max(0, total_economy_capacity - instance.economy_seats_occupied)
 
-        # ၃။ အကယ်၍ ခုံနှစ်ခုလုံး (Economy ရော Business ရော) လုံးဝ ပြည့်နေပြီဆိုမှ ဒီ Flight ကို ချန်လှပ်ခဲ့မယ်
         if economy_available <= 0 and business_available <= 0:
             continue
 
@@ -112,10 +110,8 @@ def search_flights(
             "economy_price": instance.override_economy_price or instance.base_economy_price,
             "business_price": instance.override_business_price or instance.base_business_price,
             
-            # ─── 💡 Frontend ဘက်မှာ အလွယ်တကူ စစ်ဆေးသုံးစွဲနိုင်အောင် Key သီးသန့်စီ ထုတ်ပေးလိုက်ပါတယ် ───
             "economy_seats_available": economy_available,
             "business_seats_available": business_available,
-            # မူလ UI တွေ မပျက်အောင် စုစုပေါင်း လက်ကျန်ခုံကိုပါ ပေါင်းပြပေးထားပါမယ်
             "seats_available": economy_available + business_available 
         })
 
@@ -140,3 +136,119 @@ def search_flights(
             "limit": limit
         }
     }
+
+# ───  Create Booking Endpoint ──────────────────────────────────────────
+@router.post("", response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
+def create_booking(payload: CreateBookingRequest, db: Session = Depends(get_db)):
+    """
+    Creates a new flight booking transaction, inserts detailed passenger profiles, 
+    and associates records dynamically into the bridge tables.
+    """
+    try:
+        # 1. Fetch and validate existence of FlightInstance
+        instance = db.query(models.FlightInstance).filter(
+            models.FlightInstance.instance_id == payload.flight_instance_id,
+            models.FlightInstance.is_deleted == 0
+        ).first()
+
+        if not instance:
+            return {
+                "success": False,
+                "message": "Flight instance not found",
+                "data": None,
+                "error": {"code": "NOT_FOUND", "details": "The specified flight instance does not exist or has been deleted."}
+            }
+        # ticket code generate
+        generated_ticket_code = f"BH-{secrets.token_hex(3).upper()}" 
+        
+        # check duplicate
+        while db.query(models.Booking).filter(models.Booking.ticket_code == generated_ticket_code).first():
+            generated_ticket_code = f"BH-{secrets.token_hex(3).upper()}"
+
+        passenger_count = len(payload.passengers)
+        target_seat_class = payload.seat_class.upper().strip()
+        # 2. Persist dynamic master structural records into BOOKINGS table
+        new_booking = models.Booking(
+            ticket_code=generated_ticket_code,     
+            user_id=payload.user_id, 
+            instance_id=payload.flight_instance_id,
+            booking_date=payload.booked_at,
+            total_price=payload.total_price,
+            seat_class=target_seat_class,
+            status="CONFIRMED"
+        )
+        db.add(new_booking)
+        db.flush()  
+
+        inserted_passengers = []
+        
+        # 3. Handle data migration sequence loops for all relational passengers
+        for p in payload.passengers:
+            new_passenger = models.Passenger(
+                full_name=p.name,
+                date_of_birth=p.dob,
+                Gender=p.gender,       
+                phone_no=p.phone,
+                nrc=p.nrc              
+            )
+            db.add(new_passenger)
+            db.flush()  
+
+            # Construct bridging record dependencies mapping tables together
+            booking_passenger = models.BookingPassenger(
+                booking_id=new_booking.booking_id,
+                passenger_id=new_passenger.passenger_id,
+                seat_no="Airport Check-in"      
+            )
+            db.add(booking_passenger)
+
+            inserted_passengers.append({
+                "passenger_id": new_passenger.passenger_id,
+                "name": new_passenger.full_name,
+                "nrc": new_passenger.nrc,
+                "dob": new_passenger.date_of_birth,
+                "gender": new_passenger.Gender,
+                "phone": new_passenger.phone_no,
+                "seat": "Airport Check-in"
+            })
+
+        # 4. Atomically adjust threshold configurations inside the target FlightInstance
+        if payload.seat_class.upper() == "ECONOMY":
+            instance.economy_seats_occupied += passenger_count
+        elif payload.seat_class.upper() == "BUSINESS":
+            instance.business_seats_occupied += passenger_count
+        else:
+            return {
+                "success": False,
+                "message": "Invalid seat class",
+                "data": None,
+                "error": {"code": "BAD_REQUEST", "details": "Seat class must be either 'ECOMONY' or 'BUSINESS'."}
+            }
+
+        # Safely commit transactions to disk storage
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Booking and passengers registered successfully under current Agent!",
+            "data": {
+                "booking_id": new_booking.booking_id,
+                "ticket_id": new_booking.ticket_code,
+                "flight_instance_id": new_booking.instance_id,
+                "seat_class": new_booking.seat_class,
+                "total_price": float(new_booking.total_price),
+                "booked_at": new_booking.booking_date,
+                "passengers": inserted_passengers
+            },
+            "error": None
+        }
+
+    except Exception as e:
+        db.rollback()  
+        # Unexpected Server Error များအတွက် ApiResponse Schema ပုံစံဖြင့် တုံ့ပြန်ခြင်း
+        return {
+            "success": False,
+            "message": "Internal Server Error occurred",
+            "data": None,
+            "error": {"code": "INTERNAL_SERVER_ERROR", "details": str(e)}
+        }
