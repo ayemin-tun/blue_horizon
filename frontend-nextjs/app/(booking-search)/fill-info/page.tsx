@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useBookingStore, PassengerInfo } from "@/services/store/bookingStore";
-import PassengerForm from "./componenst/PassengerForm";
+import PassengerForm from "./componenst/PassengerForm"; // စာလုံးပေါင်းသတ်ပုံအမှန်အတိုင်း ထားရှိပေးထားပါသည်
 
 // ─── Main Page ────────────────────────────────────────────────────────────
 export default function FillInfoPage() {
@@ -23,6 +22,9 @@ export default function FillInfoPage() {
   // Local form state — initialise from store (enables back-button pre-fill)
   const [forms, setForms] = useState<PassengerInfo[]>(passengers);
 
+  // 💡 Form တစ်ခုချင်းစီရဲ့ Validation Status ကို မှတ်ထားမယ့် Array State (Reset မဖြစ်အောင် ကာကွယ်ရန်)
+  const [formValidities, setFormValidities] = useState<boolean[]>([]);
+
   const updatePassenger = (index: number, updated: PassengerInfo) => {
     setForms((prev) => {
       const next = [...prev];
@@ -31,11 +33,21 @@ export default function FillInfoPage() {
     });
   };
 
-  const isFormValid = forms.every(
-    (p) => p.name.trim() && p.nrc.trim() && p.dob && p.gender && p.phone.trim()
-  );
+  // 💡 Child (PassengerForm) က လှမ်းပို့လိုက်တဲ့ Validity ကို လက်ခံပြီး သိမ်းဆည်းခြင်း
+  const handleFormValidate = (index: number, isValid: boolean) => {
+    setFormValidities((prev) => {
+      const next = [...prev];
+      next[index] = isValid;
+      return next;
+    });
+  };
+
+  // 💡 ခရီးသည်အားလုံးရဲ့ Form အရေအတွက် ပြည့်စုံပြီး Format တွေပါ မှန်ကန်မှ ခလုတ်ကို ဖွင့်ပေးမည်
+  const isFormValid = 
+    formValidities.length === forms.length && formValidities.every((v) => v === true);
 
   const handleContinue = () => {
+    if (!isFormValid) return; // Form မမှန်ရင် ရှေ့ဆက်မသွားစေရန် Guard ထားခြင်း
     setPassengers(forms);
     router.push("/generate-ticket");
   };
@@ -80,6 +92,7 @@ export default function FillInfoPage() {
             seatLabel={selectedSeats[idx] ?? `Seat ${idx + 1}`}
             value={passenger}
             onChange={(updated) => updatePassenger(idx, updated)}
+            onValidate={handleFormValidate} // 💡 Child ဆီက validation ကို စောင့်ဖမ်းရန် လှမ်းထည့်ပေးလိုက်ခြင်း
           />
         ))}
       </div>
@@ -87,7 +100,7 @@ export default function FillInfoPage() {
       {/* Validation hint */}
       {!isFormValid && (
         <p className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 rounded-lg px-4 py-3">
-          ⚠ Please complete all required fields for every passenger before continuing.
+          ⚠ Please complete all required fields with a valid format for every passenger before continuing.
         </p>
       )}
 
@@ -104,7 +117,7 @@ export default function FillInfoPage() {
           disabled={!isFormValid}
           className={`w-full sm:flex-1 py-3.5 font-bold rounded-xl text-xs uppercase tracking-wider transition text-center ${
             isFormValid
-              ? "bg-blue-900 text-white hover:bg-blue-950 active:scale-95"
+              ? "bg-blue-900 text-white hover:bg-blue-950 active:scale-95 cursor-pointer"
               : "bg-slate-100 text-slate-400 cursor-not-allowed"
           }`}
         >
