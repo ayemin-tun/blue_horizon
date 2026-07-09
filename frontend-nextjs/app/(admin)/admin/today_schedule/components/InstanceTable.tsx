@@ -11,19 +11,19 @@ interface InstanceTableProps {
   onEdit: (instance: ScheduleInstance) => void;
 }
 
-export default function InstanceTable({ 
-  instances = [], 
-  loading, 
-  search, 
+export default function InstanceTable({
+  instances = [],
+  loading,
+  search,
   onView,
   onEdit
 }: InstanceTableProps) {
-  
+
   return (
     <div className="w-full bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
       <div className="w-full overflow-x-auto">
         <div className="min-w-200">
-          
+
           {/* Table Header */}
           <div className="flex items-center px-6 py-4 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
             <div className="w-16 shrink-0">ID</div>
@@ -48,10 +48,10 @@ export default function InstanceTable({
             <div className="divide-y divide-slate-100">
               {instances.map((item) => (
                 <div key={item.instance_id} className="flex items-center px-6 py-4 transition hover:bg-slate-50/50 text-slate-700">
-                  
+
                   {/* ID */}
                   <div className="w-16 shrink-0 text-xs font-mono text-slate-400">#{item.instance_id}</div>
-                  
+
                   {/* Flight Info */}
                   <div className="w-40 shrink-0 flex flex-col">
                     <span className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
@@ -73,11 +73,10 @@ export default function InstanceTable({
 
                   {/* Status Badge */}
                   <div className="w-32 shrink-0">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                      item.status === 'SCHEDULED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                      item.status === 'DEPARTED' ? 'bg-green-50 text-green-700 border-green-200' :
-                      'bg-red-50 text-red-700 border-red-200'
-                    }`}>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${item.status === 'SCHEDULED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        item.status === 'DEPARTED' ? 'bg-green-50 text-green-700 border-green-200' :
+                          'bg-red-50 text-red-700 border-red-200'
+                      }`}>
                       {item.status}
                     </span>
                   </div>
@@ -93,7 +92,9 @@ export default function InstanceTable({
 
                     <button
                       onClick={() => onEdit(item)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-blue-50 transition active:scale-95"
+                      disabled={item.status === 'DEPARTED'} 
+                      className="p-2 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-blue-50 transition active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-400"
+                      title={item.status === 'DEPARTED' ? "Departed flights cannot be edited" : "Edit Instance"}
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
