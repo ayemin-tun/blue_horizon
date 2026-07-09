@@ -102,16 +102,16 @@ export default function RoutePage() {
     <>
       <div className="max-w-5xl mx-auto">
         {/* ── Header ── */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <h4 className="text-xl font-bold text-gray-950">Route Management</h4>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="md:text-sm text-xs text-gray-500 mt-1 ">
               Manage departure and arrival city routes for Blue Horizon flights.
             </p>
           </div>
           <button
             onClick={() => setShowAdd(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-sm transition active:scale-95"
+            className="inline-flex items-center gap-2 shrink-0 px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-sm transition active:scale-95"
           >
             <Plus className="w-4 h-4" />
             Add Route
