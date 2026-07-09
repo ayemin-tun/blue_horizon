@@ -7,7 +7,7 @@ const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
-
+import React, { Suspense } from 'react';
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -32,10 +32,16 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Providers>
-          <AlertContainer />
-          {children}
-        </Providers>
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-[50vh] text-sm text-slate-500">
+            Loading Page...
+          </div>
+        }>
+          <Providers>
+            <AlertContainer />
+            {children}
+          </Providers>
+        </Suspense>
       </body>
     </html>
   );
