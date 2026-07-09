@@ -23,6 +23,6 @@ export const useDashboardStatsQuery = () => {
       const response = await api.get('/api/admin/dashboard/stats');
       return (response as unknown) as DashboardStatsResponse;
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 10, // 2 minutes
   });
 };
