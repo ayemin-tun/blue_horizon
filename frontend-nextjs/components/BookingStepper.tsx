@@ -1,12 +1,14 @@
 "use client";
 
+import React, { useEffect } from "react"; 
 import { usePathname, useRouter } from "next/navigation";
 import { useBookingStore } from "@/services/store/bookingStore";
 
 export default function BookingStepper() {
   const pathname = usePathname();
   const router = useRouter();
-const { selectedFlight, selectedSeats, passengers, isIssued } = useBookingStore();
+  
+  const { selectedFlight, selectedSeats, passengers, isIssued, reset } = useBookingStore();
 
   const steps = [
     { id: 1, label: "Select Flight", paths: ["/search-flight"] },
@@ -18,8 +20,13 @@ const { selectedFlight, selectedSeats, passengers, isIssued } = useBookingStore(
   const currentStep =
     steps.find((step) => step.paths.some((p) => pathname.startsWith(p)))?.id || 1;
 
-  const checkIsClickable = (stepId: number) => {
+  useEffect(() => {
+    if (currentStep === 1 && isIssued) {
+      reset();
+    }
+  }, [currentStep, isIssued, reset]);
 
+  const checkIsClickable = (stepId: number) => {
     if (isIssued && stepId < 4) {
       return false; 
     }
@@ -129,8 +136,6 @@ const { selectedFlight, selectedSeats, passengers, isIssued } = useBookingStore(
                 </span>
               </div>
             )}
-
-
 
             {index < steps.length - 1 && (
               <div

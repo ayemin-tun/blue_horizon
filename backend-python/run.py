@@ -17,8 +17,12 @@ from app.routes.flight import router as flight_router
 from app.routes.agent import router as agent_router
 from app.routes.schedule import router as schedule_router
 from app.routes.schedule_instance import router as schedule_instance_router
+
+from app.routes.profile import router as profile_router
+
 from app.routes.booking import router as booking_router
 from app.routes.dashboard import router as dashboard_router
+
 
 # Close Docs url in fast api 
 app = FastAPI(
@@ -43,8 +47,13 @@ app.include_router(flight_router)
 app.include_router(agent_router)
 app.include_router(schedule_router)
 app.include_router(schedule_instance_router)
+
+app.include_router(profile_router)
+
+
 app.include_router(booking_router)
 app.include_router(dashboard_router)
+
 
 # Define user name and password 
 security = HTTPBasic()

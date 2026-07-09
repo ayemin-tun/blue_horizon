@@ -43,27 +43,30 @@ export default function LoginForm() {
       const result = await loginMutation.mutateAsync({ email, password });
 
       if (result.success) {
+        const data = result.data as any;
+
         toast.success("Login Successful!");
 
         // cookie store because next js middleware does not use zustand localStorage
-        document.cookie = `token=${(result.data as any)?.access_token}; path=/; max-age=3600`;
-        document.cookie = `name=${(result.data as any).username}; path=/; max-age=3600`;
-        document.cookie = `role=${(result.data as any).role}; path=/; max-age=3600`;
+        document.cookie = `token=${data.access_token}; path=/; max-age=3600`;
+        document.cookie = `name=${data.username}; path=/; max-age=3600`;
+        document.cookie = `role=${data.role}; path=/; max-age=3600`;
 
         setAuth(
-          (result.data as any)?.access_token,
+          data.access_token,
           3600000,
-          (result.data as any).user_id || null,            // 1st: userId 
-          (result.data as any).username || "Unknown user", // 2nd: name (e.g., "amt")
-          (result.data as any).role || "​agent"              // 3rd: role (e.g., "agent")
+          data.user_id || null,
+          data.username || "Unknown user",
+          data.role || "agent",
+          data.phone_no || null,  
+          data.email || null       
         );
 
-        if ((result.data as any).role == 'admin') {
-          router.push('/admin')
+        if (data.role == "admin") {
+          router.push("/admin");
         } else {
-          router.push('/')
+          router.push("/");
         }
-
       } else {
         setUiError(result.error?.details || result.message);
       }
