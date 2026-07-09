@@ -53,7 +53,7 @@ export function useCreateRouteMutation() {
   
   return useMutation({
     mutationFn: (payload: RoutePayload) => 
-      api.post<Route>('/api/routes/', payload, { headers: authHeader() }),
+      api.post<Route>('/api/routes/', payload, { requiresAuth: true }),
     onSuccess: (res) => {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ['routes'] });
@@ -68,7 +68,7 @@ export function useUpdateRouteMutation() {
   
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: RoutePayload }) => 
-      api.put<Route>(`/api/routes/${id}`, payload, { headers: authHeader() }),
+      api.put<Route>(`/api/routes/${id}`, payload, { requiresAuth: true }),
     onSuccess: (res) => {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ['routes'] });
@@ -83,7 +83,7 @@ export function useDeleteRouteMutation() {
   
   return useMutation({
     mutationFn: (id: number) => 
-      api.delete<null>(`/api/routes/${id}`, { headers: authHeader() }),
+      api.delete<null>(`/api/routes/${id}`, { requiresAuth: true }),
     onSuccess: (res) => {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ['routes'] });
