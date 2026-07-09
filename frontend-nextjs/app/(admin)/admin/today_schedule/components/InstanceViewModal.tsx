@@ -110,7 +110,7 @@ export default function InstanceViewModal({ isOpen, instance, onClose }: Instanc
             </div>
           </div>
 
-          {/* Bookings Section (Accordion) */}
+          {/* Bookings Section (Accordion)
           <div className="border border-slate-200 rounded-2xl overflow-hidden">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
@@ -138,7 +138,7 @@ export default function InstanceViewModal({ isOpen, instance, onClose }: Instanc
                 )}
               </div>
             )}
-          </div>
+          </div> */}
 
           <button onClick={onClose} className="w-full py-4 bg-slate-900 text-white text-sm font-bold rounded-2xl hover:bg-slate-800 transition active:scale-[0.98]">
             Done

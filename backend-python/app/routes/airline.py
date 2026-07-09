@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, Any
 from app.database.database import get_db
 from app.database import models
+from sqlalchemy import func
 
 router = APIRouter(prefix="/api/airlines", tags=["Airlines"])
 
@@ -15,23 +16,22 @@ class AirlineSchema(BaseModel):
 # --- 1. CREATE ---
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_airline(data: AirlineSchema, db: Session = Depends(get_db)):
-    # check same name is already exist on db (include soft delete)
+    # case-insensitive check (soft delete ဖြစ်သည်ဖြစ်စေ မဖြစ်သည်ဖြစ်စေ ပါဝင်စစ်မယ်)
     existing_airline = db.query(models.Airline).filter(
-        models.Airline.airline_name == data.airline_name
+        func.lower(models.Airline.airline_name) == func.lower(data.airline_name)
     ).first()
 
     if existing_airline:
         if existing_airline.is_deleted:
-            # if airline is delete (Re-activate)
+            # if airline is deleted (Re-activate)
             existing_airline.is_deleted = False
-            existing_airline.country = data.country # country အသစ်ကို Update လုပ်ပေးမယ်
+            existing_airline.airline_name = data.airline_name  # spelling/case အသစ်ကို သိမ်းမယ်
+            existing_airline.country = data.country
             db.commit()
             return {"success": True, "message": "Airline re-activated", "data": existing_airline}
         else:
-            # if not delete show already exist
             return {"success": False, "message": "Airline name already exists and active"}
 
-    # if not exist, create new 
     new_airline = models.Airline(airline_name=data.airline_name, country=data.country)
     db.add(new_airline)
     db.commit()
@@ -78,7 +78,17 @@ def update_airline(id: int, data: AirlineSchema, db: Session = Depends(get_db)):
     airline = db.query(models.Airline).filter(models.Airline.airline_id == id).first()
     if not airline:
         return {"success": False, "message": "Airline not found"}
-    
+
+    # ဒီ name ကို တခြား active airline (id မတူတာ) က သုံးနေလား စစ်မယ်
+    duplicate = db.query(models.Airline).filter(
+        func.lower(models.Airline.airline_name) == func.lower(data.airline_name),
+        models.Airline.airline_id != id,
+        models.Airline.is_deleted == False
+    ).first()
+
+    if duplicate:
+        return {"success": False, "message": "Airline name already exists and active"}
+
     airline.airline_name = data.airline_name
     airline.country = data.country
     db.commit()

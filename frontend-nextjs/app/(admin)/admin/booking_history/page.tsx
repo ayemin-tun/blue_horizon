@@ -1,99 +1,150 @@
 'use client';
+import { useState } from "react";
+import BookingStats from "./components/BookingStats";
+import { Search } from "lucide-react";
+import { FilterModal } from "@/components/FilterModal";
+import { ActiveFilters } from "@/components/ActiveFilter";
+import BookingTable from "./components/BookingTable";
+import Pagination from "@/components/Pagination";
+import BookingViewModal from "./components/BookingViewModal";
+import { BookingRecord, useAdminBookingsQuery } from "@/services/BookingService";
 
-import React from 'react';
-import { useRouter } from 'next/navigation'; 
-import { Eye, Search } from 'lucide-react';
+export default function BookingHistoryPage() {
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const LIMIT = 10;
 
-export default function BookingHistory() {
-  const router = useRouter(); 
+    // ─── Filter States ──────────────────────────────────
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const [status, setStatus] = useState<string>('');
+    const [seatClass, setSeatClass] = useState<string>('');
 
-  const bookings = [
-    { id: 'FB-NQ23230221', route: 'Yangon → Mandalay', date: '26/06/2025', class: 'Business', status: 'Pending' },
-    { id: 'FB-NQ23230223', route: 'Mandalay → Yangon', date: '22/03/2025', class: 'Business', status: 'Confirmed' },
-    { id: 'FB-NQ23230226', route: 'Yangon → Heho', date: '20/01/2026', class: 'Economy', status: 'Cancelled' },
-    { id: 'FB-NQ23230229', route: 'Yangon → NayPyiDaw', date: '15/04/2026', class: 'Economy', status: 'Confirmed' },
-    { id: 'FB-NQ23230222', route: 'Yangon → Ann', date: '18/04/2026', class: 'Business', status: 'Confirmed' },
-  ];
+    const [viewTarget, setViewTarget] = useState<BookingRecord | null>(null);
 
-  return (
-    <div className="p-4 max-w-5xl mx-auto">
+    const skip = (page - 1) * LIMIT;
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {/* Card 1 */}
-        <div className="bg-white p-4 border border-gray-200 rounded shadow-sm">
-          <p className="text-xs sm:text-sm font-semibold text-[#152B85] mb-1">Total Bookings</p>
-          <p className="text-2xl sm:text-3xl font-bold text-[#152B85]">15</p>
+    const { data: apiResponse, isLoading: loading } = useAdminBookingsQuery({
+        search,
+        status,
+        seat_class: seatClass,
+        skip,
+        limit: LIMIT,
+    });
+
+    const activeFilters = [
+        status && { label: status, onRemove: () => setStatus('') },
+        seatClass && { label: seatClass, onRemove: () => setSeatClass('') },
+        search && { label: `"${search}"`, onRemove: () => setSearch('') }
+    ].filter(Boolean) as { label: string, onRemove: () => void }[];
+
+    const bookings: BookingRecord[] = apiResponse?.data?.bookings || [];
+    const metricsData = apiResponse?.data?.metrics;
+    const paginationInfo = apiResponse?.data?.pagination;
+
+    return (
+        <div className="max-w-5xl mx-auto py-6">
+
+            {/* Stats */}
+            <BookingStats metrics={metricsData} />
+
+            {/* ── Filter & Search Bar ── */}
+            <div className="flex justify-end items-center gap-3 mb-6 w-full relative">
+
+                <div className="relative">
+                    <button
+                        onClick={() => setShowFilterMenu(true)}
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border rounded-xl transition ${(status || seatClass) ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-700'
+                            }`}
+                    >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
+                        Filters
+                        {(status || seatClass) && <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse inline-block" />}
+                    </button>
+
+                    <FilterModal
+                        isOpen={showFilterMenu}
+                        onClose={() => setShowFilterMenu(false)}
+                        hasActiveFilters={!!(status || seatClass)}
+                        onClear={() => {
+                            setStatus(''); setSeatClass(''); setSearch(''); setPage(1);
+                        }}
+                    >
+                        <div className="space-y-4">
+                            <div className="relative shrink-0">
+                                <label className="block text-xs font-semibold text-slate-500 mb-3">Status</label>
+                                <select
+                                    value={status}
+                                    onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                                    className="w-full pl-4 pr-10 py-2.5 text-sm text-slate-900 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer appearance-none [-webkit-appearance:none] [-moz-appearance:none]"
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="CONFIRMED">CONFIRMED</option>
+                                    <option value="CANCELLED">CANCELLED</option>
+                                </select>
+                                <span className="absolute right-4 top-2/3 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px] tracking-widest">▼</span>
+                            </div>
+
+                            <div className="relative shrink-0">
+                                <label className="block text-xs font-semibold text-slate-500 mb-3">Seat Class</label>
+                                <select
+                                    value={seatClass}
+                                    onChange={(e) => { setSeatClass(e.target.value); setPage(1); }}
+                                    className="w-full pl-4 pr-10 py-2.5 text-sm text-slate-900 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer appearance-none [-webkit-appearance:none] [-moz-appearance:none]"
+                                >
+                                    <option value="">All Classes</option>
+                                    <option value="Economy">Economy</option>
+                                    <option value="Business">Business</option>
+                                </select>
+                                <span className="absolute right-4 top-2/3 -translate-y-1/2 pointer-events-none text-slate-400 text-[10px] tracking-widest">▼</span>
+                            </div>
+                        </div>
+                    </FilterModal>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative w-full max-w-xs">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <Search className="w-4 h-4 text-slate-400" />
+                    </span>
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                        placeholder="Search by ticket code or passenger"
+                        className="w-full pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    />
+                </div>
+            </div>
+
+            {/* Filter text */}
+            <ActiveFilters items={activeFilters} />
+
+            <BookingTable
+                bookings={bookings}
+                loading={loading}
+                search={search}
+                onView={(booking) => setViewTarget(booking)}
+            />
+
+            {/* ── Pagination ── */}
+            {!loading && paginationInfo?.total && paginationInfo.total > LIMIT && (
+                <div className="w-full">
+                    <Pagination
+                        currentPage={page}
+                        totalCount={paginationInfo.total}
+                        pageSize={LIMIT}
+                        onPageChange={(newPage) => setPage(newPage)}
+                    />
+                </div>
+            )}
+
+            {/* Booking View modal */}
+            <BookingViewModal
+                isOpen={viewTarget !== null}
+                booking={viewTarget}
+                onClose={() => setViewTarget(null)}
+            />
+
         </div>
-        {/* Card 2 */}
-        <div className="bg-white p-4 border border-gray-200 rounded shadow-sm">
-          <p className="text-xs sm:text-sm font-semibold text-emerald-600 mb-1">Confirmed</p>
-          <p className="text-2xl sm:text-3xl font-bold text-emerald-600">12</p>
-        </div>
-        {/* Card 3 */}
-        <div className="bg-white p-4 border border-gray-200 rounded shadow-sm">
-          <p className="text-xs sm:text-sm font-semibold text-red-600 mb-1">Cancelled</p>
-          <p className="text-2xl sm:text-3xl font-bold text-red-600">3</p>
-        </div>
-        {/* Card 4 */}
-        <div className="bg-white p-4 border border-gray-200 rounded shadow-sm">
-          <p className="text-xs sm:text-sm font-semibold text-amber-500 mb-1">Pending</p>
-          <p className="text-2xl sm:text-3xl font-bold text-amber-500">2</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row justify-end gap-3 mb-4">
-        <div className="flex gap-2 w-full sm:w-auto">
-          <div className="flex items-center border border-gray-300 rounded bg-white px-2 flex-1 sm:flex-initial">
-            <select className="p-2 text-xs sm:text-sm text-gray-600 outline-none bg-transparent appearance-none pr-8 w-full">
-              <option>Sort by: Class</option>
-            </select>
-          </div>
-          <div className="flex items-center border border-gray-300 rounded bg-white px-2 flex-1 sm:flex-initial">
-            <select className="p-2 text-xs sm:text-sm text-gray-600 outline-none bg-transparent appearance-none pr-8 w-full">
-              <option>Sort by: Status</option>
-            </select>
-          </div>
-        </div>
-        
-        <div className="flex items-center border border-gray-300 rounded bg-white px-3 w-full sm:w-64">
-          <input type="text" placeholder="Search by ticket ID" className="p-2 text-xs sm:text-sm w-full outline-none" />
-          <Search size={16} className="text-gray-400 shrink-0" />
-        </div>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded shadow-sm overflow-x-auto">
-        <table className="w-full text-xs sm:text-sm text-center min-w-150">
-          <thead className="bg-[#E5E7EB] text-gray-700 whitespace-nowrap">
-            <tr>
-              {['Ticket ID', 'Route', 'Date', 'Class', 'Status', 'Action'].map(h => (
-                <th key={h} className="p-3 sm:p-4 font-bold">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {bookings.map((b) => (
-              <tr key={b.id} className="border-b border-gray-100 hover:bg-slate-50 transition-colors whitespace-nowrap">
-                <td className="p-3 sm:p-4 text-gray-800">{b.id}</td>
-                <td className="p-3 sm:p-4 text-gray-800">{b.route}</td>
-                <td className="p-3 sm:p-4 text-gray-800">{b.date}</td>
-                <td className="p-3 sm:p-4 text-gray-800">{b.class}</td>
-                <td className={`p-3 sm:p-4 font-bold ${b.status === 'Confirmed' ? 'text-emerald-600' : b.status === 'Cancelled' ? 'text-red-600' : 'text-amber-500'}`}>
-                  {b.status}
-                </td>
-                <td className="p-3 sm:p-4 text-gray-800 flex items-center justify-center font-bold">
-                  <button 
-                    onClick={() => router.push(`/admin/booking_history/${b.id}`)}
-                    className="p-2 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-blue-50 transition"
-                  >
-                    <Eye className="w-4 h-4" /> 
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-    </div>
-  );
+    )
 }
