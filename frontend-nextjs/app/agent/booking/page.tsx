@@ -1,13 +1,46 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
 import Pagination from '@/components/Pagination';
 import { Search, ChevronDown, X } from 'lucide-react';
 import { useAuthStore } from '@/services/store/authStore';
 import { useAgentBookingsQuery } from '@/services/BookingService';
 import BookingCard from './components/BookingCard';
 import Link from 'next/link';
+
+type AgentBooking = {
+    booking_id: string;
+    ticket_code?: string;
+    booking_date?: string; // ISO date
+    total_price?: number;
+    seat_class?: string;
+    status?: string;
+    passenger_name?: string;
+    origin?: string;
+    destination?: string;
+    [key: string]: any;
+};
+
+// Include expected nested properties that BookingCard/BookingRecord may rely on
+type FlightDetail = {
+    flight_number?: string;
+    departure?: string;
+    arrival?: string;
+    [key: string]: any;
+};
+
+type Passenger = {
+    name?: string;
+    age?: number;
+    seat?: string;
+    [key: string]: any;
+};
+
+// Extend AgentBooking to include flight_details and passengers to satisfy BookingCard props
+type AgentBookingWithDetails = AgentBooking & {
+    flight_details?: FlightDetail | FlightDetail[];
+    passengers?: Passenger[];
+};
 
 const STATUS_OPTIONS = [
     { label: 'All Status', value: '' },
@@ -85,8 +118,16 @@ export default function BookingHistory() {
         limit: pageSize
     });
 
-    const totalCount = bookingResponse?.pagination?.total || 0;
-    const currentBookings = bookingResponse?.data || [];
+    // bookingResponse type may not have a `pagination` property depending on service response shape.
+    // Use a safe any-cast and fallbacks to support different response shapes.
+    const totalCount = (bookingResponse as any)?.pagination?.total
+        || (bookingResponse as any)?.total
+        || (bookingResponse as any)?.count
+        || (bookingResponse as any)?.meta?.total
+        || 0;
+    const currentBookings: AgentBookingWithDetails[] = Array.isArray(bookingResponse)
+        ? (bookingResponse as AgentBookingWithDetails[])
+        : (bookingResponse as any)?.bookings || (bookingResponse as any)?.data || [];
     const hasActiveFilters = search !== '' || status !== '' || seatClass !== '';
 
     const clearFilters = () => {
@@ -100,7 +141,6 @@ export default function BookingHistory() {
     if (!currentAgentId && !isLoading) {
         return (
             <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
-                <Navbar />
                 <div className="flex-1 flex items-center justify-center text-xs font-semibold text-rose-500">
                     Authentication required. Please login to view your booking history.
                 </div>
@@ -111,7 +151,6 @@ export default function BookingHistory() {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
-                <Navbar />
                 <div className="flex-1 flex items-center justify-center text-xs font-semibold text-slate-500">
                     Loading your booking history records...
                 </div>
@@ -122,7 +161,6 @@ export default function BookingHistory() {
     if (isError) {
         return (
             <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
-                <Navbar />
                 <div className="flex-1 flex items-center justify-center text-xs font-semibold text-rose-500">
                     Error loading bookings: {error?.message || "Internal server connection failed."}
                 </div>
@@ -131,8 +169,8 @@ export default function BookingHistory() {
     }
 
     return (
-        <div className="min-h-screen bg-[#fcfcfc] font-sans text-gray-800 pb-16">
-            <Navbar />
+        <>
+            
 
             {/* Page Header Section with Clean Structure */}
             <div className="bg-white border-b border-gray-100 py-6 mb-8">
@@ -196,17 +234,20 @@ export default function BookingHistory() {
 
                     {/* Bookings Render Block */}
                     <div className="flex flex-col gap-3.5">
-                        {currentBookings.length === 0 ? (
+                            {currentBookings.length === 0 ? (
                             <div className="text-center py-16 text-xs font-medium text-slate-400 border border-dashed border-slate-200 rounded-xl bg-slate-50/30">
                                 {hasActiveFilters
                                     ? "No bookings match your current search parameters or active filters."
                                     : "No flight booking records found under this agent account."}
                             </div>
-                        ) : (
-                            currentBookings.map((booking) => (
-                                <BookingCard key={booking.booking_id} booking={booking} />
-                            ))
-                        )}
+                            ) : (
+                                currentBookings.map((booking: AgentBookingWithDetails) => (
+                                    <BookingCard
+                                        key={booking.booking_id}
+                                        booking={{ ...booking, booking_id: Number(booking.booking_id) } as any}
+                                    />
+                                ))
+                            )}
                     </div>
 
                     {/* Pagination Interface */}
@@ -222,6 +263,6 @@ export default function BookingHistory() {
                     )}
                 </div>
             </main>
-        </div>
+        </>
     );
 }

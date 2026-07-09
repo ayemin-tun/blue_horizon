@@ -2,7 +2,6 @@
 
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { useBookingDetailQuery } from "@/services/BookingService";
 import { useAuthStore } from "@/services/store/authStore"; // 🟢 1. Import Auth Store
 
@@ -48,7 +47,6 @@ export default function BookingDetailPage() {
     if (isLoading) {
         return (
             <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
-                <Navbar />
                 <div className="flex-1 flex items-center justify-center text-xs font-semibold text-slate-500">
                     Loading booking details...
                 </div>
@@ -61,7 +59,6 @@ export default function BookingDetailPage() {
         const message = error?.message || response?.error?.details || response?.message || "This booking could not be found.";
         return (
             <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
-                <Navbar />
                 <div className="flex-1 flex flex-col items-center justify-center gap-4">
                     <p className="text-xs font-semibold text-rose-500">{message}</p>
                     <button
@@ -85,7 +82,6 @@ export default function BookingDetailPage() {
     if (bookingOwnerId !== authenticatedId) {
         return (
             <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
-                <Navbar />
                 <div className="flex-1 flex flex-col items-center justify-center gap-3">
                     <div className="p-3 bg-rose-50 rounded-full text-rose-500">
                         <X size={24} className="hidden" /> {/* Optional Icon */}
@@ -108,7 +104,6 @@ export default function BookingDetailPage() {
 
     return (
         <div className="min-h-screen bg-[#fcfcfc] font-sans text-gray-800 pb-16">
-            <Navbar />
 
             {/* Page Header Area */}
             <div className="bg-white border-b border-gray-100 py-6 mb-8">

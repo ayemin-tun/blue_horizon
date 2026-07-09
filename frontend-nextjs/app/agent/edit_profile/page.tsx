@@ -1,242 +1,217 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from "next/navigation"; 
-import { useAuthStore } from "@/services/store/authStore"; 
-import Navbar from "@/components/Navbar";
-// 🌐 ဘယ်ဖိုင်ကိုမှ အမှီအခိုမပြုသော ဆောက်ခဲ့သည့် profileService ကို Relative Path ဖြင့် Import ဆွဲယူခြင်း
-import { profileService, ProfileUpdatePayload } from "../../../services/profileService"; 
+import React, { useState, useEffect } from "react";
+import { useAuthStore } from "@/services/store/authStore";
+import { profileService, ProfileUpdatePayload } from "../../../services/profileService";
+import { toast } from "@/services/store/alertStore";
+import {
+  User,
+  Mail,
+  Phone,
+  ShieldCheck,
+  Loader2,
+  Settings,
+} from "lucide-react";
 
 export default function AgentProfile() {
-const router = useRouter(); 
-const token = useAuthStore((state) => (state as any).token); 
-const logout = useAuthStore((state) => (state as any).logout); 
+  // --- Pull current user info from the auth store (set at login) ---
+  const { userId, name, email: storedEmail, phone_no: storedPhone, role, setAuth } = useAuthStore((state) => state);
+  const getValidToken = useAuthStore((state) => state.getValidToken);
 
-// 🔑 Zustand store ထဲမှ ဖြစ်နိုင်ခြေရှိသော User ID Key များအား အရင်စစ်ဆေးခြင်း
-const storeUserId = useAuthStore((state) => 
-  (state as any).user_id || (state as any).id || (state as any).userId || (state as any).agent_id
-); 
+  // --- Profile display block (top banner) ---
+  const [profile, setProfile] = useState({
+    username: name || "",
+    email: storedEmail || "",
+    role: role || "agent",
+  });
 
-// User ID State (Zustand တွင်မရှိပါက Cookie မှ ရှာဖွေရန်)
-const [userId, setUserId] = useState<string | null>(null);
+  // --- Personal info form (name / email / phone only) ---
+  const [formData, setFormData] = useState({
+    username: name || "",
+    email: storedEmail || "",
+    phone_no: storedPhone || "",
+  });
 
-// Form input state
-const [formData, setFormData] = useState({
-    username: 'Agent 10#',
-    email: 'agent10#@gmail.com', // Default fallback
-    phone_no: '000000000', 
-});
+  const [isSaving, setIsSaving] = useState(false);
 
-const [message, setMessage] = useState({ type: '', text: '' });
+  // Keep local state in sync if the store changes
+  useEffect(() => {
+    setProfile({
+      username: name || "",
+      email: storedEmail || "",
+      role: role || "agent",
+    });
+    setFormData({
+      username: name || "",
+      email: storedEmail || "",
+      phone_no: storedPhone || "",
+    });
+  }, [name, storedEmail, storedPhone, role]);
 
-// Dashboard Stats State
-const [ticketStats, setTicketStats] = useState({
-    total: 100,
-    issued: 70,
-    pending: 15,
-    refund: 15,
-});
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-// 🔄 Component Mount ချိန်တွင် Cookie ထဲမှ Name နှင့် Email ကို ပေါင်းစပ်ပြီး တပြိုင်နက်တည်း ဆွဲထုတ်ခြင်း
-useEffect(() => {
-    const getCookie = (name: string) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift();
-    return null;
-    };
-
-    // ၁။ Saved Profile Name နှင့် Email အား Cookie မှ တစ်ခါတည်း ဆွဲယူပြီး Form ထဲ ထည့်သွင်းခြင်း
-    const savedName = getCookie('name');
-    const savedEmail = getCookie('email'); // 📧 Email Cookie ကိုပါ ရှာဖွေဖတ်ရှုခြင်း
-
-    // ✅ အဓိကပြင်ဆင်ချက် - Name ရော Email ပါရှိလျှင် ပြိုင်တူ Dynamic အစားထိုးလဲလှယ်ပေးရန် ရေးသားထားပါသည်
-    setFormData((prev) => ({
-        ...prev,
-        username: savedName ? decodeURIComponent(savedName) : 'Agent 10#',
-        email: savedEmail ? decodeURIComponent(savedEmail) : 'agent10#@gmail.com',
-    }));
-
-    // ၂။ User ID အား ရှာဖွေသတ်မှတ်ခြင်း (Zustand သို့မဟုတ် Cookie)
-    if (storeUserId) {
-    setUserId(String(storeUserId));
-    } else {
-    const savedId = getCookie('id') || getCookie('user_id') || getCookie('agent_id');
-    if (savedId) setUserId(savedId);
-    }
-}, [storeUserId]);
-
-// --- Handlers ---
-const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-};
-
-// 🚪 Logout ပြုလုပ်ချိန်တွင် သိမ်းဆည်းထားသော Email Cookie ပါ တစ်ခါတည်း သန့်ရှင်းရေးလုပ်ခြင်း
-const handleLogout = () => {
-    logout(); 
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = "name=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = "email=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"; // Email Cookie အား ဖျက်ခြင်း
-    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = "id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = "user_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    
-    window.location.href = "/login"; 
-};
-
-// 🔄 Profile Update ပြုလုပ်သည့် အပိုင်း
-const submitProfileUpdate = async (e: React.FormEvent) => {
+  // --- Save name / email / phone_no ---
+  const submitProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage({ type: '', text: '' });
 
-    if (!token) {
-    setMessage({ type: 'error', text: 'Authentication missing. Please log in again.' });
-    return;
+    const token = getValidToken();
+    if (!userId || !token) {
+      toast.warning("Your session has expired, please login again");
+      return;
     }
 
-    if (!userId) {
-    setMessage({ type: 'error', text: 'User identification missing. Cannot update profile.' });
-    return;
-    }
-
+    setIsSaving(true);
     try {
-    const payload: ProfileUpdatePayload = {
-        username: formData.username,
-        email: formData.email,
-        phone_no: formData.phone_no || null,
-    };
+      const payload: ProfileUpdatePayload = {
+        username: formData.username.trim(),
+        email: formData.email.trim(),
+        phone_no: formData.phone_no?.trim() || null,
+      };
 
-    const result = await profileService.updateProfile(Number(userId), payload, token);
+      const result = await profileService.updateProfile(userId, payload, token);
 
-    if (result.success) {
-        setMessage({ type: 'success', text: result.message || 'Profile edited successfully' });
-        
-        // 💾 အောင်မြင်ပါက Cookie ထဲသို့ Name ရော Email အသစ်ပါ တစ်ခါတည်း သက်တမ်းသတ်မှတ်ပြီး သိမ်းဆည်းပေးခြင်း
-        if (result.data?.username) {
-           document.cookie = `name=${encodeURIComponent(result.data.username)}; path=/; max-age=86400`;
-        }
-        if (result.data?.email) {
-           document.cookie = `email=${encodeURIComponent(result.data.email)}; path=/; max-age=86400`;
-        }
-    } else {
-        const errorDetails = result.error?.details || 'Validation error';
-        setMessage({ type: 'error', text: `${result.message}: ${errorDetails}` });
-    }
+      if (result.success && result.data) {
+        const updatedData = result.data;
+        toast.success("Profile updated successfully!");
+
+        setProfile((prev) => ({
+          ...prev,
+          username: updatedData.username,
+          email: updatedData.email,
+        }));
+
+        setAuth(
+          token,
+          3600000,
+          updatedData.user_id,
+          updatedData.username,
+          updatedData.role,
+          updatedData.phone_no,
+          updatedData.email
+        );
+      } else {
+        const errMsg = result.error?.details || result.message || "Failed to update profile";
+        toast.error(errMsg);
+      }
     } catch (error) {
-    console.error('Error updating profile:', error);
-    setMessage({ type: 'error', text: 'An unexpected communication error occurred.' });
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-};
+  };
 
-return (
-    <div className="w-full min-h-screen bg-gray-50 text-gray-900">
-    <Navbar/>
-    <div className="max-w-6xl mx-auto pt-5">
+  return (
+    <div className="w-full max-w-3xl mx-auto p-4 md:p-8 space-y-8">
+      {/* Premium Top Info Banner */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 shadow-xs overflow-hidden relative">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600"></div>
+
+        <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 rounded-full flex items-center justify-center border border-blue-100 shrink-0 shadow-inner">
+          <User className="w-10 h-10 stroke-[1.5]" />
+        </div>
         
-        {/* Top Header Bar */}
-        <div className="flex justify-between items-center pb-4 mb-2">
-        <div className="flex items-center gap-2 text-gray-800 font-bold text-lg">
-            <svg className="w-6 h-6 text-gray-800" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-            Agent Profile
+        <div className="text-center sm:text-left space-y-1.5 flex-1">
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">{profile.username}</h1>
+          <div className="flex flex-wrap gap-2 justify-center sm:justify-start pt-0.5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50/80 text-blue-700 border border-blue-100 shadow-3xs">
+              <ShieldCheck className="w-3.5 h-3.5" /> {profile.role}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200">
+              <Mail className="w-3.5 h-3.5" /> {profile.email}
+            </span>
+          </div>
         </div>
-        <button 
-            onClick={handleLogout}
-            className="text-red-600 font-bold hover:text-red-800 transition"
-        >
-            Logout
-        </button>
+      </div>
+
+      {/* Personal Information Form Card */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-5 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Personal Information</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Manage your account profile details</p>
+          </div>
+          <span className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 shadow-3xs">
+            <Settings className="w-4 h-4 animate-[spin_8s_linear_infinite]" />
+          </span>
         </div>
 
-        {/* Alert Notification banner */}
-        {message.text && (
-        <div className={`p-4 mb-6 rounded text-sm font-medium ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-            {message.type === 'success' ? '✓' : '⚠️'} {message.text}
-        </div>
-        )}
-
-        {/* Main Layout Split Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* LEFT COLUMN: Change Information Form */}
-        <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm h-fit">
-            <h2 className="text-gray-700 font-semibold mb-6">Change Information</h2>
-            <form onSubmit={submitProfileUpdate} className="space-y-5">
-            <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Full Name</label>
-                <input
+        <form onSubmit={submitProfileUpdate} className="p-6 space-y-6">
+          {/* Full Name Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">Full Name</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 pointer-events-none">
+                <User className="w-4 h-4 stroke-[1.8]" />
+              </span>
+              <input
                 type="text"
                 name="username"
                 value={formData.username}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 bg-white rounded px-4 py-2 text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-slate-50/40 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition-all duration-200 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/8 shadow-3xs"
                 required
-                />
+              />
             </div>
-            
-            <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Email Address</label>
-                <input
+          </div>
+
+          {/* Email Address Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">Email Address</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 pointer-events-none">
+                <Mail className="w-4 h-4 stroke-[1.8]" />
+              </span>
+              <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 bg-white rounded px-4 py-2 text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-slate-50/40 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition-all duration-200 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/8 shadow-3xs"
                 required
-                />
+              />
             </div>
+          </div>
 
-            <input type="hidden" name="phone_no" value={formData.phone_no} />
+          {/* Phone Number Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">Phone Number</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 pointer-events-none">
+                <Phone className="w-4 h-4 stroke-[1.8]" />
+              </span>
+              <input
+                type="text"
+                name="phone_no"
+                value={formData.phone_no}
+                onChange={handleInputChange}
+                placeholder="09-xxxxxxxxx"
+                className="w-full bg-slate-50/40 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition-all duration-200 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/8 shadow-3xs"
+              />
+            </div>
+          </div>
 
+          {/* Action Button */}
+          <div className="pt-4 flex justify-end border-t border-slate-100">
             <button
-                type="submit"
-                className="w-full bg-black text-white font-semibold py-3 rounded hover:bg-gray-800 transition duration-200 mt-4"
+              type="submit"
+              disabled={isSaving}
+              className="w-full sm:w-auto px-6 bg-slate-900 text-white font-semibold py-2.5 rounded-xl hover:bg-slate-800 transition duration-150 active:scale-[0.98] text-sm shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-                Save Changes
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving Changes...
+                </>
+              ) : (
+                "Save Changes"
+              )}
             </button>
-            </form>
-        </div>
-
-        {/* RIGHT COLUMN: Tickets Sold Dashboard */}
-        <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm flex flex-col">
-            <h2 className="text-gray-700 font-semibold mb-6">Tickets Sold</h2>
-            
-            <div className="grid grid-cols-2 gap-4 flex-grow">
-            <div className="bg-white border border-gray-200 rounded-md p-4 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-sm font-bold text-gray-800 mb-1">Total Ticket Sale</span>
-                <span className="text-3xl font-black text-indigo-900 mb-1">{ticketStats.total}</span>
-                <span className="text-xs font-semibold text-gray-500">Tickets</span>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-md p-4 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-sm font-bold text-gray-800 mb-1">Issued Tickets</span>
-                <span className="text-3xl font-black text-green-600 mb-1">{ticketStats.issued}</span>
-                <span className="text-xs font-semibold text-gray-500">Tickets</span>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-md p-4 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-sm font-bold text-gray-800 mb-1">Pending Tickets</span>
-                <span className="text-3xl font-black text-yellow-500 mb-1">{ticketStats.pending}</span>
-                <span className="text-xs font-semibold text-gray-500">Tickets</span>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-md p-4 flex flex-col items-center justify-center shadow-sm">
-                <span className="text-sm font-bold text-gray-800 mb-1">Refund Tickets</span>
-                <span className="text-3xl font-black text-red-600 mb-1">{ticketStats.refund}</span>
-                <span className="text-xs font-semibold text-gray-500">Tickets</span>
-            </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-            <button className="bg-[#1e1a9d] text-white font-semibold py-2 px-8 rounded hover:bg-blue-900 transition duration-200">
-                View Details
-            </button>
-            </div>
-        </div>
-
-        </div>
+          </div>
+        </form>
+      </div>
     </div>
-    </div>
-);
+  );
 }
