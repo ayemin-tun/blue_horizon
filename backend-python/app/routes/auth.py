@@ -8,6 +8,11 @@ from app.database import models
 from app.utils.auth_utils import get_password_hash, verify_password, create_access_token
 from datetime import datetime
 from app.utils.reset_email_sender import send_email_notification
+from app.utils.email_verification_utils import generate_verification_token, send_verification_email
+from fastapi import BackgroundTasks  
+from app.config import EMAIL_VERIFICATION_REQUIRED
+
+
 router = APIRouter(
     prefix="/api",
     tags=["Authentication"]
@@ -31,16 +36,14 @@ class ApiResponse(BaseModel):
     error: Optional[dict] = None
 
 
-# ---  1. REGISTER API ---
 @router.post("/register", response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
-def register_user(user_data: RegisterSchema, db: Session = Depends(get_db)):
+def register_user(user_data: RegisterSchema, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
 
-    #check email is already register
     db_user = db.query(models.User).filter(
         models.User.email == user_data.email,
         models.User.is_deleted == 0
     ).first()
-    
+
     if db_user:
         return {
             "success": False,
@@ -48,32 +51,45 @@ def register_user(user_data: RegisterSchema, db: Session = Depends(get_db)):
             "data": None,
             "error": {"code": "EMAIL_ALREADY_EXISTS", "details": "Email already registered"}
         }
-    
-    #password hash
+
     hashed_pwd = get_password_hash(user_data.password)
-    
-    #catch register date
     current_date_str = datetime.now().strftime("%d/%m/%Y")
+
     new_user = models.User(
         username=user_data.username,
         email=user_data.email,
         password=hashed_pwd,
         role="agent",
         joined_date=current_date_str,
-        status="ACTIVE"
+        # 🆕 Flag-based behavior
+        status="ACTIVE" if not EMAIL_VERIFICATION_REQUIRED else "INACTIVE",
+        is_email_verified=1 if not EMAIL_VERIFICATION_REQUIRED else 0
     )
-    
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
+    response_message = "User registered successfully."
+
+    # 🆕 Only generate token / send email if verification is required
+    if EMAIL_VERIFICATION_REQUIRED:
+        token = generate_verification_token(db, new_user.user_id)
+        db.commit()
+        background_tasks.add_task(
+            send_verification_email,
+            email=new_user.email,
+            username=new_user.username,
+            token=token
+        )
+        response_message = "Registered successfully. Please check your email to verify your account before logging in."
+
     return {
         "success": True,
-        "message": "User registered successfully",
+        "message": response_message,
         "data": {"username": new_user.username, "email": new_user.email},
-        "error": None  
+        "error": None
     }
-
 
 # --- 2. LOGIN API ---
 @router.post("/login", response_model=ApiResponse)
@@ -101,6 +117,17 @@ def login_user(login_data: LoginSchema, db: Session = Depends(get_db)):
             "error": {"code": "INVALID_CREDENTIALS", "details": "Invalid Email or Password"}
         }
     
+    if EMAIL_VERIFICATION_REQUIRED and db_user.role == "agent" and db_user.is_email_verified == 0:
+        return {
+        "success": False,
+        "message": "Login failed",
+        "data": None,
+        "error": {
+            "code": "EMAIL_NOT_VERIFIED",
+            "details": "Please verify your email address before logging in. Check your inbox for the verification link."
+        }
+    }
+
     if db_user.status != "ACTIVE":
         return {
             "success": False,
@@ -414,3 +441,72 @@ def resolve_password_request(
         "message": "Password reset successfully and email notification send to request email.",
         "data": {"request_id": request_record.id, "email": db_user.email}
     }
+
+@router.get("/verify-email", response_model=ApiResponse)
+def verify_email(token: str, db: Session = Depends(get_db)):
+
+    token_record = db.query(models.EmailVerificationToken).filter(
+        models.EmailVerificationToken.token == token,
+        models.EmailVerificationToken.is_used == 0
+    ).first()
+
+    if not token_record:
+        return {
+            "success": False,
+            "message": "Verification failed",
+            "data": None,
+            "error": {"code": "INVALID_TOKEN", "details": "This verification link is invalid or has already been used."}
+        }
+
+    if token_record.expires_at < datetime.now():
+        return {
+            "success": False,
+            "message": "Verification failed",
+            "data": None,
+            "error": {"code": "TOKEN_EXPIRED", "details": "This verification link has expired. Please request a new one."}
+        }
+
+    user = db.query(models.User).filter(models.User.user_id == token_record.user_id).first()
+    if not user:
+        return {
+            "success": False,
+            "message": "Verification failed",
+            "data": None,
+            "error": {"code": "USER_NOT_FOUND", "details": "Associated user account no longer exists."}
+        }
+
+    user.is_email_verified = 1
+    user.status = "ACTIVE"
+    token_record.is_used = 1
+
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Email verified successfully. You can now log in.",
+        "data": {"email": user.email},
+        "error": None
+    }
+
+class ResendVerificationSchema(BaseModel):
+    email: EmailStr
+
+@router.post("/resend-verification", response_model=ApiResponse)
+def resend_verification(data: ResendVerificationSchema, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+
+    user = db.query(models.User).filter(
+        models.User.email == data.email,
+        models.User.is_deleted == 0
+    ).first()
+
+    if not user:
+        return {"success": False, "message": "Request failed", "data": None, "error": {"code": "USER_NOT_FOUND", "details": "No account found with this email."}}
+
+    if user.is_email_verified == 1:
+        return {"success": False, "message": "Already verified", "data": None, "error": {"code": "ALREADY_VERIFIED", "details": "This email is already verified."}}
+
+    token = generate_verification_token(db, user.user_id)
+    db.commit()
+    background_tasks.add_task(send_verification_email, email=user.email, username=user.username, token=token)
+
+    return {"success": True, "message": "Verification email resent.", "data": {"email": user.email}, "error": None}

@@ -32,7 +32,7 @@ export default function RegisterForm() {
       });
 
       if (result.success) {
-        toast.success("Registration Successful!");
+        toast.success("Registered successfully. Please check your email to verify your account before logging in.");
         router.push("/login");
       } else {
         setUiError(result.error?.details || result.message);

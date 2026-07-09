@@ -33,6 +33,9 @@ export default function LoginForm() {
     if (alertType === "already_logged_in") {
       toast.warning("You are already login!");
     }
+     if (alertType === "email_change") {
+      toast.warning("Email updated. Please verify your new email address before logging in again.");
+    }
   }, [alertType]);
 
   const router = useRouter();
