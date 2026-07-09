@@ -5,21 +5,23 @@ import Footer from "@/components/Footer";
 import FlightSearchForm from "./main/FlightSearchForm";
 
 export default function HomePage() {
-  
+
 
   return (
     <main className="min-h-screen bg-white ">
 
-      <HeroSection/>
+      <HeroSection />
 
-      <FlightSearchForm/>
+      <div className="max-w-2xl mx-auto px-4 -mt-36 relative z-30">
+        <FlightSearchForm />
+      </div>
 
-      <AvailableAirline/>
+      <AvailableAirline />
 
-     
-      <TouristAttractions/>
 
-      <Footer/>
+      <TouristAttractions />
+
+      <Footer />
 
     </main>
   );

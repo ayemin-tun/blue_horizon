@@ -20,20 +20,20 @@ export default function LoginForm() {
   const [uiError, setUiError] = useState<string | null>(null);
   const loginMutation = useLoginMutation();
 
-      // Hadle serverside alert message from middleware.ts
-    const searchParams = useSearchParams();
-    const alertType = searchParams.get("alert_action");
-    useEffect(() => {
-        if (alertType === "unauthorized") {
-            toast.warning("You are not authorized, please login first");
-        } 
-         if (alertType === "forbidden") {
-            toast.warning("You are not authorized to access this page");
-        }
-        if (alertType === "already_logged_in") {
-            toast.warning("You are already login!");
-        }
-    }, [alertType]);
+  // Hadle serverside alert message from middleware.ts
+  const searchParams = useSearchParams();
+  const alertType = searchParams.get("alert_action");
+  useEffect(() => {
+    if (alertType === "unauthorized") {
+      toast.warning("You are not authorized, please login first");
+    }
+    if (alertType === "forbidden") {
+      toast.warning("You are not authorized to access this page");
+    }
+    if (alertType === "already_logged_in") {
+      toast.warning("You are already login!");
+    }
+  }, [alertType]);
 
   const router = useRouter();
   const handleLogin = async (e: React.FormEvent) => {
@@ -43,26 +43,30 @@ export default function LoginForm() {
       const result = await loginMutation.mutateAsync({ email, password });
 
       if (result.success) {
+        const data = result.data as any;
+
         toast.success("Login Successful!");
 
         // cookie store because next js middleware does not use zustand localStorage
-        document.cookie = `token=${(result.data as any)?.access_token}; path=/; max-age=3600`;
-        document.cookie = `name=${(result.data as any).username}; path=/; max-age=3600`;
-        document.cookie = `role=${(result.data as any).role}; path=/; max-age=3600`;
+        document.cookie = `token=${data.access_token}; path=/; max-age=3600`;
+        document.cookie = `name=${data.username}; path=/; max-age=3600`;
+        document.cookie = `role=${data.role}; path=/; max-age=3600`;
 
         setAuth(
-          (result.data as any)?.access_token,
+          data.access_token,
           3600000,
-          (result.data as any).username || "Unknown user",
-          (result.data as any).role || "user"
+          data.user_id || null,
+          data.username || "Unknown user",
+          data.role || "agent",
+          data.phone_no || null,  
+          data.email || null       
         );
 
-        if ((result.data as any).role == 'admin') {
-          router.push('/admin')
+        if (data.role == "admin") {
+          router.push("/admin");
         } else {
-          router.push('/')
+          router.push("/");
         }
-
       } else {
         setUiError(result.error?.details || result.message);
       }

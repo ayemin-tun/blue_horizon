@@ -5,6 +5,7 @@ from typing import Optional, Any
 from app.database.database import get_db
 from app.database import models
 from app.utils.auth_utils import get_current_user 
+from sqlalchemy import func
 
 router = APIRouter(prefix="/api/airlines", tags=["Airlines"])
 
@@ -21,21 +22,21 @@ def create_airline(
     current_user:dict = Depends(get_current_user)
 ):
     existing_airline = db.query(models.Airline).filter(
-        models.Airline.airline_name == data.airline_name
+        func.lower(models.Airline.airline_name) == func.lower(data.airline_name)
     ).first()
 
     if existing_airline:
         if existing_airline.is_deleted:
-            # if airline is delete (Re-activate)
+            # if airline is deleted (Re-activate)
             existing_airline.is_deleted = False
-            existing_airline.country = data.country 
+            existing_airline.airline_name = data.airline_name
+            existing_airline.country = data.country
+
             db.commit()
             return {"success": True, "message": "Airline re-activated", "data": existing_airline}
         else:
-            # if not delete show already exist
             return {"success": False, "message": "Airline name already exists and active"}
 
-    # if not exist, create new 
     new_airline = models.Airline(airline_name=data.airline_name, country=data.country)
     db.add(new_airline)
     db.commit()
@@ -87,7 +88,17 @@ def update_airline(
     airline = db.query(models.Airline).filter(models.Airline.airline_id == id).first()
     if not airline:
         return {"success": False, "message": "Airline not found"}
-    
+
+    # ဒီ name ကို တခြား active airline (id မတူတာ) က သုံးနေလား စစ်မယ်
+    duplicate = db.query(models.Airline).filter(
+        func.lower(models.Airline.airline_name) == func.lower(data.airline_name),
+        models.Airline.airline_id != id,
+        models.Airline.is_deleted == False
+    ).first()
+
+    if duplicate:
+        return {"success": False, "message": "Airline name already exists and active"}
+
     airline.airline_name = data.airline_name
     airline.country = data.country
     db.commit()

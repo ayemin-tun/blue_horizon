@@ -243,6 +243,23 @@ def delete_flight(id: int, db: Session = Depends(get_db)):
                 }
             }
 
+        # ဒီ flight ကို ROUTE_SCHEDULE က active ဖြစ်ဖြစ် သုံးနေလား စစ်မယ်
+        linked_schedule = db.query(models.RouteSchedule).filter(
+            models.RouteSchedule.flight_id == id,
+            models.RouteSchedule.is_deleted == False
+        ).first()
+
+        if linked_schedule:
+            return {
+                "success": False,
+                "message": "Delete failed",
+                "data": None,
+                "error": {
+                    "code": "FLIGHT_HAS_ACTIVE_SCHEDULE",
+                    "details": "Cannot delete this flight because it still has active route schedules associated with it."
+                }
+            }
+
         flight.is_deleted = True
         db.commit()
         
