@@ -20,7 +20,6 @@ class RouteSchema(BaseModel):
 def create_route(data: RouteSchema, db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
     # Check route is already exist on db 
 
-def create_route(data: RouteSchema, db: Session = Depends(get_db)):
    
     if data.departure_city.strip().lower() == data.arrival_city.strip().lower():
         return {"success": False, "message": "Departure city and arrival city cannot be the same"}
