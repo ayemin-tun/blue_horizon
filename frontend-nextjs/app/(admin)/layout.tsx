@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <AdminSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
         {/* Right Side: Panel  */}
-        <section className="flex-1 p-4 md:p-5 w-full overflow-x-hidden bg-white">
+        <section className="flex-1 p-4 md:p-5 w-full overflow-x-hidden">
           {children}
         </section>
 
