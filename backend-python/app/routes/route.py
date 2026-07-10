@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status,Query
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from sqlalchemy import func
+from sqlalchemy import func,desc
 from pydantic import BaseModel
 from app.database.database import get_db
 from app.database import models
@@ -16,7 +16,6 @@ class RouteSchema(BaseModel):
 # 1. CREATE
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_route(data: RouteSchema, db: Session = Depends(get_db)):
-    # departure နဲ့ arrival မြို့ တူနေရင် ပိတ်မယ် (case-insensitive)
     if data.departure_city.strip().lower() == data.arrival_city.strip().lower():
         return {"success": False, "message": "Departure city and arrival city cannot be the same"}
 
@@ -53,6 +52,7 @@ def get_routes(
 ):
     # Base query
     query = db.query(models.Route).filter(models.Route.is_deleted == False)
+    query = query.order_by(desc(models.Route.route_id))
     
     # search city name on db
     if search:

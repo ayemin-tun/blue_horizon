@@ -6,13 +6,13 @@ Blue Horizon Airlines - Forecast Analytics  Mock Data Seeder
 
 ထည့်ပေးမယ့် data:
   - AIRLINES      : +4  (Blue Horizon 5)
-  - ROUTES        : +7  (Yangon-Mandalay 8)
+  - ROUTES        : +9  (Yangon-Mandalay ကလွဲပြီး route pair 5 ခု၊ round-trip 10 ခု)
   - FLIGHTS       : +14 (BH-101 15 )  (airline share test)
   - ROUTE_SCHEDULE: flight  schedule (route weight )
   - FLIGHT_INSTANCE: Jan-Jun 2026  month-weight (April=Thingyan high season)
   - USERS (agent) : +4 (agent01  5) - weight difference (agent performance test)
   - PASSENGERS    : 300
-  - BOOKINGS      : 200 (status: 92% CONFIRMED / 8% CANCELLED)
+  - BOOKINGS      : 500 (status: 92% CONFIRMED / 8% CANCELLED)
   - BOOKING_PASSENGERS : booking (1 or 2)
 
 Run:  python mock_data.py
@@ -52,25 +52,33 @@ NEW_AIRLINES = [
     ("FMI Air", "Myanmar"),
 ]
 
+# NOTE: "Yangon-Mandalay" route already exists in the DB (used by flight_id=1 / BH-101).
+# Here we add the REVERSE of that route plus 4 more city-pairs, each in BOTH directions,
+# so that the final route set is 5 city-pairs x 2 directions = 10 routes total (round-trip).
 NEW_ROUTES = [
-    ("Yangon", "Mawlamyine"),
+    ("Mandalay", "Yangon"),        # reverse of the existing Yangon-Mandalay route
     ("Yangon", "Nay Pyi Taw"),
-    ("Yangon", "Heho"),
-    ("Yangon", "Sittwe"),
-    ("Yangon", "Myitkyina"),
+    ("Nay Pyi Taw", "Yangon"),
     ("Mandalay", "Bagan"),
-    ("Mandalay", "Nay Pyi Taw"),
+    ("Bagan", "Mandalay"),
+    ("Yangon", "Heho"),
+    ("Heho", "Yangon"),
+    ("Yangon", "Mawlamyine"),
+    ("Mawlamyine", "Yangon"),
 ]
 
+# 5 city-pairs, round-trip (10 routes total). Each direction has its own (close) weight.
 ROUTE_WEIGHTS = {
-    ("Yangon", "Mandalay"): 30,       # HIGH
-    ("Yangon", "Nay Pyi Taw"): 22,    # HIGH-MED
-    ("Mandalay", "Bagan"): 18,        # MEDIUM
-    ("Yangon", "Heho"): 14,           # MEDIUM
-    ("Yangon", "Mawlamyine"): 10,     # MEDIUM-LOW
-    ("Mandalay", "Nay Pyi Taw"): 8,   # LOW
-    ("Yangon", "Sittwe"): 6,          # LOW
-    ("Yangon", "Myitkyina"): 4,       # LOW
+    ("Yangon", "Mandalay"): 30,        # HIGH (outbound)
+    ("Mandalay", "Yangon"): 28,        # HIGH (return)
+    ("Yangon", "Nay Pyi Taw"): 22,     # HIGH-MED (outbound)
+    ("Nay Pyi Taw", "Yangon"): 20,     # HIGH-MED (return)
+    ("Mandalay", "Bagan"): 18,         # MEDIUM (outbound)
+    ("Bagan", "Mandalay"): 16,         # MEDIUM (return)
+    ("Yangon", "Heho"): 14,            # MEDIUM (outbound)
+    ("Heho", "Yangon"): 12,            # MEDIUM (return)
+    ("Yangon", "Mawlamyine"): 10,      # MEDIUM-LOW (outbound)
+    ("Mawlamyine", "Yangon"): 9,       # MEDIUM-LOW (return)
 }
 
 AIRLINE_CODE = {
@@ -305,7 +313,7 @@ def seed_passengers(cur, count=300):
     return passenger_ids
 
 
-def seed_bookings(cur, instances, agent_ids, passenger_ids, count=200):
+def seed_bookings(cur, instances, agent_ids, passenger_ids, count=500):
     
     agent_weights = [0.35, 0.25, 0.18, 0.13, 0.09][: len(agent_ids)]
 
@@ -392,7 +400,7 @@ def seed_mock_data():
     instances = seed_instances(cur, schedules)
     agent_ids = seed_agents(cur)
     passenger_ids = seed_passengers(cur, count=300)
-    seed_bookings(cur, instances, agent_ids, passenger_ids, count=200)
+    seed_bookings(cur, instances, agent_ids, passenger_ids, count=500)
     update_instance_occupancy(cur, instances)
 
     conn.commit()

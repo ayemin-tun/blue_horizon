@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from app.database.database import get_db
 from app.database import models
-from sqlalchemy import cast, String
+from sqlalchemy import cast, desc
 
 router = APIRouter(prefix="/api/agents", tags=["Agent Management"])
 
@@ -59,6 +59,7 @@ def get_agents(
         # Recent Joined
         recent_joined_count = 0
         all_agents = db.query(models.User).filter(models.User.role == "agent", models.User.is_deleted == 0).all()
+
         current_time = datetime.now()
         for agent in all_agents:
             if agent.joined_date:
@@ -75,6 +76,7 @@ def get_agents(
         
         agents = (
             base_query
+            .order_by(desc(models.User.user_id))
             .offset(skip)
             .limit(limit)
             .all()
