@@ -9,10 +9,10 @@ backend-python/__pycache__/
 backend-python/*.pyc
 backend-python/venv/
 backend-python/.env
-
+backend-cobol/bin
 # Database 
 backend-python/data/blue_horizon.db
-
+backend-python/bin
 # OS Files
 .DS_Store
 Thumbs.db

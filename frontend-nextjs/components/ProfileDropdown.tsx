@@ -37,7 +37,7 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
     setIsOpen(false);
     
     // ⚠️ router.push
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   // (Routes)

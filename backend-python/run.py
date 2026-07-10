@@ -22,6 +22,7 @@ from app.routes.profile import router as profile_router
 
 from app.routes.booking import router as booking_router
 from app.routes.dashboard import router as dashboard_router
+from app.routes.forecast import router as forecast_router
 
 
 # Close Docs url in fast api 
@@ -47,6 +48,7 @@ app.include_router(flight_router)
 app.include_router(agent_router)
 app.include_router(schedule_router)
 app.include_router(schedule_instance_router)
+app.include_router(forecast_router)
 
 app.include_router(profile_router)
 
