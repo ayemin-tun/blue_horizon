@@ -38,7 +38,7 @@ def get_schedule_instances(
     db: Session = Depends(get_db)
 ):
     try:
-        # Helper function for safe float conversion
+        # Helper function for safe float casting
         def to_float(val, fallback):
             try:
                 if val is not None and float(val) > 0:
@@ -47,13 +47,13 @@ def get_schedule_instances(
                 pass
             return float(fallback) if fallback is not None else 0.0
 
-        # Base query fetching active instances
+        # Base query configuration targeting active instances with eager relationship loading
         base_query = db.query(models.FlightInstance).options(
             joinedload(models.FlightInstance.schedule).joinedload(models.RouteSchedule.route),
             joinedload(models.FlightInstance.schedule).joinedload(models.RouteSchedule.flight).joinedload(models.Flight.airline)
         ).filter(models.FlightInstance.is_deleted == 0)
 
-        # 1. Filters
+        # --- Filter Constraints ---
         if route_id:
             base_query = base_query.join(models.FlightInstance.schedule).filter(models.RouteSchedule.route_id == route_id)
 
@@ -70,29 +70,36 @@ def get_schedule_instances(
                 (func.lower(models.Airline.airline_name).like(search_param))
             )
 
-        all_matches = base_query.all()
-
-        # 2. Date Filtering
+        # --- Date Normalization and Evaluative Processing ---
         today_str = datetime.now().strftime("%d/%m/%Y")
         start_date_obj = datetime.strptime(from_date.strip() if from_date else today_str, "%d/%m/%Y")
         end_date_obj = datetime.strptime(to_date.strip() if to_date else today_str, "%d/%m/%Y")
 
+        all_matches = base_query.all()
         filtered_instances = []
         metric_scheduled = metric_departed = metric_cancelled = 0
 
+        # Apply precise analytical checks against parsed string-based date inputs
         for inst in all_matches:
-            inst_date_obj = datetime.strptime(inst.flight_date, "%d/%m/%Y")
-            if start_date_obj <= inst_date_obj <= end_date_obj:
-                filtered_instances.append(inst)
-                s = (inst.status or "SCHEDULED").upper()
-                if s == "SCHEDULED": metric_scheduled += 1
-                elif s == "DEPARTED": metric_departed += 1
-                elif s == "CANCELLED": metric_cancelled += 1
+            try:
+                inst_date_obj = datetime.strptime(inst.flight_date, "%d/%m/%Y")
+                if start_date_obj <= inst_date_obj <= end_date_obj:
+                    filtered_instances.append(inst)
+                    s = (inst.status or "SCHEDULED").upper()
+                    if s == "SCHEDULED": metric_scheduled += 1
+                    elif s == "DEPARTED": metric_departed += 1
+                    elif s == "CANCELLED": metric_cancelled += 1
+            except ValueError:
+                continue
 
-        # 3. Pagination
+        # --- Latest First Sorting Logic ---
+        # Sort collections sequentially backwards based on target scheduling dates
+        filtered_instances.sort(key=lambda x: datetime.strptime(x.flight_date, "%d/%m/%Y"), reverse=True)
+        
+        # Paginate final clean data
         paginated_instances = filtered_instances[skip : skip + limit]
 
-        # 4. Data Mapping
+        # --- Data Presentation Structure Mapping ---
         formatted_instances = []
         for inst in paginated_instances:
             sch = inst.schedule
@@ -136,6 +143,7 @@ def get_schedule_instances(
             "data": None,
             "error": {"code": "SERVER_ERROR", "details": str(e)}
         }
+    
 # ─── 2. RETRIEVE SINGLE INSTANCE DETAIL ──────────────────────────────────────
 
 """

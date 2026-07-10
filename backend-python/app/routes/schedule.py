@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Query
-from sqlalchemy import func
+from sqlalchemy import func,desc
 from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from typing import Any, Optional, List
@@ -151,6 +151,7 @@ def get_schedules(
 
         # Pagination & Query execution
         filtered_total = base_query.count()
+        base_query = base_query.order_by(desc(models.RouteSchedule.schedule_id))
         raw_schedules = base_query.offset(skip).limit(limit).all()
 
         # Data Mapping 

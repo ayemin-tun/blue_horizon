@@ -269,7 +269,6 @@ def get_all_bookings_for_admin(
     """
     try:
         # ─── 1. COMPUTE GLOBAL DASHBOARD METRICS ────────────────────────────
-        # 🟢 Filter မသက်ရောက်ခင် တစ်ကျောင်းလုံးမှာရှိတဲ့ Booking Metrics အစစ်အမှန်ကို ရှာဖွေတွက်ချက်မယ်
         metrics_query = db.query(
             func.count(models.Booking.booking_id).label("total"),
             func.count(case((func.lower(models.Booking.status) == "confirmed", 1))).label("confirmed"),

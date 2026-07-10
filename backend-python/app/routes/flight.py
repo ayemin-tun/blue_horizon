@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Query
-from sqlalchemy import func
+from sqlalchemy import func,desc
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database import models
@@ -112,6 +112,7 @@ def get_flights(
             
         # Total count for the current query (used for pagination)
         total_count = query.count()
+        query = query.order_by(desc(models.Flight.flight_id))
         raw_flights = query.offset(skip).limit(limit).all()
         
         serialized_flights = [FlightResponse.model_validate(f).model_dump() for f in raw_flights]
