@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, Any
 from app.database.database import get_db
 from app.database import models
+from app.utils.auth_utils import get_current_user 
 from sqlalchemy import func
 
 router = APIRouter(prefix="/api/airlines", tags=["Airlines"])
@@ -15,8 +16,11 @@ class AirlineSchema(BaseModel):
 
 # --- 1. CREATE ---
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_airline(data: AirlineSchema, db: Session = Depends(get_db)):
-    # case-insensitive check (soft delete ဖြစ်သည်ဖြစ်စေ မဖြစ်သည်ဖြစ်စေ ပါဝင်စစ်မယ်)
+def create_airline(
+    data: AirlineSchema,
+    db: Session = Depends(get_db),
+    current_user:dict = Depends(get_current_user)
+):
     existing_airline = db.query(models.Airline).filter(
         func.lower(models.Airline.airline_name) == func.lower(data.airline_name)
     ).first()
@@ -25,8 +29,9 @@ def create_airline(data: AirlineSchema, db: Session = Depends(get_db)):
         if existing_airline.is_deleted:
             # if airline is deleted (Re-activate)
             existing_airline.is_deleted = False
-            existing_airline.airline_name = data.airline_name  # spelling/case အသစ်ကို သိမ်းမယ်
+            existing_airline.airline_name = data.airline_name
             existing_airline.country = data.country
+
             db.commit()
             return {"success": True, "message": "Airline re-activated", "data": existing_airline}
         else:
@@ -42,8 +47,8 @@ def create_airline(data: AirlineSchema, db: Session = Depends(get_db)):
 def get_airlines(
     skip: int = 0, 
     limit: int = 5, 
-    search: Optional[str] = Query(None), # accept search as optional query
-    db: Session = Depends(get_db)
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
 ):
     # Base query
     query = db.query(models.Airline).filter(models.Airline.is_deleted == False)
@@ -74,7 +79,12 @@ def get_airlines(
 
 # --- 3. UPDATE ---
 @router.put("/{id}")
-def update_airline(id: int, data: AirlineSchema, db: Session = Depends(get_db)):
+def update_airline(
+    id: int,
+    data: AirlineSchema, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     airline = db.query(models.Airline).filter(models.Airline.airline_id == id).first()
     if not airline:
         return {"success": False, "message": "Airline not found"}
@@ -96,7 +106,11 @@ def update_airline(id: int, data: AirlineSchema, db: Session = Depends(get_db)):
 
 # --- 4. DELETE (soft delete) ---
 @router.delete("/{id}") 
-def delete_airline(id: int, db: Session = Depends(get_db)):
+def delete_airline(
+    id: int, 
+    db: Session = Depends(get_db), 
+    current_user: dict = Depends(get_current_user)
+):
     airline = db.query(models.Airline).filter(
         models.Airline.airline_id == id,
         models.Airline.is_deleted == False 

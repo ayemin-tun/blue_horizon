@@ -47,7 +47,7 @@ export const usePasswordRequestsQuery = (page: number, limit: number, search: st
       if (status) {
         url += `&status=${encodeURIComponent(status)}`;
       }
-      const response = await api.get(url);
+      const response = await api.get(url, { requiresAuth: true });
       return response;
     },
   });
@@ -63,7 +63,7 @@ export function useResolvePasswordRequestMutation() {
 
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: ResolvePasswordPayload }) =>
-      api.patch(`/api/admin/password-requests/${id}/resolve`, payload, { headers: authHeader() }),
+      api.patch(`/api/admin/password-requests/${id}/resolve`, payload, { requiresAuth: true }),
     
     onSuccess: (res) => {
       if (res.success) {

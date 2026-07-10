@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.database.database import get_db
 from app.database import models
 from typing import Optional
+from app.utils.auth_utils import get_current_user
 
 router = APIRouter(prefix="/api/routes", tags=["Routes"])
 
@@ -15,10 +16,14 @@ class RouteSchema(BaseModel):
 
 # 1. CREATE
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_route(data: RouteSchema, db: Session = Depends(get_db)):
-    # departure နဲ့ arrival မြို့ တူနေရင် ပိတ်မယ် (case-insensitive)
+
+def create_route(data: RouteSchema, db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
+    # Check route is already exist on db 
+
+   
     if data.departure_city.strip().lower() == data.arrival_city.strip().lower():
         return {"success": False, "message": "Departure city and arrival city cannot be the same"}
+
 
     existing_route = db.query(models.Route).filter(
         func.lower(models.Route.departure_city) == func.lower(data.departure_city),
@@ -80,7 +85,7 @@ def get_routes(
 
 # 3. UPDATE
 @router.put("/{id}")
-def update_route(id: int, data: RouteSchema, db: Session = Depends(get_db)):
+def update_route(id: int, data: RouteSchema, db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
     route = db.query(models.Route).filter(
         models.Route.route_id == id,
         models.Route.is_deleted == False
@@ -89,7 +94,7 @@ def update_route(id: int, data: RouteSchema, db: Session = Depends(get_db)):
     if not route:
         return {"success": False, "message": "Route not found"}
 
-    # departure နဲ့ arrival မြို့ တူနေရင် ပိတ်မယ်
+    
     if data.departure_city.strip().lower() == data.arrival_city.strip().lower():
         return {"success": False, "message": "Departure city and arrival city cannot be the same"}
 
@@ -110,7 +115,7 @@ def update_route(id: int, data: RouteSchema, db: Session = Depends(get_db)):
 
 # 4. DELETE (Soft Delete)
 @router.delete("/{id}")
-def delete_route(id: int, db: Session = Depends(get_db)):
+def delete_route(id: int, db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
     route = db.query(models.Route).filter(
         models.Route.route_id == id,
         models.Route.is_deleted == False

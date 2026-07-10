@@ -1,4 +1,5 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, status,Query
+from fastapi import APIRouter, BackgroundTasks, Depends, status, Query, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Any, Optional
@@ -141,6 +142,39 @@ def login_user(login_data: LoginSchema, db: Session = Depends(get_db)):
         "error": None
     }
 
+
+# --- 3. SWAGGER OAUTH2 TOKEN ENDPOINT ---
+# This endpoint is required for Swagger UI's built-in "Authorize" button to work.
+# It accepts form-encoded username/password and returns the standard OAuth2 token response.
+@router.post("/token", include_in_schema=False)
+def swagger_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    """OAuth2-compatible token endpoint used by Swagger UI Authorize button.
+    Username field = email, Password field = password."""
+    db_user = db.query(models.User).filter(
+        models.User.email == form_data.username,
+        models.User.is_deleted == 0
+    ).first()
+
+    if not db_user or not verify_password(form_data.password, db_user.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if db_user.status != "ACTIVE":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive. Contact the administrator.",
+        )
+
+    access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
 # =====================================================================
 #  NEW CODES FOR FORGOT PASSWORD 
 # =====================================================================
@@ -150,6 +184,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 from app.database import models
+from app.utils.auth_utils import get_current_user
 
 class ForgotPasswordSchema(BaseModel):
     email: EmailStr
@@ -236,6 +271,7 @@ def get_all_password_requests(
     limit: int = 10, 
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None), 
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     try:
@@ -309,7 +345,9 @@ def get_all_password_requests(
         }
 
 @router.get("/admin/password-requests/{request_id}", response_model=ApiResponse)
-def get_password_request_detail(request_id: int, db: Session = Depends(get_db)):
+def get_password_request_detail(request_id: int,
+                                current_user: models.User = Depends(get_current_user),
+                                  db: Session = Depends(get_db)):
     
     result = db.query(models.PasswordResetRequest, models.User).\
         outerjoin(models.User, (models.User.email == models.PasswordResetRequest.email) & (models.User.is_deleted == 0)).\
@@ -357,6 +395,7 @@ def resolve_password_request(
     request_id: int, 
     payload: ResolvePasswordSchema, 
     background_tasks: BackgroundTasks, 
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     # Find Password Request Record by ID and Ensure it's Not Deleted
