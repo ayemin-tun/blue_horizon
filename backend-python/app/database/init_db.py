@@ -35,7 +35,8 @@ def init_database():
         phone_no TEXT,                                     
         status TEXT CHECK(status IN ('ACTIVE', 'INACTIVE')) DEFAULT 'ACTIVE', 
         joined_date TEXT,
-        is_deleted INTEGER DEFAULT 0
+        is_deleted INTEGER DEFAULT 0,
+        is_email_verified INTEGER DEFAULT 0
     )''')
 
     cursor.execute('''
@@ -44,6 +45,17 @@ def init_database():
     WHERE is_deleted = 0;
     ''')
 
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS EMAIL_VERIFICATION_TOKENS (
+    token_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    expires_at DATETIME NOT NULL,
+    is_used INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES USERS(user_id)
+    )''')
+    
     # 2. AIRLINES Table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS AIRLINES (
@@ -189,13 +201,23 @@ def init_database():
     current_date_str = datetime.now().strftime("%d/%m/%Y")
 
     # 1. Default User 
+    # cursor.execute(
+    #     "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role,phone_no,status,joined_date,is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    #     (1, 'admin', admin_hashed_password, 'admin@bluehorizon.com', 'admin', '09-123456789', 'ACTIVE', current_date_str, 0)
+    # )
+    # cursor.execute(
+    #     "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role,phone_no,status,joined_date,is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    #     (2, 'agent01', agent_hashed_password, 'agent01@bluehorizon.com', 'agent', '09-987654321', 'ACTIVE', current_date_str, 0)
+    # )
+
     cursor.execute(
-        "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role,phone_no,status,joined_date,is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (1, 'admin', admin_hashed_password, 'admin@bluehorizon.com', 'admin', '09-123456789', 'ACTIVE', current_date_str, 0)
+    "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role, phone_no, status, joined_date, is_deleted, is_email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    (1, 'admin', admin_hashed_password, 'admin@bluehorizon.com', 'admin', '09-123456789', 'ACTIVE', current_date_str, 0, 1)
     )
+
     cursor.execute(
-        "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role,phone_no,status,joined_date,is_deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (2, 'agent01', agent_hashed_password, 'agent01@bluehorizon.com', 'agent', '09-987654321', 'ACTIVE', current_date_str, 0)
+    "INSERT OR IGNORE INTO USERS (user_id, username, password, email, role, phone_no, status, joined_date, is_deleted, is_email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    (2, 'agent01', agent_hashed_password, 'agent01@bluehorizon.com', 'agent', '09-987654321', 'ACTIVE', current_date_str, 0, 1)
     )
 
     # 2. Sample Airline & Route

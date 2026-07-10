@@ -12,6 +12,7 @@ import {
     useUpdateAgentStatusMutation,
     useDeleteAgentMutation,
     useUpdateAgentMutation,
+    useUpdateAgentEmailVerificationMutation,
 } from '@/services/agentService';
 
 import AgentStats from './components/AgentStats';
@@ -43,6 +44,8 @@ export default function AgentPage() {
     const updateStatusMutation = useUpdateAgentStatusMutation();
     const deleteMutation = useDeleteAgentMutation();
     const updateMutation = useUpdateAgentMutation();
+
+    const verifyEmailMutation = useUpdateAgentEmailVerificationMutation();
 
     // ─── Type Cast Response ───────────────────────────────────────────────────
     const res = apiResponse as unknown as PaginatedAgentResponse;
@@ -127,12 +130,28 @@ export default function AgentPage() {
         });
     };
 
+    const handleVerifyEmail = (agent: Agent) => {
+        verifyEmailMutation.mutate(
+            { id: agent.agent_id, payload: { is_email_verified: true } },
+            {
+                onSuccess: (res) => {
+                    if (res.success) {
+                        toast.success(`${agent.username}'s email marked as verified.`);
+                    } else {
+                        toast.error(res.error?.details || "Failed to verify email.");
+                    }
+                },
+                onError: () => toast.error("An unexpected error occurred."),
+            }
+        );
+    };
+
     return (
         <>
             <div className="max-w-5xl mx-auto">
                 {/* ── Header ── */}
                 <div className="mb-8 flex  sm:flex-row justify-end gap-4 ">
-                    
+
                     <button
                         onClick={() => setShowAdd(true)}
                         className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-sm transition active:scale-95 w-32"
@@ -169,7 +188,7 @@ export default function AgentPage() {
                     </div>
 
                     {/* 🔍 Search Input Box */}
-                    <div className="relative w-full max-w-xs sm:max-w-md"> 
+                    <div className="relative w-full max-w-xs sm:max-w-md">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
                             <Search className="w-4 h-4 text-slate-400" />
                         </span>
@@ -223,7 +242,7 @@ export default function AgentPage() {
 
             <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title="Update Agent Information">
                 <AgentForm
-                    initialData={editTarget} 
+                    initialData={editTarget}
                     onSubmit={handleUpdateAllData}
                     onCancel={() => setEditTarget(null)}
                     loading={updateStatusMutation.isPending}

@@ -17,9 +17,26 @@ class User(Base):
     status = Column(String, nullable=True, default="ACTIVE") # default Active
     joined_date = Column(String, nullable=True) 
     is_deleted = Column(Integer, default=0, nullable=False)
+    # 🆕 NEW: tracks whether the user's email has been verified
+    is_email_verified = Column(Integer, default=0, nullable=False)
 
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
+
+# 🆕 NEW MODEL: stores verification tokens for register / email-change flows
+from sqlalchemy import DateTime as SQLDateTime
+
+class EmailVerificationToken(Base):
+    __tablename__ = "EMAIL_VERIFICATION_TOKENS"
+
+    token_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("USERS.user_id"), nullable=False)
+    token = Column(String, unique=True, nullable=False, index=True)
+    expires_at = Column(SQLDateTime, nullable=False)
+    is_used = Column(Integer, default=0, nullable=False)
+    created_at = Column(SQLDateTime, server_default=func.now(), nullable=False)
+
+    user = relationship("User")
 
 class PasswordResetRequest(Base):
     __tablename__ = "PASSWORD_RESET_REQUESTS" # အစ်ကိုတို့ Style အတိုင်း Table နာမည်ကို အကြီးပေးထားပါတယ်

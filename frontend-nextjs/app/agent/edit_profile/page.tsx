@@ -15,7 +15,7 @@ import {
 
 export default function AgentProfile() {
   // --- Pull current user info from the auth store (set at login) ---
-  const { userId, name, email: storedEmail, phone_no: storedPhone, role, setAuth } = useAuthStore((state) => state);
+  const { userId, name, email: storedEmail, phone_no: storedPhone, role, setAuth, logout } = useAuthStore((state) => state);
   const getValidToken = useAuthStore((state) => state.getValidToken);
 
   // --- Profile display block (top banner) ---
@@ -53,6 +53,20 @@ export default function AgentProfile() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // --- Force logout after an agent changes their email, matching the same
+  //     pattern used in ProfileDropdown's handleLogout (store clear + cookie
+  //     clear + hard redirect via window.location.href, not router.push) ---
+  const forceLogoutAfterEmailChange = () => {
+    logout();
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "name=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    // ⚠️ window.location.href, not router.push — forces a full reload so no
+    // stale state/components stick around after the session is invalidated.
+    window.location.href = "/login?alert_action=email_change";
+  };
+
   // --- Save name / email / phone_no ---
   const submitProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,10 +85,23 @@ export default function AgentProfile() {
         phone_no: formData.phone_no?.trim() || null,
       };
 
+      // Detect whether the email is actually changing, BEFORE the request
+      const emailIsChanging = formData.email.trim().toLowerCase() !== storedEmail?.toLowerCase();
+
       const result = await profileService.updateProfile(userId, payload, token);
 
       if (result.success && result.data) {
         const updatedData = result.data;
+
+        // Agent + email changed + backend confirms it's no longer verified
+        // -> force logout so they must re-verify before using the app again
+        if (role === "agent" && emailIsChanging && updatedData.is_email_verified === 0) {
+          toast.success("Profile updated. Please verify your new email address before logging in again.");
+          forceLogoutAfterEmailChange();
+          return; // stop here — page is navigating away, don't touch local state
+        }
+
+        // Normal case (username/phone changed, or admin changed email): just sync state
         toast.success("Profile updated successfully!");
 
         setProfile((prev) => ({
@@ -107,12 +134,12 @@ export default function AgentProfile() {
     <div className="w-full max-w-3xl mx-auto p-4 md:p-8 space-y-8">
       {/* Premium Top Info Banner */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 shadow-xs overflow-hidden relative">
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600"></div>
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-linedar-to-r from-blue-600 via-indigo-600 to-purple-600"></div>
 
-        <div className="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 rounded-full flex items-center justify-center border border-blue-100 shrink-0 shadow-inner">
+        <div className="w-20 h-20 bg-linear-to-br from-blue-50 to-indigo-50 text-blue-600 rounded-full flex items-center justify-center border border-blue-100 shrink-0 shadow-inner">
           <User className="w-10 h-10 stroke-[1.5]" />
         </div>
-        
+
         <div className="text-center sm:text-left space-y-1.5 flex-1">
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">{profile.username}</h1>
           <div className="flex flex-wrap gap-2 justify-center sm:justify-start pt-0.5">
