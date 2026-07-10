@@ -122,9 +122,9 @@ def get_season_trends():
 
     finally:
         conn.close()
-        for p in (input_path, output_path):
-            if os.path.exists(p):
-                os.remove(p)
+        # for p in (input_path, output_path):
+        #     if os.path.exists(p):
+        #         os.remove(p)
 
 
 if __name__ == "__main__":
