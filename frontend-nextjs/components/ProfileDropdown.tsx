@@ -35,9 +35,15 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
     document.cookie = "name=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     setIsOpen(false);
-    router.push("/");
-    window.location.reload();
+    
+    // ⚠️ router.push
+    window.location.href = "/login";
   };
+
+  // (Routes)
+  const isAdmin = role?.toLowerCase() === "admin";
+  
+  const profileHref = isAdmin ? "/admin/edit_profile" : "/agent/edit_profile";
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -61,25 +67,26 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
       {/* Dropdown Box Menu*/}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-xl border border-slate-200 text-slate-800 text-xs overflow-hidden z-50">
-          {/* Header / Admin Name */}
+          {/* Header / Account Name */}
           <div className="bg-slate-50 px-4 py-3 flex items-center justify-between border-b border-slate-100">
             <span className="font-bold text-slate-700">{name || "User"}</span>
-            <span className={`font-semibold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider ${role?.toLowerCase() === "admin" ? "bg-red-500 text-white" : "bg-blue-600 text-white"
+            <span className={`font-semibold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider ${isAdmin ? "bg-red-500 text-white" : "bg-blue-600 text-white"
               }`}>
               {role || "agent"}
             </span>
           </div>
 
           {/* Menu Items */}
+          {/* Edit Profile: Click for Agent */}
           <Link
-            href="/"
+            href={profileHref}
             onClick={() => setIsOpen(false)}
             className="block px-4 py-3 font-semibold text-slate-800 hover:bg-slate-50 border-b border-slate-100 transition"
           >
             Edit Profile
           </Link>
 
-          {role?.toLowerCase() === "admin" ? (
+          {isAdmin ? (
             <Link
               href="/admin"
               onClick={() => setIsOpen(false)}
@@ -87,7 +94,7 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
             >
               Admin Dashboard
             </Link>
-          ) :
+          ) : (
             <Link
               href="/agent/booking"
               onClick={() => setIsOpen(false)}
@@ -95,7 +102,7 @@ export default function ProfileDropdown({ isMainPage = false }: ProfileDropdownP
             >
               My Bookings
             </Link>
-          }
+          )}
 
           {/* Logout Action */}
           <button

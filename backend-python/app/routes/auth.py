@@ -135,6 +135,7 @@ def login_user(login_data: LoginSchema, db: Session = Depends(get_db)):
             "role": db_user.role,
             "username": db_user.username,
             "email": db_user.email,
+            "phone_no":db_user.phone_no,
             "user_id":db_user.user_id
         },
         "error": None
