@@ -78,7 +78,7 @@ export function useCreateFlightMutation() {
 
     return useMutation({
         mutationFn: (payload: FlightPayload) =>
-            api.post<Flight>('/api/flights', payload, { headers: authHeader() }),
+            api.post<Flight>('/api/flights', payload, { requiresAuth: true}),
         onSuccess: (res) => {
             if (res.success) {
                 queryClient.invalidateQueries({ queryKey: ['flights'], exact: false });
@@ -93,7 +93,7 @@ export function useUpdateFlightMutation() {
 
     return useMutation({
         mutationFn: ({ id, payload }: { id: number; payload: FlightPayload }) =>
-            api.put<Flight>(`/api/flights/${id}`, payload, { headers: authHeader() }),
+            api.put<Flight>(`/api/flights/${id}`, payload, { requiresAuth: true }),
         onSuccess: (res) => {
             if (res.success) {
                 queryClient.invalidateQueries({ queryKey: ['flights'], exact: false });
@@ -110,7 +110,7 @@ export function useDeleteFlightMutation() {
 
     return useMutation({
         mutationFn: (id: number) =>
-            api.delete<null>(`/api/flights/${id}`, { headers: authHeader() }),
+            api.delete<null>(`/api/flights/${id}`, { requiresAuth: true}),
         onSuccess: (res) => {
             if (res.success) {
                 queryClient.invalidateQueries({ queryKey: ['flights'], exact: false });

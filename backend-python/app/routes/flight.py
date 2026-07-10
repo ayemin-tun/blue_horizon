@@ -5,12 +5,13 @@ from app.database.database import get_db
 from app.database import models
 from app.schemas.flights_schema import FlightCreate, ApiResponse
 from typing import Optional
+from app.routes.auth import get_current_user
 
 router = APIRouter(prefix="/api/flights", tags=["Flights"])
 
 # ─── 1. CREATE OR REACTIVATE FLIGHT ─────────────────────────────────────────
 @router.post("", response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
-def create_flight(data: FlightCreate, db: Session = Depends(get_db)):
+def create_flight(data: FlightCreate, db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
     try:
         from app.schemas.flights_schema import FlightResponse
         
@@ -147,7 +148,7 @@ def get_flights(
 
 # ─── 3. UPDATE FLIGHT ───────────────────────────────────────────────────────
 @router.put("/{id}", response_model=ApiResponse)
-def update_flight(id: int, data: FlightCreate, db: Session = Depends(get_db)):
+def update_flight(id: int, data: FlightCreate, db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
     try:
         flight = db.query(models.Flight).filter(
             models.Flight.flight_id == id,
@@ -225,7 +226,7 @@ def update_flight(id: int, data: FlightCreate, db: Session = Depends(get_db)):
 
 # ─── 4. DELETE FLIGHT (SOFT DELETE) ─────────────────────────────────────────
 @router.delete("/{id}", response_model=ApiResponse)
-def delete_flight(id: int, db: Session = Depends(get_db)):
+def delete_flight(id: int, db: Session = Depends(get_db),current_user: dict = Depends(get_current_user)):
     try:
         flight = db.query(models.Flight).filter(
             models.Flight.flight_id == id,
