@@ -45,49 +45,53 @@ const FORECAST_QUERY_OPTIONS = {
 } as const;
 
 // ─── 1. Route Demand ───────────────────────────────────────────────────────
-export const useRouteDemandQuery = () => {
+export const useRouteDemandQuery = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['forecast', 'route-demand'],
     queryFn: async () => {
       const response = await api.get<RouteDemandItem[]>('/api/forecast/route-demand');
       return response;
     },
+    enabled,
     ...FORECAST_QUERY_OPTIONS,
   });
 };
 
 // ─── 2. Agent Performance ──────────────────────────────────────────────────
-export const useAgentPerformanceQuery = () => {
+export const useAgentPerformanceQuery = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['forecast', 'agent-performance'],
     queryFn: async () => {
       const response = await api.get<AgentPerformanceItem[]>('/api/forecast/agent-performance');
       return response;
     },
+    enabled,
     ...FORECAST_QUERY_OPTIONS,
   });
 };
 
 // ─── 3. Season Trends ───────────────────────────────────────────────────────
-export const useSeasonTrendsQuery = () => {
+export const useSeasonTrendsQuery = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['forecast', 'season-trends'],
     queryFn: async () => {
       const response = await api.get<SeasonTrendItem[]>('/api/forecast/season-trends');
       return response;
     },
+    enabled,
     ...FORECAST_QUERY_OPTIONS,
   });
 };
 
 // ─── 4. Airline Share ───────────────────────────────────────────────────────
-export const useAirlineShareQuery = () => {
+export const useAirlineShareQuery = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['forecast', 'airline-share'],
     queryFn: async () => {
       const response = await api.get<AirlineShareItem[]>('/api/forecast/airline-share');
       return response;
     },
+    enabled,
     ...FORECAST_QUERY_OPTIONS,
   });
 };
