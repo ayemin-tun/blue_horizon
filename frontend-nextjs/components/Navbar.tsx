@@ -12,7 +12,7 @@ interface NavbarProps {
 export default function Navbar({ isMainPage = false }: NavbarProps) {
   return (
     <nav
-      className={`flex items-center justify-between w-full px-6 md:px-12 pt-4 pb-4 transition-all duration-300 relative z-50 ${
+      className={`flex items-center justify-between w-full px-6 md:px-12 pt-4 pb-4 transition-all duration-300 sticky top-0 z-50 ${
         isMainPage
           ? "bg-transparent text-white"
           : "bg-white text-blue-950 shadow-sm border-b border-slate-100"
