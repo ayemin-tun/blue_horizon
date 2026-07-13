@@ -1,22 +1,19 @@
 """
 mock_data.py
 ------------
-Mock Data Seeder for Blue Horizon Airlines - Forecast Analytics
+Blue Horizon Airlines - Forecast Analytics  Mock Data Seeder
 
-This script adds mock data on top of the existing schema/base rows generated 
-by init_database.py (admin, agent01, Blue Horizon airline, Yangon->Mandalay route, 
-and BH-101 flight).
 
-Data to be populated:
-  - AIRLINES      : +4  (Total of 5 including Blue Horizon)
-  - ROUTES        : +7  (Total of 8 including Yangon-Mandalay)
-  - FLIGHTS       : +14 (Total of 15 including BH-101) - Varying counts per airline for airline share test
-  - ROUTE_SCHEDULE: Schedule for each flight assigned based on route weight
-  - FLIGHT_INSTANCE: Between Jan-Jun 2026, using month-weight (April=Thingyan high season)
-  - USERS (agent) : +4 (Total of 5 including agent01) - Weighted for agent performance test
+ထည့်ပေးမယ့် data:
+  - AIRLINES      : +4  (Blue Horizon 5)
+  - ROUTES        : +9  (Yangon-Mandalay ကလွဲပြီး route pair 5 ခု၊ round-trip 10 ခု)
+  - FLIGHTS       : +14 (BH-101 15 )  (airline share test)
+  - ROUTE_SCHEDULE: flight  schedule (route weight )
+  - FLIGHT_INSTANCE: Jan-Jun 2026  month-weight (April=Thingyan high season)
+  - USERS (agent) : +4 (agent01  5) - weight difference (agent performance test)
   - PASSENGERS    : 300
-  - BOOKINGS      : 200 (status breakdown: 92% CONFIRMED / 8% CANCELLED)
-  - BOOKING_PASSENGERS : 1-2 passengers per booking
+  - BOOKINGS      : 500 (status: 92% CONFIRMED / 8% CANCELLED)
+  - BOOKING_PASSENGERS : booking (1 or 2)
 
 Run:  python mock_data.py
 """
@@ -30,7 +27,7 @@ from datetime import datetime, timedelta
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from app.utils.auth_utils import get_password_hash
 
-random.seed(42)  # To ensure reproducible data generation
+random.seed(42) 
 
 # ---------------------------------------------------------------------------
 # DB connection
@@ -55,30 +52,35 @@ NEW_AIRLINES = [
     ("FMI Air", "Myanmar"),
 ]
 
+# NOTE: "Yangon-Mandalay" route already exists in the DB (used by flight_id=1 / BH-101).
+# Here we add the REVERSE of that route plus 4 more city-pairs, each in BOTH directions,
+# so that the final route set is 5 city-pairs x 2 directions = 10 routes total (round-trip).
 NEW_ROUTES = [
-    ("Yangon", "Mawlamyine"),
+    ("Mandalay", "Yangon"),        # reverse of the existing Yangon-Mandalay route
     ("Yangon", "Nay Pyi Taw"),
-    ("Yangon", "Heho"),
-    ("Yangon", "Sittwe"),
-    ("Yangon", "Myitkyina"),
+    ("Nay Pyi Taw", "Yangon"),
     ("Mandalay", "Bagan"),
-    ("Mandalay", "Nay Pyi Taw"),
+    ("Bagan", "Mandalay"),
+    ("Yangon", "Heho"),
+    ("Heho", "Yangon"),
+    ("Yangon", "Mawlamyine"),
+    ("Mawlamyine", "Yangon"),
 ]
 
-# route (dep,arr) -> relative demand weight. This determines how many 
-# flights/schedules are allocated. Higher weight = more flights -> more instances -> more bookings
+# 5 city-pairs, round-trip (10 routes total). Each direction has its own (close) weight.
 ROUTE_WEIGHTS = {
-    ("Yangon", "Mandalay"): 30,       # HIGH
-    ("Yangon", "Nay Pyi Taw"): 22,    # HIGH-MED
-    ("Mandalay", "Bagan"): 18,        # MEDIUM
-    ("Yangon", "Heho"): 14,           # MEDIUM
-    ("Yangon", "Mawlamyine"): 10,     # MEDIUM-LOW
-    ("Mandalay", "Nay Pyi Taw"): 8,   # LOW
-    ("Yangon", "Sittwe"): 6,          # LOW
-    ("Yangon", "Myitkyina"): 4,       # LOW
+    ("Yangon", "Mandalay"): 30,        # HIGH (outbound)
+    ("Mandalay", "Yangon"): 28,        # HIGH (return)
+    ("Yangon", "Nay Pyi Taw"): 22,     # HIGH-MED (outbound)
+    ("Nay Pyi Taw", "Yangon"): 20,     # HIGH-MED (return)
+    ("Mandalay", "Bagan"): 18,         # MEDIUM (outbound)
+    ("Bagan", "Mandalay"): 16,         # MEDIUM (return)
+    ("Yangon", "Heho"): 14,            # MEDIUM (outbound)
+    ("Heho", "Yangon"): 12,            # MEDIUM (return)
+    ("Yangon", "Mawlamyine"): 10,      # MEDIUM-LOW (outbound)
+    ("Mawlamyine", "Yangon"): 9,       # MEDIUM-LOW (return)
 }
 
-# Airline codes for flight number generation
 AIRLINE_CODE = {
     "Blue Horizon": "BH",
     "Myanmar National Airlines": "UB",
@@ -87,16 +89,14 @@ AIRLINE_CODE = {
     "FMI Air": "FM",
 }
 
-# Flight count allocation per airline (unequal distribution to test airline market share)
 AIRLINE_FLIGHT_COUNT = {
-    "Blue Horizon": 4,               # +4 (reaches 5 total when including existing BH-101)
+    "Blue Horizon": 4,              
     "Myanmar National Airlines": 3,
     "Air KBZ": 3,
     "Yangon Airways": 2,
     "FMI Air": 2,
 }
 
-# Month weight (2026) - April = Thingyan high season, Jan = year-end/new-year travel
 MONTH_WEIGHTS = {1: 18, 2: 10, 3: 10, 4: 25, 5: 10, 6: 15}
 
 FIRST_NAMES = [
@@ -142,11 +142,11 @@ def random_dob(min_age=18, max_age=65):
     return dob.strftime("%d/%m/%Y")
 
 def random_flight_date_2026():
-    """Selects a target month weighted by seasonal demand within Jan-Jun 2026 and outputs a random day"""
+    
     months = list(MONTH_WEIGHTS.keys())
     weights = list(MONTH_WEIGHTS.values())
     month = weighted_choice(months, weights)
-    day = random.randint(1, 28)  # Capped at 28 days for simplified handling
+    day = random.randint(1, 28)  
     return datetime(2026, month, day)
 
 def fmt_ddmmyyyy(dt):
@@ -183,15 +183,13 @@ def seed_routes(cur):
 
 
 def seed_flights_and_schedules(cur, airline_map, route_map):
-    """Creates flights for each individual airline, assigns routes based on weighted distribution
-    (higher weights have higher selection chances), and generates corresponding schedules immediately"""
+    
 
     route_items = list(ROUTE_WEIGHTS.keys())
     route_weights_list = list(ROUTE_WEIGHTS.values())
 
-    schedules = []  # list of dict: schedule_id, route_id, econ_price, biz_price, total_seats
+    schedules = []  
 
-    # --- Seed route schedule templates for the existing pre-seeded BH-101 flight (flight_id=1) (Yangon-Mandalay) ---
     cur.execute("SELECT total_seats FROM FLIGHTS WHERE flight_id = 1")
     bh101_seats = cur.fetchone()[0]
     cur.execute(
@@ -212,7 +210,7 @@ def seed_flights_and_schedules(cur, airline_map, route_map):
         code = AIRLINE_CODE[airline_name]
 
         if airline_name == "Blue Horizon":
-            start_num = 102  # Starts at 102 since BH-101 already exists
+            start_num = 102  
         else:
             start_num = 101
 
@@ -252,8 +250,8 @@ def seed_flights_and_schedules(cur, airline_map, route_map):
     return schedules
 
 
-def seed_instances(cur : sqlite3.Cursor, schedules):
-    """Generates 12 to 20 concrete flight instances for each individual schedule template within Jan-Jun 2026"""
+def seed_instances(cur, schedules):
+   
     instances = []
     today = datetime(2026, 7, 9)
 
@@ -291,8 +289,8 @@ def seed_agents(cur):
     agent_ids = [2]  # agent01 already exists (user_id=2)
     for username in AGENT_USERNAMES:
         cur.execute(
-            """INSERT INTO USERS (username, password, email, role, phone_no, status, joined_date, is_deleted)
-               VALUES (?, ?, ?, 'agent', ?, 'ACTIVE', ?, 0)""",
+            """INSERT INTO USERS (username, password, email, role, phone_no, status, joined_date, is_deleted, is_email_verified)
+               VALUES (?, ?, ?, 'agent', ?, 'ACTIVE', ?, 0, 1)""",
             (username, agent_hashed_password, f"{username}@bluehorizon.com", random_phone(), current_date_str),
         )
         agent_ids.append(cur.lastrowid)
@@ -315,8 +313,8 @@ def seed_passengers(cur, count=300):
     return passenger_ids
 
 
-def seed_bookings(cur, instances, agent_ids, passenger_ids, count=200):
-    # agent performance weights: agent01 (index 0) performs the best, following entries diminish progressively
+def seed_bookings(cur, instances, agent_ids, passenger_ids, count=500):
+    
     agent_weights = [0.35, 0.25, 0.18, 0.13, 0.09][: len(agent_ids)]
 
     booking_count = 0
@@ -402,7 +400,7 @@ def seed_mock_data():
     instances = seed_instances(cur, schedules)
     agent_ids = seed_agents(cur)
     passenger_ids = seed_passengers(cur, count=300)
-    seed_bookings(cur, instances, agent_ids, passenger_ids, count=200)
+    seed_bookings(cur, instances, agent_ids, passenger_ids, count=500)
     update_instance_occupancy(cur, instances)
 
     conn.commit()

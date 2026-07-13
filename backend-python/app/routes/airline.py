@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, Any
 from app.database.database import get_db
 from app.database import models
-from sqlalchemy import func
+from sqlalchemy import func,desc
 
 router = APIRouter(prefix="/api/airlines", tags=["Airlines"])
 
@@ -58,6 +58,7 @@ def get_airlines(
         
     # calculate total after filter
     total_count = query.count()
+    query = query.order_by(desc(models.Airline.airline_id))
     
     # Paginate
     airline = query.offset(skip).limit(limit).all()

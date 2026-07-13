@@ -133,7 +133,8 @@ export default function PasswordRequestPage() {
           status: viewTarget.status,
           phone_no: viewTarget.phone_no,
           joined_date: viewTarget.created_at,
-          is_deleted: false
+          is_deleted: false,
+          is_email_verified: false,
         } : null}
       />
 

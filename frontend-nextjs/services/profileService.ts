@@ -15,6 +15,7 @@ export interface ProfileResponseData {
   username: string;
   email: string;
   phone_no: string;
+  is_email_verified: number;
 }
 
 // 3. Profile Management Service Object

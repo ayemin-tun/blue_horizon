@@ -29,7 +29,8 @@ export default function AgentForm({
     email: initialData?.email ?? "",
     phone_no: initialData?.phone_no ?? "",
     password: "",
-    status: initialData?.status ?? "ACTIVE", //default active
+    status: initialData?.status ?? "ACTIVE",
+    is_email_verified: initialData?.is_email_verified ?? false, // 🟢 initial value ချိတ်ဆက်မှု
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -69,7 +70,7 @@ export default function AgentForm({
         </div>
       </div>
 
-      {/*Email Input */}
+      {/* Email Input */}
       <div>
         <label className="block text-xs font-semibold text-slate-600 mb-1.5">
           Email Address
@@ -109,7 +110,7 @@ export default function AgentForm({
         </div>
       </div>
 
-      {/*Status Toggle Switch Button */}
+      {/* Agent Status Toggle */}
       <div>
         <label className="block text-xs font-semibold text-slate-600 mb-2">
           Agent Status
@@ -125,7 +126,6 @@ export default function AgentForm({
             </span>
           </div>
 
-          {/* Toggle Switch */}
           <button
             type="button"
             onClick={() => {
@@ -138,8 +138,42 @@ export default function AgentForm({
               }`}
           >
             <span
-              pointer-events-none="true"
               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${form.status === "ACTIVE" ? "translate-x-5" : "translate-x-0"
+                }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* 🟢 ဤနေရာတွင် Email Verification Toggle ကို အသစ်ထည့်သွင်းထားပါသည် */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-600 mb-2">
+          Email Verification Status
+        </label>
+
+        <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-slate-900">
+              {form.is_email_verified ? "Verified" : "Unverified"}
+            </span>
+            <span className="text-[11px] text-slate-400">
+              {form.is_email_verified ? "Agent's email is marked as verified." : "Agent account requires manual confirmation."}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setForm((prev) => ({
+                ...prev,
+                is_email_verified: !prev.is_email_verified,
+              }));
+            }}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${form.is_email_verified ? "bg-blue-600" : "bg-slate-200"
+              }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${form.is_email_verified ? "translate-x-5" : "translate-x-0"
                 }`}
             />
           </button>
@@ -173,10 +207,15 @@ export default function AgentForm({
           <p className="text-blue-900 font-bold">Preview:</p>
           <div className="flex items-center justify-between">
             <p className="text-slate-600 font-medium">{form.username || "—"} ({form.email || "—"})</p>
-            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${form.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"
-              }`}>
-              {form.status}
-            </span>
+            <div className="flex gap-2">
+              {/* 🟢 Preview အောက်မှာပါ ဒိုင်နမစ် Badge ပြောင်းလဲမှု ထည့်ပေးထားပါတယ် */}
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${form.is_email_verified ? "bg-blue-100 text-blue-800" : "bg-rose-100 text-rose-800"}`}>
+                {form.is_email_verified ? "VERIFIED" : "UNVERIFIED"}
+              </span>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${form.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}>
+                {form.status}
+              </span>
+            </div>
           </div>
         </div>
       )}

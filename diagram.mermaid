@@ -1,0 +1,118 @@
+erDiagram
+    USERS {
+        int user_id PK
+        string username
+        string password
+        string email
+        string role
+        string phone_no
+        string status
+        string joined_date
+        int is_deleted
+        int is_email_verified
+    }
+
+    EMAIL_VERIFICATION_TOKENS {
+        int token_id PK
+        int user_id FK
+        string token
+        datetime expires_at
+        int is_used
+        datetime created_at
+    }
+
+    AIRLINES {
+        int airline_id PK
+        string airline_name
+        string country
+        int is_deleted
+    }
+
+    ROUTES {
+        int route_id PK
+        string departure_city
+        string arrival_city
+        int is_deleted
+    }
+
+    FLIGHTS {
+        int flight_id PK
+        int airline_id FK
+        string flight_no
+        int total_seats
+        int is_deleted
+    }
+
+    ROUTE_SCHEDULE {
+        int schedule_id PK
+        int route_id FK
+        int flight_id FK
+        string departure_time
+        string arrival_time
+        decimal economy_price
+        decimal business_price
+        string flight_type
+        int is_deleted
+    }
+
+    FLIGHT_INSTANCE {
+        int instance_id PK
+        int schedule_id FK
+        string flight_date
+        int economy_seats_occupied
+        int business_seats_occupied
+        string base_departure_time
+        string base_arrival_time
+        decimal base_economy_price
+        decimal base_business_price
+        decimal override_economy_price
+        decimal override_business_price
+        string status
+        int is_deleted
+    }
+
+    BOOKINGS {
+        int booking_id PK
+        string ticket_code
+        int user_id FK
+        int instance_id FK
+        datetime booking_date
+        decimal total_price
+        string seat_class
+        string status
+    }
+
+    PASSENGERS {
+        int passenger_id PK
+        string full_name
+        string date_of_birth
+        string Gender
+        string phone_no
+        string nrc
+    }
+
+    BOOKING_PASSENGERS {
+        int bp_id PK
+        int booking_id FK
+        int passenger_id FK
+        string seat_no
+    }
+
+    PASSWORD_RESET_REQUESTS {
+        int id PK
+        string email
+        string status
+        int is_deleted
+        datetime created_at
+        datetime updated_at
+    }
+
+    USERS ||--o{ EMAIL_VERIFICATION_TOKENS : "has"
+    USERS ||--o{ BOOKINGS : "makes"
+    AIRLINES ||--o{ FLIGHTS : "operates"
+    ROUTES ||--o{ ROUTE_SCHEDULE : "has"
+    FLIGHTS ||--o{ ROUTE_SCHEDULE : "assigned to"
+    ROUTE_SCHEDULE ||--o{ FLIGHT_INSTANCE : "generates"
+    FLIGHT_INSTANCE ||--o{ BOOKINGS : "booked for"
+    BOOKINGS ||--o{ BOOKING_PASSENGERS : "includes"
+    PASSENGERS ||--o{ BOOKING_PASSENGERS : "listed in"

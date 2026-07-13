@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from app.database.database import get_db
 from app.database import models
-from sqlalchemy import cast, String
+from sqlalchemy import cast, desc
 
 router = APIRouter(prefix="/api/agents", tags=["Agent Management"])
 
@@ -59,6 +59,7 @@ def get_agents(
         # Recent Joined
         recent_joined_count = 0
         all_agents = db.query(models.User).filter(models.User.role == "agent", models.User.is_deleted == 0).all()
+
         current_time = datetime.now()
         for agent in all_agents:
             if agent.joined_date:
@@ -75,6 +76,7 @@ def get_agents(
         
         agents = (
             base_query
+            .order_by(desc(models.User.user_id))
             .offset(skip)
             .limit(limit)
             .all()
@@ -88,7 +90,8 @@ def get_agents(
                 "email": user.email,
                 "phone_no": user.phone_no if user.phone_no else "-",
                 "status": user.status,
-                "joined_date": user.joined_date if user.joined_date else "-"
+                "joined_date": user.joined_date if user.joined_date else "-",
+                "is_email_verified": bool(user.is_email_verified)
             } for user in agents
         ]
         
@@ -153,7 +156,8 @@ def get_agent_by_id(id: int, db: Session = Depends(get_db)):
             "email": agent.email,
             "phone_no": agent.phone_no if agent.phone_no else "-",
             "status": agent.status,
-            "joined_date": agent.joined_date if agent.joined_date else "-"
+            "joined_date": agent.joined_date if agent.joined_date else "-",
+            "is_email_verified": bool(agent.is_email_verified)
         }
         
         return {
@@ -352,8 +356,9 @@ class AgentUpdateSchema(BaseModel):
     email: str
     phone_no: Optional[str] = None
     status: Optional[str] = "ACTIVE"
+    is_email_verified: Optional[bool] = None
 
-# --- 6. UPDATE AGENT ALL DATA API (🌟 အသစ်ဖြည့်စွက်လိုက်သည့်အချက်) ---
+# --- 6. UPDATE AGENT ALL DATA API  ---
 @router.put("/{id}", response_model=ApiResponse)
 def update_agent(id: int, data: AgentUpdateSchema, db: Session = Depends(get_db)):
     try:
@@ -412,6 +417,10 @@ def update_agent(id: int, data: AgentUpdateSchema, db: Session = Depends(get_db)
         agent.email = data.email.strip()
         agent.phone_no = data.phone_no.strip() if data.phone_no else None
         agent.status = formatted_status
+
+        if data.is_email_verified is not None:
+             agent.is_email_verified = 1 if data.is_email_verified else 0
+
         
         db.commit()
         db.refresh(agent)
@@ -424,7 +433,8 @@ def update_agent(id: int, data: AgentUpdateSchema, db: Session = Depends(get_db)
                 "username": agent.username,
                 "email": agent.email,
                 "phone_no": agent.phone_no if agent.phone_no else "-",
-                "status": agent.status
+                "status": agent.status,
+                "is_email_verified": bool(agent.is_email_verified)
             },
             "error": None
         }
@@ -438,4 +448,57 @@ def update_agent(id: int, data: AgentUpdateSchema, db: Session = Depends(get_db)
                 "code": "SERVER_ERROR",
                 "details": str(e)
             }
+        }
+
+class AgentEmailVerifyUpdateSchema(BaseModel):
+    is_email_verified: bool
+
+# --- 7. MANUALLY OVERRIDE AGENT EMAIL VERIFICATION (Admin Action) ---
+@router.patch("/{id}/verify-email", response_model=ApiResponse)
+def update_agent_email_verification(id: int, data: AgentEmailVerifyUpdateSchema, db: Session = Depends(get_db)):
+    try:
+        agent = db.query(models.User).filter(
+            models.User.user_id == id,
+            models.User.role == "agent",
+            models.User.is_deleted == 0
+        ).first()
+
+        if not agent:
+            return {
+                "success": False,
+                "message": "Agent not found",
+                "data": None,
+                "error": {"code": "AGENT_NOT_FOUND", "details": f"Active agent with ID {id} does not exist."}
+            }
+
+        agent.is_email_verified = 1 if data.is_email_verified else 0
+
+        # If admin is manually verifying, also unlock the account so the
+        # agent isn't stuck INACTIVE just because they never got the email
+        # (e.g. they mistyped it at registration and could never receive it).
+        if data.is_email_verified and agent.status == "INACTIVE":
+            agent.status = "ACTIVE"
+
+        db.commit()
+        db.refresh(agent)
+
+        return {
+            "success": True,
+            "message": f"Agent email verification {'enabled' if data.is_email_verified else 'disabled'} successfully",
+            "data": {
+                "agent_id": agent.user_id,
+                "username": agent.username,
+                "email": agent.email,
+                "status": agent.status,
+                "is_email_verified": bool(agent.is_email_verified)
+            },
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": "Failed to update email verification status",
+            "data": None,
+            "error": {"code": "SERVER_ERROR", "details": str(e)}
         }

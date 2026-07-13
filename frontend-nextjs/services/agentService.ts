@@ -11,6 +11,7 @@ export interface Agent {
   status: string;
   joined_date: string;
   is_deleted: boolean;
+  is_email_verified: boolean;
 }
 
 export interface AgentPayload {
@@ -19,6 +20,7 @@ export interface AgentPayload {
   password?: string;
   phone_no?: string;
   status?: string;
+  is_email_verified: boolean;
 }
 
 export interface AgentStatusPayload {
@@ -124,6 +126,25 @@ export function useUpdateAgentMutation() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: AgentPayload }) =>
       api.put<Agent>(`/api/agents/${id}`, payload, { headers: authHeader() }),
+    onSuccess: (res) => {
+      if (res.success) {
+        queryClient.invalidateQueries({ queryKey: ['agents'], exact: false });
+      }
+    },
+  });
+}
+
+export interface AgentEmailVerifyPayload {   // 🆕
+  is_email_verified: boolean;
+}
+
+// ─── 6. Update Agent Email Verification Mutation (PATCH) — quick table action ───
+export function useUpdateAgentEmailVerificationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: AgentEmailVerifyPayload }) =>
+      api.patch<Agent>(`/api/agents/${id}/verify-email`, payload, { headers: authHeader() }),
     onSuccess: (res) => {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ['agents'], exact: false });

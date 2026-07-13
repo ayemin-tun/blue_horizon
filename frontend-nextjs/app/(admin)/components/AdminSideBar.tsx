@@ -112,10 +112,11 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
       )}
 
       <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200/80 flex flex-col pt-16 md:pt-2 shrink-0
-        transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-auto
-        ${isOpen ? "translate-x-0" : "-translate-x-full"}
-      `}>
+  fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200/80 flex flex-col pt-16 md:pt-2 shrink-0
+  transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static
+  md:h-full md:overflow-y-auto
+  ${isOpen ? "translate-x-0" : "-translate-x-full"}
+`}>
         <ul className="w-full flex flex-col">
           {menuItems.map((item) => {
             //check if the current pathname matches the item's path to determine if it's active
@@ -129,8 +130,8 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
                   href={item.path}
                   onClick={() => setIsOpen(false)}
                   className={`w-full flex items-center gap-3.5 text-left px-6 md:px-8 py-3.5 text-xs font-semibold tracking-wide transition-all duration-200 border-b border-slate-100/70 ${isActive
-                      ? "bg-blue-900 text-white font-bold"
-                      : "text-blue-900 hover:bg-slate-50"
+                    ? "bg-blue-900 text-white font-bold"
+                    : "text-blue-900 hover:bg-slate-50"
                     }`}
                 >
                   <span className={`${isActive ? "text-white" : "text-blue-900/70"}`}>
