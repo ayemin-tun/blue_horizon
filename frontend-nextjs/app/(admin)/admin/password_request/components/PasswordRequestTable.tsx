@@ -54,7 +54,7 @@ export default function PasswordRequestTable({ requests, loading, search, onView
                     </div>
                     
                     <div className="w-48 shrink-0 text-sm text-slate-600">
-                      {req.created_at ? new Date(req.created_at).toLocaleString() : '-'}
+                      {req.created_at}
                     </div>
                     
                     <div className="w-32 shrink-0 flex justify-center">
