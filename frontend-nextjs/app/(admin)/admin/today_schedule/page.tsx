@@ -2,7 +2,7 @@
 import { InstanceUpdatePayload, PaginatedInstanceResponse, ScheduleInstance, useInstancesQuery, useUpdateInstanceMutation } from "@/services/scheduleInstanceService";
 import { useState } from "react";
 import InstanceStats from "./components/InstanceStats";
-import { Search } from "lucide-react"; 
+import { Search } from "lucide-react";
 import { FilterModal } from "@/components/FilterModal";
 import { ActiveFilters } from "@/components/ActiveFilter";
 import InstanceTable from "./components/InstanceTable";
@@ -12,6 +12,8 @@ import InstanceViewModal from "./components/InstanceViewModal";
 import UpdateInstanceForm from "./components/UpdateInstanceForm";
 import Modal from "@/components/Modal";
 import { toast } from "@/services/store/alertStore";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function SchedulePage() {
     const [search, setSearch] = useState('');
@@ -36,8 +38,8 @@ export default function SchedulePage() {
     const [viewTarget, setViewTarget] = useState<ScheduleInstance | null>(null);
 
     const { data: apiResponse, isLoading: loading, error } = useInstancesQuery(
-        page, LIMIT, search, routeId, status, formatDateForApi(fromDate), 
-        formatDateForApi(toDate)    
+        page, LIMIT, search, routeId, status, formatDateForApi(fromDate),
+        formatDateForApi(toDate)
     );
 
     const activeFilters = [
@@ -126,16 +128,51 @@ export default function SchedulePage() {
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1">
-                                    <label className="block text-[10px] font-semibold text-slate-500">From</label>
-                                    <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full pl-4 pr-10 py-2.5 text-sm text-slate-900 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer appearance-none [-webkit-appearance:none] [-moz-appearance:none]" />
+                            <div className="grid grid-cols-2 gap-4 pt-1">
+                                {/* From Date */}
+                                <div className="space-y-1.5 flex flex-col">
+                                    <label className="block text-xs font-semibold text-slate-500">From Date</label>
+                                    <div className="relative w-full custom-large-datepicker">
+                                        <DatePicker
+                                            selected={fromDate ? new Date(fromDate) : null}
+                                            onChange={(date: Date | null) => { 
+                                                if (date) {
+                                                    
+                                                    const formatted = date.toISOString().split('T')[0];
+                                                    setFromDate(formatted);
+                                                } else {
+                                                    setFromDate('');
+                                                }
+                                            }}
+                                            dateFormat="dd/MM/yyyy"
+                                            placeholderText="Select From Date"
+                                            className="w-full px-4 py-2.5 text-sm text-slate-900 bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="block text-[10px] font-semibold text-slate-500">To</label>
-                                    <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full pl-4 pr-10 py-2.5 text-sm text-slate-900 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer appearance-none [-webkit-appearance:none] [-moz-appearance:none]" />
+
+                                {/* To Date */}
+                                <div className="space-y-1.5 flex flex-col">
+                                    <label className="block text-xs font-semibold text-slate-500">To Date</label>
+                                    <div className="relative w-full custom-large-datepicker">
+                                        <DatePicker
+                                            selected={toDate ? new Date(toDate) : null}
+                                            onChange={(date: Date | null) => { 
+                                                if (date) {
+                                                    const formatted = date.toISOString().split('T')[0];
+                                                    setToDate(formatted);
+                                                } else {
+                                                    setToDate('');
+                                                }
+                                            }}
+                                            dateFormat="dd/MM/yyyy"
+                                            placeholderText="Select To Date"
+                                            className="w-full px-4 py-2.5 text-sm text-slate-900 bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer"
+                                        />
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
                     </FilterModal>
                 </div>

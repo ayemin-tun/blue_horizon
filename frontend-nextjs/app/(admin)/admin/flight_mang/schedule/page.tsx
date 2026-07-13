@@ -203,7 +203,7 @@ export default function SchedulePage() {
 
             {/* ── Pagination ── */}
             {!loading && paginationInfo?.total && paginationInfo.total > LIMIT && (
-                <div className="w-full">
+                <div className="w-xfull">
                     <Pagination
                         currentPage={page}
                         totalCount={paginationInfo.total}

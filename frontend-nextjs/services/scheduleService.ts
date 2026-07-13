@@ -20,7 +20,7 @@ export interface Schedule {
 export interface SchedulePayload {
   flight_id: number;
   route_id: number;
-  flight_type: string;
+  flight_type?: string;
   departure_time: string;
   arrival_time: string;
   economy_price: number;
