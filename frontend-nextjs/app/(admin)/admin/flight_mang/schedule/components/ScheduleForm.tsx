@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Loader2, Clock, Navigation, AlertCircle, Banknote } from "lucide-react";
+import { Loader2, Clock, Navigation, AlertCircle, Banknote, ChevronDown, ChevronUp } from "lucide-react";
 import { Schedule, SchedulePayload } from "@/services/scheduleService";
 import FlightSelect from "./FlightSelect";
 import RouteSelect from "./RouteSelect";
@@ -49,6 +49,9 @@ export default function ScheduleForm({
 
   const [errors, setErrors] = useState<FormErrors>({});
 
+  // Accordion open/close state for Business Rules
+  const [isRulesOpen, setIsRulesOpen] = useState(false);
+
   const { data: flightsRes } = useFlightsQuery(1, 100, "");
   const { data: routesRes } = useRoutesQuery(1, 100, "");
 
@@ -80,7 +83,11 @@ export default function ScheduleForm({
   };
 
   const handleRouteChange = (routeId: number) => {
-    setForm((prev) => ({ ...prev, route_id: routeId }));
+    setForm((prev) => ({
+      ...prev,
+      route_id: routeId,
+    }));
+
     if (errors.route_id) setErrors((prev) => ({ ...prev, route_id: undefined }));
   };
 
@@ -113,7 +120,6 @@ export default function ScheduleForm({
       setErrors(newErrors);
       return;
     }
-    console.log("Selected Route Object:", selectedRouteObj);
 
     setErrors({});
     onSubmit(form);
@@ -122,15 +128,14 @@ export default function ScheduleForm({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-      {/* Right Side: Preview Field */}
-      <div className="hidden lg:block lg:col-span-5 lg:sticky lg:top-4 space-y-3">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden lg:block">Real-time Preview</p>
+      {/* Right Side: Preview Field & Accordion Rules */}
+      <div className="hidden lg:block lg:col-span-5 lg:sticky lg:top-4 space-y-4">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Real-time Preview</p>
 
         {form.flight_id > 0 || form.route_id > 0 ? (
           <ScheduleFormPreview
             flightId={form.flight_id}
             routeId={form.route_id}
-            flightType={form.flight_type}
             departureTime={form.departure_time}
             arrivalTime={form.arrival_time}
             economyPrice={form.economy_price}
@@ -150,6 +155,50 @@ export default function ScheduleForm({
             </p>
           </div>
         )}
+
+        {/* ⚡ Accordion: Schedule Business Rules */}
+        <div className="bg-amber-50/50 border border-amber-100 rounded-2xl overflow-hidden transition-all duration-300">
+          <button
+            type="button"
+            onClick={() => setIsRulesOpen(!isRulesOpen)}
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-amber-100/30 transition-colors focus:outline-none"
+          >
+            <div className="flex items-center gap-2 text-amber-800">
+              <AlertCircle className="w-4 h-4 text-amber-600" />
+              <span className="text-xs font-bold uppercase tracking-wider">Schedule Business Rules</span>
+            </div>
+            {isRulesOpen ? (
+              <ChevronUp className="w-4 h-4 text-amber-600" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-amber-600" />
+            )}
+          </button>
+
+          {isRulesOpen && (
+            <div className="px-4 pb-4.5 space-y-3 border-t border-amber-100/50 pt-3">
+              <ul className="space-y-3.5 text-[11px] leading-relaxed text-amber-900/80">
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-500 mt-0.5">•</span>
+                  <span>
+                    <strong>Dynamic Flight Direction:</strong> Flight direction is determined dynamically. The first route assigned to a flight automatically becomes <code className="bg-amber-100/80 px-1 py-0.5 rounded text-amber-900 font-mono text-[10px]">OUTBOUND</code>, while the matching return route will be auto-detected as <code className="bg-amber-100/80 px-1 py-0.5 rounded text-amber-900 font-mono text-[10px]">INBOUND</code> by the backend.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-500 mt-0.5">•</span>
+                  <span>
+                    <strong>Turnaround Time Rule:</strong> There must be a minimum ground turnaround time of <strong>3 hours (180 minutes)</strong> between the arrival of the outbound flight and the departure of the inbound flight.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-500 mt-0.5">•</span>
+                  <span>
+                    <strong>Pricing Rule:</strong> Business Class ticket pricing must strictly be higher than Economy Class pricing.
+                  </span>
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Left Side: Form Fields  */}
@@ -182,26 +231,6 @@ export default function ScheduleForm({
           </div>
         </div>
 
-        {/* 2. Flight Type Select (OUTBOUND / INBOUND) */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-            Flight Type
-          </label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-              <Navigation className="w-4 h-4" />
-            </span>
-            <select
-              name="flight_type"
-              value={form.flight_type}
-              onChange={handleChange}
-              className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-black appearance-none"
-            >
-              <option value="OUTBOUND">OUTBOUND</option>
-              <option value="INBOUND">INBOUND</option>
-            </select>
-          </div>
-        </div>
 
         {/* 3. Timings (Departure & Arrival Time) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

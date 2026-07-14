@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link"; // Link import လုပ်ပါ
-import { usePathname } from "next/navigation"; // Path သိဖို့ import လုပ်ပါ
-
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { usePendingPasswordRequestsCountQuery } from "@/services/passwordRequestService";
 interface AdminSidebarProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
@@ -11,6 +11,11 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
   const pathname = usePathname();
+
+  const { data: pendingRes } = usePendingPasswordRequestsCountQuery();
+  
+  const pendingCount = pendingRes?.data?.pending_count ?? 0;
+
   const menuItems = [
     {
       id: "overview",
@@ -76,7 +81,8 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
         </svg>
-      )
+      ),
+      showBadge: true 
     },
     {
       id: "forecasting",
@@ -100,8 +106,6 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
     },
   ];
 
-  const [activeMenu, setActiveMenu] = useState("overview");
-
   return (
     <>
       {isOpen && (
@@ -112,14 +116,13 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
       )}
 
       <aside className={`
-  fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200/80 flex flex-col pt-16 md:pt-2 shrink-0
-  transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static
-  md:h-full md:overflow-y-auto
-  ${isOpen ? "translate-x-0" : "-translate-x-full"}
-`}>
+        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200/80 flex flex-col pt-16 md:pt-2 shrink-0
+        transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static
+        md:h-full md:overflow-y-auto
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+      `}>
         <ul className="w-full flex flex-col">
           {menuItems.map((item) => {
-            //check if the current pathname matches the item's path to determine if it's active
             const isActive = item.id === "overview"
               ? pathname === "/admin"
               : pathname.startsWith(item.path);
@@ -129,15 +132,28 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
                 <Link
                   href={item.path}
                   onClick={() => setIsOpen(false)}
-                  className={`w-full flex items-center gap-3.5 text-left px-6 md:px-8 py-3.5 text-xs font-semibold tracking-wide transition-all duration-200 border-b border-slate-100/70 ${isActive
-                    ? "bg-blue-900 text-white font-bold"
-                    : "text-blue-900 hover:bg-slate-50"
-                    }`}
+                  className={`w-full flex items-center justify-between px-6 md:px-8 py-3.5 text-xs font-semibold tracking-wide transition-all duration-200 border-b border-slate-100/70 ${
+                    isActive
+                      ? "bg-blue-900 text-white font-bold"
+                      : "text-blue-900 hover:bg-slate-50"
+                  }`}
                 >
-                  <span className={`${isActive ? "text-white" : "text-blue-900/70"}`}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-3.5 text-left">
+                    <span className={`${isActive ? "text-white" : "text-blue-900/70"}`}>
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </div>
+
+                  {item.showBadge && pendingCount > 0 && (
+                    <span className={`inline-flex items-center justify-center px-2 py-0.5 text-[10px] font-bold rounded-full transition-all duration-300 ${
+                      isActive 
+                        ? "bg-white text-blue-900 animate-pulse" 
+                        : "bg-red-500 text-white"
+                    }`}>
+                      {pendingCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

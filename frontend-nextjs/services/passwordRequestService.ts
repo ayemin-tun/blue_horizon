@@ -50,6 +50,9 @@ export const usePasswordRequestsQuery = (page: number, limit: number, search: st
       const response = await api.get(url);
       return response;
     },
+    staleTime: 0,                     // Always refetch on focus / mount
+    refetchInterval: 15000,           // Auto-poll every 15 seconds
+    refetchIntervalInBackground: true, // Keep polling even when tab is inactive
   });
 };
 
@@ -72,3 +75,27 @@ export function useResolvePasswordRequestMutation() {
     },
   });
 }
+
+export interface PendingCountResponse {
+  success: boolean;
+  message: string;
+  data: {
+    pending_count: number;
+  };
+  error: any;
+}
+
+export const usePendingPasswordRequestsCountQuery = () => {
+  return useQuery<any>({
+    queryKey: ['passwordRequests', 'pendingCount'],
+    queryFn: async () => {
+      const response = await api.get('/api/admin/password-requests/pending-count', {
+        headers: authHeader(),
+      });
+      return response;
+    },
+    staleTime: 0,                     // Always refetch on focus / mount
+    refetchInterval: 15000,           // Reduced to 15 seconds for faster badge update
+    refetchIntervalInBackground: true, // Keep polling even when tab is inactive
+  });
+};

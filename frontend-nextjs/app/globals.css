@@ -40,3 +40,72 @@ body {
 .dob-field .react-datepicker__input-container input {
   width: 100%;
 }
+
+/* ==========================================
+   CUSTOM REACT-DATEPICKER STYLE OVERRIDES
+   ========================================== */
+
+.react-datepicker-popper {
+  z-index: 9999 !important;
+  padding-top: 8px !important;
+}
+
+.react-datepicker {
+  font-family: inherit !important;
+  border: 1px solid #e2e8f0 !important; /* border-slate-200 */
+  border-radius: 16px !important;       /* Rounded-2xl */
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important; /* Soft Shadow */
+  background-color: #ffffff !important;
+  overflow: hidden !important;
+}
+
+.react-datepicker__header--time {
+  background-color: #f8fafc !important; /* bg-slate-50 */
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 12px 0 !important;
+}
+
+.react-datepicker__header .react-datepicker-time__header {
+  color: #1e293b !important; /* text-slate-800 */
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.react-datepicker__time-container {
+  width: 140px !important;
+}
+
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
+  width: 100% !important;
+  border-radius: 0 0 16px 16px !important;
+}
+
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
+  height: auto !important;
+  padding: 10px 12px !important; /* padding  */
+  font-size: 13px !important;
+  color: #334155 !important; /* text-slate-700 */
+  transition: all 0.15s ease-in-out !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* Hover effect */
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover {
+  background-color: #f1f5f9 !important; /* bg-slate-100 */
+  color: #1e3a8a !important; /* text-blue-900 */
+}
+
+/*  Time list item (Selected state) */
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
+  background-color: #1e3a8a !important; /* bg-blue-900 (သင့် Form button ) */
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.react-datepicker__triangle {
+  display: none !important; 
+}

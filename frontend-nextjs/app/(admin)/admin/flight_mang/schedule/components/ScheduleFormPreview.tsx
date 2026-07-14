@@ -6,7 +6,6 @@ import { ArrowRight, Plane } from "lucide-react";
 interface SchedulePreviewProps {
     flightId: number;
     routeId: number;
-    flightType: string;
     departureTime: string;
     arrivalTime: string;
     economyPrice: number;
@@ -19,7 +18,6 @@ interface SchedulePreviewProps {
 export default function ScheduleFormPreview({
     flightId,
     routeId,
-    flightType,
     departureTime,
     arrivalTime,
     economyPrice,
@@ -53,11 +51,6 @@ export default function ScheduleFormPreview({
                     <Plane className="w-3.5 h-3.5 text-blue-900" />
                     <p className="text-blue-900 font-bold text-[13px]">Schedule Preview</p>
                 </div>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase ${
-                    flightType === "OUTBOUND" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
-                }`}>
-                    {flightType}
-                </span>
             </div>
 
             {/* Flight No & Airline Details */}

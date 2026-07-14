@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ENGINE_LOG_LINES, EngineTriggerPanel } from './components./EngineTriggerPanel';
-import { ReportHeader } from './components./ReportHeader';
-import { RouteDemandSection } from './components./RouteDemandSection';
-import { AgentPerformanceSection } from './components./AgentPerformanceSection';
-import { SeasonTrendsSection } from './components./SeasonTrendSection';
-import { AirlineShareSection } from './components./AirlineShareSection';
+import { ENGINE_LOG_LINES, EngineTriggerPanel } from './components/EngineTriggerPanel';
+import { ReportHeader } from './components/ReportHeader';
+import { RouteDemandSection } from './components/RouteDemandSection';
+import { AgentPerformanceSection } from './components/AgentPerformanceSection';
+import { SeasonTrendsSection } from './components/SeasonTrendSection';
+import { AirlineShareSection } from '@/app/(admin)/admin/forecast/components/AirlineShareSection';
 type EngineState = 'idle' | 'running' | 'done';
 
 export default function ForecastDashboardPage() {
