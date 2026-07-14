@@ -58,9 +58,22 @@ echo -e "${GREEN}  ✓ chmod +x applied to all files in backend-cobol/bin/${NC}"
 
 # ── Step 2: Backend (FastAPI + venv) ────────────────────────
 echo -e "${YELLOW}[2/3] Starting FastAPI backend...${NC}"
-if [ ! -d "$PYTHON_DIR/venv" ]; then
-    echo -e "${RED}  ✗ venv not found in backend-python/. Run: python3 -m venv venv && pip install -r requirements.txt${NC}"
+
+# Check python3 installed
+if ! command -v python3 &>/dev/null; then
+    echo -e "${RED}  ✗ python3 not found. Install from https://www.python.org${NC}"
     exit 1
+fi
+
+# Auto-create venv if missing
+if [ ! -d "$PYTHON_DIR/venv" ]; then
+    echo -e "${YELLOW}  venv not found — creating virtual environment...${NC}"
+    python3 -m venv "$PYTHON_DIR/venv"
+    echo -e "${GREEN}  ✓ venv created${NC}"
+
+    echo -e "${YELLOW}  Installing Python dependencies...${NC}"
+    "$PYTHON_DIR/venv/bin/pip" install --quiet -r "$PYTHON_DIR/requirements.txt"
+    echo -e "${GREEN}  ✓ Python packages installed${NC}"
 fi
 
 # Open a new Terminal tab/window for backend
@@ -75,9 +88,18 @@ sleep 1
 
 # ── Step 3: Frontend (Next.js) ──────────────────────────────
 echo -e "${YELLOW}[3/3] Starting Next.js frontend...${NC}"
-if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
-    echo -e "${RED}  ✗ node_modules not found. Run: cd frontend-nextjs && npm install${NC}"
+
+# Check node/npm installed
+if ! command -v npm &>/dev/null; then
+    echo -e "${RED}  ✗ npm not found. Install Node.js from https://nodejs.org${NC}"
     exit 1
+fi
+
+# Auto-install node_modules if missing
+if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+    echo -e "${YELLOW}  node_modules not found — running npm install...${NC}"
+    npm --prefix "$FRONTEND_DIR" install --silent
+    echo -e "${GREEN}  ✓ npm packages installed${NC}"
 fi
 
 osascript <<EOF

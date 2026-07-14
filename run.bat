@@ -54,32 +54,54 @@ echo.
 
 :: ── Step 2: Backend (FastAPI + venv) ─────────────────────────────────
 echo [2/3] Starting FastAPI backend...
-if not exist "%PYTHON_DIR%\venv" (
-    echo   ^✗ venv not found in backend-python\
-    echo      Run: cd backend-python ^&^& python -m venv venv ^&^& pip install -r requirements.txt
+
+:: Check python is installed
+where python >nul 2>&1
+if errorlevel 1 (
+    echo   [ERROR] python not found. Install from https://www.python.org
     pause
     exit /b 1
 )
 
-start "Blue Horizon — FastAPI Backend" cmd /k ^
-    "echo 🚀 Blue Horizon — FastAPI Backend && cd /d "%PYTHON_DIR%" && call venv\Scripts\activate.bat && python run.py"
+:: Auto-create venv if missing
+if not exist "%PYTHON_DIR%\venv" (
+    echo   venv not found -- creating virtual environment...
+    python -m venv "%PYTHON_DIR%\venv"
+    echo   [OK] venv created
 
-echo   ^✓ Backend started in new window ^(port 8000^)
+    echo   Installing Python dependencies...
+    "%PYTHON_DIR%\venv\Scripts\pip.exe" install -q -r "%PYTHON_DIR%\requirements.txt"
+    echo   [OK] Python packages installed
+)
+
+start "Blue Horizon — FastAPI Backend" cmd /k ^
+    "echo Blue Horizon — FastAPI Backend && cd /d "%PYTHON_DIR%" && call venv\Scripts\activate.bat && python run.py"
+
+echo   [OK] Backend started in new window (port 8000)
 timeout /t 2 >nul
 
 :: ── Step 3: Frontend (Next.js) ────────────────────────────────────────
 echo [3/3] Starting Next.js frontend...
-if not exist "%FRONTEND_DIR%\node_modules" (
-    echo   ^✗ node_modules not found in frontend-nextjs\
-    echo      Run: cd frontend-nextjs ^&^& npm install
+
+:: Check npm is installed
+where npm >nul 2>&1
+if errorlevel 1 (
+    echo   [ERROR] npm not found. Install Node.js from https://nodejs.org
     pause
     exit /b 1
 )
 
-start "Blue Horizon — Next.js Frontend" cmd /k ^
-    "echo 🌐 Blue Horizon — Next.js Frontend && cd /d "%FRONTEND_DIR%" && npm run dev"
+:: Auto-install node_modules if missing
+if not exist "%FRONTEND_DIR%\node_modules" (
+    echo   node_modules not found -- running npm install...
+    cd /d "%FRONTEND_DIR%" && npm install --silent
+    echo   [OK] npm packages installed
+)
 
-echo   ^✓ Frontend started in new window ^(port 3000^)
+start "Blue Horizon — Next.js Frontend" cmd /k ^
+    "echo Blue Horizon — Next.js Frontend && cd /d "%FRONTEND_DIR%" && npm run dev"
+
+echo   [OK] Frontend started in new window (port 3000)
 
 :: ── Done ──────────────────────────────────────────────────────────────
 echo.
