@@ -63,10 +63,22 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Auto-create venv if missing
-if not exist "%PYTHON_DIR%\venv" (
-    echo   venv not found -- creating virtual environment...
+:: Check if venv is properly set up (activate.bat must exist, not just the folder)
+if not exist "%PYTHON_DIR%\venv\Scripts\activate.bat" (
+    echo   venv not found or incomplete -- creating virtual environment...
+
+    :: Remove broken venv folder if it exists
+    if exist "%PYTHON_DIR%\venv" (
+        echo   Removing incomplete venv folder...
+        rmdir /s /q "%PYTHON_DIR%\venv"
+    )
+
     python -m venv "%PYTHON_DIR%\venv"
+    if errorlevel 1 (
+        echo   [ERROR] Failed to create venv. Make sure Python is installed correctly.
+        pause
+        exit /b 1
+    )
     echo   [OK] venv created
 
     echo   Installing Python dependencies...
