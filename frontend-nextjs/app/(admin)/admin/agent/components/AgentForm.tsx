@@ -111,72 +111,73 @@ export default function AgentForm({
       </div>
 
       {/* Agent Status Toggle */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-2">
-          Agent Status
-        </label>
+      <div className="grid md:grid-cols-2 grid-cols-1 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-2">
+            Agent Status
+          </label>
 
-        <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-slate-900">
-              {form.status === "ACTIVE" ? "Active" : "Inactive"}
-            </span>
-            <span className="text-[11px] text-slate-400">
-              {form.status === "ACTIVE" ? "Agent can log in and access system." : "Agent access will be disabled."}
-            </span>
-          </div>
+          <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-slate-900">
+                {form.status === "ACTIVE" ? "Active" : "Inactive"}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                {form.status === "ACTIVE" ? "Agent can log in and access system." : "Agent access will be disabled."}
+              </span>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setForm((prev) => ({
-                ...prev,
-                status: prev.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-              }));
-            }}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${form.status === "ACTIVE" ? "bg-green-500" : "bg-slate-200"
-              }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${form.status === "ACTIVE" ? "translate-x-5" : "translate-x-0"
+            <button
+              type="button"
+              onClick={() => {
+                setForm((prev) => ({
+                  ...prev,
+                  status: prev.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+                }));
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${form.status === "ACTIVE" ? "bg-green-500" : "bg-slate-200"
                 }`}
-            />
-          </button>
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${form.status === "ACTIVE" ? "translate-x-5" : "translate-x-0"
+                  }`}
+              />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* 🟢 ဤနေရာတွင် Email Verification Toggle ကို အသစ်ထည့်သွင်းထားပါသည် */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-2">
-          Email Verification Status
-        </label>
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-2">
+            Email Verification Status
+          </label>
 
-        <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-slate-900">
-              {form.is_email_verified ? "Verified" : "Unverified"}
-            </span>
-            <span className="text-[11px] text-slate-400">
-              {form.is_email_verified ? "Agent's email is marked as verified." : "Agent account requires manual confirmation."}
-            </span>
-          </div>
+          <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-slate-900">
+                {form.is_email_verified ? "Verified" : "Unverified"}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                {form.is_email_verified ? "Agent's email is marked as verified." : "Agent account requires manual confirmation."}
+              </span>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setForm((prev) => ({
-                ...prev,
-                is_email_verified: !prev.is_email_verified,
-              }));
-            }}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${form.is_email_verified ? "bg-blue-600" : "bg-slate-200"
-              }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${form.is_email_verified ? "translate-x-5" : "translate-x-0"
+            <button
+              type="button"
+              onClick={() => {
+                setForm((prev) => ({
+                  ...prev,
+                  is_email_verified: !prev.is_email_verified,
+                }));
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${form.is_email_verified ? "bg-blue-600" : "bg-slate-200"
                 }`}
-            />
-          </button>
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${form.is_email_verified ? "translate-x-5" : "translate-x-0"
+                  }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 
