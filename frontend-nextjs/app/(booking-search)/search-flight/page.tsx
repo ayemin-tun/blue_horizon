@@ -86,7 +86,7 @@ export default function TicketBookingPage() {
       )}
 
       {/* ─── PAGINATION SECTION */}
-      {!isPending && paginationInfo?.total && paginationInfo.total > LIMIT && (
+      {!isPending && (paginationInfo?.total ?? 0) > LIMIT && (
         <div className="w-full mt-8 flex justify-center">
           <Pagination
             currentPage={page}

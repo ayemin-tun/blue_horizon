@@ -71,6 +71,9 @@ export const useAgentsQuery = (page: number, limit: number, search: string,statu
       const response = await api.get(url);
       return response;
     },
+    staleTime: 0,                     // Always refetch on focus / mount
+    refetchInterval: 15000,           // Auto-poll every 15 seconds
+    refetchIntervalInBackground: true, // Keep polling even when tab is inactive
   });
 };
 

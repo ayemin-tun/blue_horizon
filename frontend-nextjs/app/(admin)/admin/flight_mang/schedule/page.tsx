@@ -202,8 +202,8 @@ export default function SchedulePage() {
             />
 
             {/* ── Pagination ── */}
-            {!loading && paginationInfo?.total && paginationInfo.total > LIMIT && (
-                <div className="w-full">
+            {!loading && (paginationInfo?.total ?? 0) > LIMIT && (
+                <div className="w-xfull">
                     <Pagination
                         currentPage={page}
                         totalCount={paginationInfo.total}
@@ -221,12 +221,13 @@ export default function SchedulePage() {
             />
 
             {/* ── Add Flight Modal ── */}
-            <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Schedule" maxWidth="3xl">
+            <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add New Schedule" maxWidth="3xl" >
                 <ScheduleForm
                     onSubmit={handleCreate}
                     onCancel={() => setShowAdd(false)}
                     loading={formLoading}
                     submitLabel="Create Schedule"
+                    
                 />
             </Modal>
 

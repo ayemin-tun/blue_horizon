@@ -335,6 +335,33 @@ def get_all_password_requests(
             }
         }
 
+
+# --- GET PENDING PASSWORD REQUESTS COUNT API ---
+@router.get("/admin/password-requests/pending-count", response_model=ApiResponse)
+def get_pending_password_requests_count(db: Session = Depends(get_db)):
+    try:
+        pending_count = db.query(models.PasswordResetRequest).filter(
+            models.PasswordResetRequest.status == "PENDING",
+            models.PasswordResetRequest.is_deleted == 0
+        ).count()
+
+        return {
+            "success": True,
+            "message": "Pending requests count retrieved successfully",
+            "data": {"pending_count": pending_count},
+            "error": None
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": "Failed to fetch pending count",
+            "data": {"pending_count": 0},
+            "error": {
+                "code": "SERVER_ERROR",
+                "details": str(e)
+            }
+        }
+
 @router.get("/admin/password-requests/{request_id}", response_model=ApiResponse)
 def get_password_request_detail(request_id: int, db: Session = Depends(get_db)):
     

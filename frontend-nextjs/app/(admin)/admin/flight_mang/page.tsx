@@ -153,7 +153,7 @@ export default function AdminAirlinesPage() {
         />
 
         {/* ── Pagination ── */}
-        {!loading && paginationInfo?.total && paginationInfo.total > LIMIT && (
+        {!loading && (paginationInfo?.total ?? 0) > LIMIT && (
           <div className="w-full">
             <Pagination
               currentPage={page}

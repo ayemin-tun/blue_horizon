@@ -35,9 +35,9 @@ class ScheduleBase(BaseModel):
     flight_id: int
     
     # Limit flight type is only for "OUTBOUND/INBOUND"
-    flight_type: Literal["OUTBOUND", "INBOUND"] = Field(
-        ..., 
-        description="Flight direction type: Must be 'OUTBOUND' or 'INBOUND'"
+    flight_type: Optional[Literal["OUTBOUND", "INBOUND"]] = Field(
+        None, 
+        description="Flight direction type: Will be automatically determined"
     )
     
     departure_time: str = Field(..., description="Departure time in HH:MM format (24-hour style)")
@@ -49,7 +49,7 @@ class ScheduleBase(BaseModel):
     # uppercase validator
     @field_validator('flight_type', mode='before')
     @classmethod
-    def uppercase_flight_type(cls, v: str) -> str:
+    def uppercase_flight_type(cls, v: Any) -> Any:
         if isinstance(v, str):
             return v.strip().upper()
         return v
@@ -89,7 +89,6 @@ class ScheduleBase(BaseModel):
             "example": {
                 "route_id": 1,
                 "flight_id": 1,
-                "flight_type": "OUTBOUND",
                 "departure_time": "08:30",
                 "arrival_time": "10:00",
                 "economy_price": 150000.00,

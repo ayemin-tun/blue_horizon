@@ -29,7 +29,7 @@ def validate_schedule_business_logic(
     current_route_id: int, 
     new_departure_time: str, 
     new_arrival_time: str,
-    new_flight_type: str,
+    assigned_flight_type: str,
     companion_schedules: List[models.RouteSchedule]
 ) -> Optional[dict]:
     
@@ -38,14 +38,7 @@ def validate_schedule_business_logic(
 
     companion_schedule = companion_schedules[0]
     
-    # Checko inbound/outbound
-    if companion_schedule.flight_type.strip().upper() == new_flight_type.strip().upper():
-        return {
-            "code": "DUPLICATE_FLIGHT_TYPE",
-            "details": f"Flight ID already has an '{companion_schedule.flight_type}' schedule. Each flight must have exactly one OUTBOUND and one INBOUND schedule."
-        }
-    
-    # rule 1 : Inbound-Outbout city checking
+    # Return route validation
     current_route = db.query(models.Route).filter(models.Route.route_id == current_route_id).first()
     companion_route = db.query(models.Route).filter(models.Route.route_id == companion_schedule.route_id).first()
     
@@ -60,57 +53,51 @@ def validate_schedule_business_logic(
     if not is_valid_return:
         return {
             "code": "INVALID_RETURN_ROUTE",
-            "details": "Route conflict. Route must match the exact return route."
+            "details": f"Route conflict. Expected return route for '{companion_route.departure_city} ➔ {companion_route.arrival_city}'."
         }
 
     time_fmt = "%H:%M"
     display_fmt = "%I:%M %p"
     
-    # rule 2: check time for (Inbound)
-    if new_flight_type.strip().upper() == "INBOUND":
-        first_arrival = datetime.strptime(companion_schedule.arrival_time, time_fmt)
-        return_departure = datetime.strptime(new_departure_time, time_fmt)
+    # Turnaround Time Check 
+    new_dep = datetime.strptime(new_departure_time, time_fmt)
+    new_arr = datetime.strptime(new_arrival_time, time_fmt)
+    comp_dep = datetime.strptime(companion_schedule.departure_time, time_fmt)
+    comp_arr = datetime.strptime(companion_schedule.arrival_time, time_fmt)
+
+    if assigned_flight_type == "INBOUND":
         
-        min_allowed_time_obj = first_arrival + timedelta(minutes=180)
-        
-        if return_departure < first_arrival:
+        min_allowed_time_obj = comp_arr + timedelta(minutes=180)
+        if new_dep < comp_arr:
             return {
                 "code": "BACKWARD_TIME_ERROR",
-                "details": f"The return flight departure ({return_departure.strftime(display_fmt)}) cannot be earlier than the first flight arrival ({first_arrival.strftime(display_fmt)}). The earliest available departure time is {min_allowed_time_obj.strftime(display_fmt)}."
+                "details": f"Inbound flight departure ({new_dep.strftime(display_fmt)}) cannot be earlier than Outbound arrival ({comp_arr.strftime(display_fmt)})."
             }
-            
-        time_difference = (return_departure - first_arrival).total_seconds() / 60
+        
+        time_difference = (new_dep - comp_arr).total_seconds() / 60
         if time_difference < 180:
             return {
                 "code": "INSUFFICIENT_TURNAROUND_TIME",
-                "details": f"The companion flight arrives at {first_arrival.strftime(display_fmt)}. The return flight must depart at least 3 hours (180 mins) later. Earliest available departure time is {min_allowed_time_obj.strftime(display_fmt)}."
+                "details": f"Insufficient turnaround time. Outbound arrives at {comp_arr.strftime(display_fmt)}. Inbound must depart after {min_allowed_time_obj.strftime(display_fmt)}."
             }
             
-    # rule3: Checking time for (Outbound)
-    else:
-        first_arrival = datetime.strptime(new_arrival_time, time_fmt)
-        return_departure = datetime.strptime(companion_schedule.departure_time, time_fmt)
+    else: # OUTBOUND
         
-        max_allowed_arrival_obj = return_departure - timedelta(minutes=180)
-        
-        if return_departure < first_arrival:
+        max_allowed_arrival_obj = comp_dep - timedelta(minutes=180)
+        if comp_dep < new_arr:
             return {
                 "code": "FORWARD_TIME_ERROR",
-                "details": f"The first flight arrival ({first_arrival.strftime(display_fmt)}) cannot be later than the return flight departure ({return_departure.strftime(display_fmt)}). Your flight must arrive by {max_allowed_arrival_obj.strftime(display_fmt)}."
+                "details": f"Outbound flight arrival ({new_arr.strftime(display_fmt)}) cannot be later than Inbound departure ({comp_dep.strftime(display_fmt)})."
             }
             
-        time_difference = (return_departure - first_arrival).total_seconds() / 60
-        
+        time_difference = (comp_dep - new_arr).total_seconds() / 60
         if time_difference < 180:
             return {
                 "code": "INSUFFICIENT_TURNAROUND_TIME",
-                "details": f"Insufficient turnaround time. The inbound flight departs at {return_departure.strftime(display_fmt)}. "
-                           f"If this outbound flight arrives at {first_arrival.strftime(display_fmt)}, the aircraft will only have {int(time_difference)} minutes to rest. "
-                           f"The outbound flight must arrive by {max_allowed_arrival_obj.strftime(display_fmt)} to ensure a 3-hour breakdown."
+                "details": f"Insufficient turnaround time. Inbound departs at {comp_dep.strftime(display_fmt)}. Outbound must arrive by {max_allowed_arrival_obj.strftime(display_fmt)}."
             }
 
     return None
-
 
 # ─── 1. READ ALL SCHEDULES API (With Metrics & Pagination) ───────────────────
 @router.get("", response_model=ApiResponse)
@@ -254,33 +241,43 @@ def get_schedule_by_id(id: int, db: Session = Depends(get_db)):
 @router.post("", response_model=ApiResponse, status_code=status.HTTP_201_CREATED)
 def create_schedule(data: ScheduleCreate, db: Session = Depends(get_db)):
     try:
+        # Route and Flight exist check
         if not db.query(models.Route).filter(models.Route.route_id == data.route_id, models.Route.is_deleted == 0).first():
             return {"success": False, "message": "Invalid route_id", "data": None, "error": {"code": "ROUTE_NOT_FOUND", "details": "Route does not exist."}}
         if not db.query(models.Flight).filter(models.Flight.flight_id == data.flight_id, models.Flight.is_deleted == 0).first():
             return {"success": False, "message": "Invalid flight_id", "data": None, "error": {"code": "FLIGHT_NOT_FOUND", "details": "Flight does not exist."}}
 
+        # Flight 
         all_history_schedules = db.query(models.RouteSchedule).filter(models.RouteSchedule.flight_id == data.flight_id).all()
         active_schedules = [s for s in all_history_schedules if s.is_deleted == 0]
         deleted_schedules = [s for s in all_history_schedules if s.is_deleted == 1]
 
-        if len(active_schedules) >= 2:
+        # ⚡ [DYNAMIC AUTO-DETECT LOGIC]
+        if len(active_schedules) == 0:
+            assigned_flight_type = "OUTBOUND"
+        elif len(active_schedules) == 1:
+            assigned_flight_type = "INBOUND"
+        else:
             return {
                 "success": False, 
                 "message": "Schedule limitation exceeded", 
                 "data": None, 
-                "error": {"code": "SCHEDULE_LIMIT_REACHED", "details": f"Flight ID {data.flight_id} already has 2 active schedules."}
+                "error": {"code": "SCHEDULE_LIMIT_REACHED", "details": f"Flight ID {data.flight_id} already has {len(active_schedules)} active schedules."}
             }
 
+        data.flight_type = assigned_flight_type
+
+        # Soft-deleted match check
         existing_deleted_match = None
         for ds in deleted_schedules:
-            if ds.flight_type.strip().upper() == data.flight_type.strip().upper():
+            if ds.flight_type.strip().upper() == assigned_flight_type:
                 existing_deleted_match = ds
                 break
 
-        # Case A: Reactive Restore 
+        # Case A: Soft-Deleted
         if existing_deleted_match:
             business_error = validate_schedule_business_logic(
-                db, data.route_id, data.departure_time, data.arrival_time, data.flight_type, active_schedules
+                db, data.route_id, data.departure_time, data.arrival_time, assigned_flight_type, active_schedules
             )
             if business_error:
                 return {"success": False, "message": "Validation failed for restore", "data": None, "error": business_error}
@@ -292,14 +289,13 @@ def create_schedule(data: ScheduleCreate, db: Session = Depends(get_db)):
             existing_deleted_match.business_price = data.business_price
             existing_deleted_match.is_deleted = 0
 
-            reactivate_and_sync_future_instances(db,existing_deleted_match)
-
+            reactivate_and_sync_future_instances(db, existing_deleted_match)
             db.commit()
             db.refresh(existing_deleted_match)
 
             return {
                 "success": True, 
-                "message": "Existing deleted schedule restored and updated successfully", 
+                "message": f"Existing deleted schedule restored and updated as {assigned_flight_type} successfully", 
                 "data": {"schedule_id": existing_deleted_match.schedule_id, "flight_type": existing_deleted_match.flight_type}, 
                 "error": None
             }
@@ -307,34 +303,29 @@ def create_schedule(data: ScheduleCreate, db: Session = Depends(get_db)):
         # Case B: Create New Schedule
         else:
             business_error = validate_schedule_business_logic(
-                db, data.route_id, data.departure_time, data.arrival_time, data.flight_type, active_schedules
+                db, data.route_id, data.departure_time, data.arrival_time, assigned_flight_type, active_schedules
             )
             if business_error:
                 return {"success": False, "message": "Validation failed", "data": None, "error": business_error}
 
             new_schedule = models.RouteSchedule(**data.model_dump())
             db.add(new_schedule)
-
-            #🛠️ ADDED: Flush to generate the schedule_id from DB before passing to utility
             db.flush() 
 
-            # 🛠️ ADDED: Generate 30 days instances for the newly created schedule
             generate_30_days_instances(db, new_schedule)
-
             db.commit()
             db.refresh(new_schedule)
 
             return {
                 "success": True, 
-                "message": "Route schedule created successfully", 
+                "message": f"Route schedule created successfully as {assigned_flight_type}", 
                 "data": {"schedule_id": new_schedule.schedule_id, "flight_type": new_schedule.flight_type}, 
                 "error": None
             }
 
     except Exception as e:
         return {"success": False, "message": "Failed to create schedule", "data": None, "error": {"code": "SERVER_ERROR", "details": str(e)}}
-
-
+    
 # ─── 4. UPDATE ROUTE SCHEDULE (PUT) ──────────────────────────────────────────
 @router.put("/{id}", response_model=ApiResponse)
 def update_schedule(id: int, data: ScheduleCreate, db: Session = Depends(get_db)):
@@ -346,7 +337,10 @@ def update_schedule(id: int, data: ScheduleCreate, db: Session = Depends(get_db)
         if not db.query(models.Route).filter(models.Route.route_id == data.route_id, models.Route.is_deleted == 0).first() or not db.query(models.Flight).filter(models.Flight.flight_id == data.flight_id, models.Flight.is_deleted == 0).first():
             return {"success": False, "message": "Invalid route_id or flight_id", "data": None, "error": {"code": "VALIDATION_ERROR", "details": "Target route or flight does not exist."}}
 
-        # Check other schedules for the same flight_id, excluding the current schedule being updated
+        # [Auto-Detect Logic for Update]: 
+        assigned_flight_type = schedule.flight_type
+
+        # Check other schedules for the same flight_id
         other_schedules = db.query(models.RouteSchedule).filter(
             models.RouteSchedule.flight_id == data.flight_id, 
             models.RouteSchedule.is_deleted == 0, 
@@ -356,30 +350,30 @@ def update_schedule(id: int, data: ScheduleCreate, db: Session = Depends(get_db)
         if len(other_schedules) >= 2:
             return {"success": False, "message": "Update failed", "data": None, "error": {"code": "SCHEDULE_LIMIT_REACHED", "details": f"Target Flight ID {data.flight_id} already has 2 active schedules."}}
 
-        # Logic Gap Fix: if no other schedules found, check for potential companion schedule based on route matching
+        # Logic Gap Fix 
         if not other_schedules:
             current_route = db.query(models.Route).filter(models.Route.route_id == data.route_id).first()
             potential_companion = db.query(models.RouteSchedule).join(models.RouteSchedule.route).filter(
                 models.RouteSchedule.is_deleted == 0,
                 models.RouteSchedule.schedule_id != id,
-                models.RouteSchedule.flight_id == data.flight_id, # for the same flight_id
+                models.RouteSchedule.flight_id == data.flight_id,
                 func.lower(models.Route.departure_city) == func.lower(current_route.arrival_city),
                 func.lower(models.Route.arrival_city) == func.lower(current_route.departure_city)
             ).first()
             if potential_companion:
                 other_schedules = [potential_companion]
 
-        # check business logic validation with the other schedules 
+        # Business Logic 
         business_error = validate_schedule_business_logic(
-            db, data.route_id, data.departure_time, data.arrival_time, data.flight_type, other_schedules
+            db, data.route_id, data.departure_time, data.arrival_time, assigned_flight_type, other_schedules
         )
         if business_error:
             return {"success": False, "message": "Update validation failed", "data": None, "error": business_error}
 
-        # Data Save
+        # Data Save 
         schedule.route_id = data.route_id
         schedule.flight_id = data.flight_id
-        schedule.flight_type = data.flight_type.strip().upper()
+        schedule.flight_type = assigned_flight_type
         schedule.departure_time = data.departure_time.strip()
         schedule.arrival_time = data.arrival_time.strip()
         schedule.economy_price = data.economy_price

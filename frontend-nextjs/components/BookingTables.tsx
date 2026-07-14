@@ -76,7 +76,7 @@ const BookingTable: React.FC = () => {
       {/* Go to Booking Page */}
       <div className="mt-5 flex justify-end">
         <Link
-          href="/admin/booking"
+          href="/admin/booking_history"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-800 hover:underline"
         >
           Go to Booking Page
