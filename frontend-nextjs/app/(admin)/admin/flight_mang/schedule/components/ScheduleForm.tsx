@@ -244,7 +244,6 @@ export default function ScheduleForm({
                 <Clock className="w-4 h-4" />
               </span>
               <DatePicker
-                portalId="datepicker-portal"
                 selected={
                   form.departure_time
                     ? (() => {
@@ -290,7 +289,6 @@ export default function ScheduleForm({
                 <Clock className="w-4 h-4" />
               </span>
               <DatePicker
-                portalId="datepicker-portal"
                 selected={
                   form.arrival_time
                     ? (() => {

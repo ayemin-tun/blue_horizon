@@ -37,9 +37,9 @@ export default function Modal({
       />
       
       {/* Panel */}
-      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} mx-4 overflow-hidden transform transition-all duration-300 scale-100`}>
+      <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} mx-4  transform transition-all duration-300 scale-100`}>
         {/* Header */}
-        <div className="bg-linear-to-r from-blue-900 to-blue-700 px-6 py-4 flex items-center justify-between">
+        <div className="bg-linear-to-r from-blue-900 to-blue-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <h2 className="text-white font-bold text-sm tracking-wide">{title}</h2>
           <button
             onClick={onClose}
