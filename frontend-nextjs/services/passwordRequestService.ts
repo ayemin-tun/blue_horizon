@@ -72,3 +72,25 @@ export function useResolvePasswordRequestMutation() {
     },
   });
 }
+
+export interface PendingCountResponse {
+  success: boolean;
+  message: string;
+  data: {
+    pending_count: number;
+  };
+  error: any;
+}
+
+export const usePendingPasswordRequestsCountQuery = () => {
+  return useQuery<any>({
+    queryKey: ['passwordRequests', 'pendingCount'],
+    queryFn: async () => {
+      const response = await api.get('/api/admin/password-requests/pending-count', {
+        headers: authHeader(),
+      });
+      return response;
+    },
+    refetchInterval: 30000, 
+  });
+};
