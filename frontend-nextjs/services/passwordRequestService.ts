@@ -50,6 +50,9 @@ export const usePasswordRequestsQuery = (page: number, limit: number, search: st
       const response = await api.get(url);
       return response;
     },
+    staleTime: 0,                     // Always refetch on focus / mount
+    refetchInterval: 15000,           // Auto-poll every 15 seconds
+    refetchIntervalInBackground: true, // Keep polling even when tab is inactive
   });
 };
 
@@ -91,6 +94,8 @@ export const usePendingPasswordRequestsCountQuery = () => {
       });
       return response;
     },
-    refetchInterval: 30000, 
+    staleTime: 0,                     // Always refetch on focus / mount
+    refetchInterval: 15000,           // Reduced to 15 seconds for faster badge update
+    refetchIntervalInBackground: true, // Keep polling even when tab is inactive
   });
 };
