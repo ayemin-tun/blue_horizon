@@ -77,42 +77,44 @@ if "%PYTHON_CMD%"=="" (
 echo   [OK] Using Python launcher: %PYTHON_CMD%
 
 :: Check if venv is properly set up (activate.bat must exist, not just the folder)
-if not exist "%PYTHON_DIR%\venv\Scripts\activate.bat" (
-    echo   venv not found or incomplete -- creating virtual environment...
+if exist "%PYTHON_DIR%\venv\Scripts\activate.bat" goto :venv_ready
 
-    :: Remove broken venv folder if it exists
-    if exist "%PYTHON_DIR%\venv" (
-        echo   Removing incomplete venv folder...
-        rmdir /s /q "%PYTHON_DIR%\venv"
-    )
+echo   venv not found or incomplete -- creating virtual environment...
 
-    %PYTHON_CMD% -m venv "%PYTHON_DIR%\venv"
-    if errorlevel 1 (
-        echo   [ERROR] Failed to create venv.
-        echo          Make sure Python is properly installed from https://www.python.org
-        pause
-        exit /b 1
-    )
-    echo   [OK] venv created
-
-    echo   Installing Python dependencies...
-    "%PYTHON_DIR%\venv\Scripts\pip.exe" install -r "%PYTHON_DIR%\requirements.txt"
-    if errorlevel 1 (
-        echo   [ERROR] pip install failed. Check your internet connection.
-        pause
-        exit /b 1
-    )
-    echo   [OK] Python packages installed
-
-    echo   Initializing database (init_db.py)...
-    "%PYTHON_DIR%\venv\Scripts\python.exe" "%PYTHON_DIR%\app\database\init_db.py"
-    if errorlevel 1 (
-        echo   [ERROR] Database initialization failed.
-        pause
-        exit /b 1
-    )
-    echo   [OK] Database initialized
+:: Remove broken venv folder if it exists
+if exist "%PYTHON_DIR%\venv" (
+    echo   Removing incomplete venv folder...
+    rmdir /s /q "%PYTHON_DIR%\venv"
 )
+
+%PYTHON_CMD% -m venv "%PYTHON_DIR%\venv"
+if errorlevel 1 (
+    echo   [ERROR] Failed to create venv.
+    echo          Make sure Python is properly installed from https://www.python.org
+    pause
+    exit /b 1
+)
+echo   [OK] venv created
+
+echo   Installing Python dependencies...
+"%PYTHON_DIR%\venv\Scripts\pip.exe" install -r "%PYTHON_DIR%\requirements.txt"
+if errorlevel 1 (
+    echo   [ERROR] pip install failed. Check your internet connection.
+    pause
+    exit /b 1
+)
+echo   [OK] Python packages installed
+
+echo   Initializing database (init_db.py)...
+"%PYTHON_DIR%\venv\Scripts\python.exe" "%PYTHON_DIR%\app\database\init_db.py"
+if errorlevel 1 (
+    echo   [ERROR] Database initialization failed.
+    pause
+    exit /b 1
+)
+echo   [OK] Database initialized
+
+:venv_ready
 
 :: Write temp launcher for backend (full absolute paths — no relative path issues)
 (
