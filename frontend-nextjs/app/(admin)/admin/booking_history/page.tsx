@@ -131,7 +131,7 @@ export default function BookingHistoryPage() {
                 <div className="w-full">
                     <Pagination
                         currentPage={page}
-                        totalCount={paginationInfo.total}
+                        totalCount={paginationInfo!.total}
                         pageSize={LIMIT}
                         onPageChange={(newPage) => setPage(newPage)}
                     />
