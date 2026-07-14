@@ -20,6 +20,8 @@ COBOL_BIN="$ROOT_DIR/backend-cobol/bin"
 PYTHON_DIR="$ROOT_DIR/backend-python"
 FRONTEND_DIR="$ROOT_DIR/frontend-nextjs"
 
+DB_PATH="$ROOT_DIR/data/blue_horizon.db"
+
 # ── Banner ───────────────────────────────────────────────────
 echo ""
 echo -e "${CYAN}${BOLD}╔══════════════════════════════════════════════╗${NC}"
@@ -78,10 +80,15 @@ if [ ! -d "$PYTHON_DIR/venv" ]; then
     echo -e "${YELLOW}  Installing Python dependencies...${NC}"
     "$PYTHON_DIR/venv/bin/pip" install --quiet -r "$PYTHON_DIR/requirements.txt"
     echo -e "${GREEN}  ✓ Python packages installed${NC}"
+fi
 
-    echo -e "${YELLOW}  Initializing database (init_db.py)...${NC}"
+if [ ! -f "$DB_PATH" ]; then
+    echo -e "${YELLOW}  ⚠️ Database file missing! Initializing database (init_db.py)...${NC}"
+    mkdir -p "$(dirname "$DB_PATH")"
     "$PYTHON_DIR/venv/bin/python" "$PYTHON_DIR/app/database/init_db.py"
-    echo -e "${GREEN}  ✓ Database initialized${NC}"
+    echo -e "${GREEN}  ✓ New Database initialized successfully!${NC}"
+else
+    echo -e "${GREEN}  ✓ Database file found.${NC}"
 fi
 
 # Open a new Terminal tab/window for backend

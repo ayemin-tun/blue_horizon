@@ -12,6 +12,8 @@ set "COBOL_BIN=%ROOT_DIR%backend-cobol\bin"
 set "PYTHON_DIR=%ROOT_DIR%backend-python"
 set "FRONTEND_DIR=%ROOT_DIR%frontend-nextjs"
 
+set "DB_PATH=%ROOT_DIR%data\blue_horizon.db"
+
 echo.
 echo ╔══════════════════════════════════════════════╗
 echo ║       Blue Horizon — Dev Server Startup       ║
@@ -56,7 +58,6 @@ echo.
 echo [2/3] Starting FastAPI backend...
 
 :: Find real Python — prefer "py" launcher (official Windows installer)
-:: "py" always points to real Python, not embedded ones (e.g. GnuCOBOL's Python)
 set "PYTHON_CMD="
 where py >nul 2>&1
 if not errorlevel 1 (
@@ -76,7 +77,7 @@ if "%PYTHON_CMD%"=="" (
 )
 echo   [OK] Using Python launcher: %PYTHON_CMD%
 
-:: Check if venv is properly set up (activate.bat must exist, not just the folder)
+:: Check if venv is properly set up
 if exist "%PYTHON_DIR%\venv\Scripts\activate.bat" goto :venv_ready
 
 echo   venv not found or incomplete -- creating virtual environment...
@@ -90,7 +91,6 @@ if exist "%PYTHON_DIR%\venv" (
 %PYTHON_CMD% -m venv "%PYTHON_DIR%\venv"
 if errorlevel 1 (
     echo   [ERROR] Failed to create venv.
-    echo          Make sure Python is properly installed from https://www.python.org
     pause
     exit /b 1
 )
@@ -105,18 +105,25 @@ if errorlevel 1 (
 )
 echo   [OK] Python packages installed
 
-echo   Initializing database (init_db.py)...
-"%PYTHON_DIR%\venv\Scripts\python.exe" "%PYTHON_DIR%\app\database\init_db.py"
-if errorlevel 1 (
-    echo   [ERROR] Database initialization failed.
-    pause
-    exit /b 1
-)
-echo   [OK] Database initialized
-
 :venv_ready
 
-:: Write temp launcher for backend (full absolute paths — no relative path issues)
+if not exist "%DB_PATH%" (
+    echo   [WARNING] Database file missing! Initializing database (init_db.py)...
+    
+    if not exist "%ROOT_DIR%data" mkdir "%ROOT_DIR%data"
+    
+    "%PYTHON_DIR%\venv\Scripts\python.exe" "%PYTHON_DIR%\app\database\init_db.py"
+    if errorlevel 1 (
+        echo   [ERROR] Database initialization failed.
+        pause
+        exit /b 1
+    )
+    echo   [OK] New Database initialized successfully^!
+) else (
+    echo   [OK] Database file found.
+)
+
+:: Write temp launcher for backend
 (
     echo @echo off
     echo echo Blue Horizon -- FastAPI Backend
@@ -159,7 +166,7 @@ if not exist "%FRONTEND_DIR%\node_modules" (
     echo   [OK] npm packages installed
 )
 
-:: Write temp launcher for frontend (avoids nested-quote path bug)
+:: Write temp launcher for frontend
 (
     echo @echo off
     echo cd /d "%FRONTEND_DIR%"
