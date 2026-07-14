@@ -74,8 +74,16 @@ if not exist "%PYTHON_DIR%\venv" (
     echo   [OK] Python packages installed
 )
 
-start "Blue Horizon — FastAPI Backend" cmd /k ^
-    "echo Blue Horizon — FastAPI Backend && cd /d "%PYTHON_DIR%" && call venv\Scripts\activate.bat && python run.py"
+:: Write temp launcher for backend (avoids nested-quote path bug)
+(
+    echo @echo off
+    echo cd /d "%PYTHON_DIR%"
+    echo call venv\Scripts\activate.bat
+    echo python run.py
+    echo pause
+) > "%TEMP%\bh_backend.bat"
+
+start "Blue Horizon — FastAPI Backend" cmd /k "%TEMP%\bh_backend.bat"
 
 echo   [OK] Backend started in new window (port 8000)
 timeout /t 2 >nul
@@ -98,8 +106,15 @@ if not exist "%FRONTEND_DIR%\node_modules" (
     echo   [OK] npm packages installed
 )
 
-start "Blue Horizon — Next.js Frontend" cmd /k ^
-    "echo Blue Horizon — Next.js Frontend && cd /d "%FRONTEND_DIR%" && npm run dev"
+:: Write temp launcher for frontend (avoids nested-quote path bug)
+(
+    echo @echo off
+    echo cd /d "%FRONTEND_DIR%"
+    echo npm run dev
+    echo pause
+) > "%TEMP%\bh_frontend.bat"
+
+start "Blue Horizon — Next.js Frontend" cmd /k "%TEMP%\bh_frontend.bat"
 
 echo   [OK] Frontend started in new window (port 3000)
 
