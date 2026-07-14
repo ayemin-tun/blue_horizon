@@ -9,8 +9,10 @@ Blue Horizon is a web-based Air Ticket Analytics System designed to track, manag
 - [Project Structure](#-project-structure)
 - [Tech Stack](#️-tech-stack)
 - [Getting Started](#-getting-started-local-setup)
-  - [Frontend Setup](#1-frontend-setup-nextjs)
-  - [Backend & Database Setup](#2-backend--database-setup-pythonsqlite)
+  - [One-Click Startup](#-one-click-startup-recommended)
+  - [Manual Setup (Fallback)](#-manual-setup-fallback)
+    - [Frontend Setup](#1-frontend-setup-nextjs)
+    - [Backend & Database Setup](#2-backend--database-setup-pythonsqlite)
 - [Running the Server](#️-running-the-server)
 - [API Documentation Security](#️-api-documentation-security)
 - [Admin Access](#-admin-access)
@@ -26,25 +28,29 @@ air-ticket-analytics-system/
 ├── frontend-nextjs/          # Next.js (Frontend UI & App Router)
 │   ├── app/                  # Authentication & Dashboard Pages
 │   ├── components/           # Reusable UI Components (Input, Buttons, etc.)
-│   └── public/                # Static Assets (Logos, Icons)
+│   └── public/               # Static Assets (Logos, Icons)
 │
-├── backend-python/            # FastAPI (Backend RESTful APIs)
+├── backend-python/           # FastAPI (Backend RESTful APIs)
 │   ├── app/
-│   │   ├── database/           # Database Connection, Models & Mock Data
+│   │   ├── database/         # Database Connection, Models & Mock Data
 │   │   │   ├── database.py
 │   │   │   ├── models.py
-│   │   │   └── init_db.py      # Database Initialization & Seed Script
-│   │   ├── routes/              # API Endpoints (auth.py, etc.)
-│   │   └── utils/                # Shared Helper Utilities
-│   │       └── auth_utils.py     # Password Hashing & JWT Token Utilities
-│   ├── data/                    # Local SQLite Database Folder (auto-generated)
-│   ├── venv/                    # Python Virtual Environment (local only)
-│   ├── requirements.txt         # Python Dependencies & Libraries List
-│   └── run.py                   # Main FastAPI Application Entry & Docs Security
+│   │   │   └── init_db.py    # Database Initialization & Seed Script
+│   │   ├── routes/           # API Endpoints (auth.py, etc.)
+│   │   └── utils/            # Shared Helper Utilities
+│   │       └── auth_utils.py # Password Hashing & JWT Token Utilities
+│   ├── data/                 # Local SQLite Database Folder (auto-generated)
+│   ├── venv/                 # Python Virtual Environment (local only)
+│   ├── requirements.txt      # Python Dependencies & Libraries List
+│   └── run.py                # Main FastAPI Application Entry & Docs Security
 │
-├── backend-Cobol/              # Legacy COBOL Processing Core
+├── backend-cobol/            # Legacy COBOL Processing Core
+│   ├── src/                  # COBOL source files (*.cbl)
+│   └── bin/                  # Compiled COBOL binaries (auto-generated)
 │
-└── README.md                    # Project Documentation
+├── run.sh                    # One-click startup script (macOS / Linux)
+├── run.bat                   # One-click startup script (Windows)
+└── README.md                 # Project Documentation
 ```
 
 ---
@@ -66,12 +72,56 @@ air-ticket-analytics-system/
 ## 🚀 Getting Started (Local Setup)
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- Python (v3.10 or higher)
+- **Node.js** (v18 or higher) — [nodejs.org](https://nodejs.org)
+- **Python** (v3.10 or higher) — [python.org](https://www.python.org)
+- **GnuCOBOL** (`cobc`) — only needed if `backend-cobol/bin/` is missing
+  - macOS: `brew install gnucobol`
+  - Windows: `winget install GnuCOBOL.GnuCOBOL`
 
 ---
 
-### 1. Frontend Setup (Next.js)
+### ⚡ One-Click Startup (Recommended)
+
+After cloning the repo, you can start **all services** (COBOL, FastAPI backend, Next.js frontend) with a single command. The scripts handle venv creation, `pip install`, `npm install`, and database initialization automatically on first run.
+
+#### macOS / Linux
+
+```bash
+./run.sh
+```
+
+> If permission is denied, run `chmod +x run.sh` first.
+
+#### Windows
+
+Double-click `run.bat`, or run from Command Prompt:
+
+```bat
+run.bat
+```
+
+**What the scripts do automatically:**
+
+| Step | Action |
+|---|---|
+| 1️⃣ COBOL | Compiles `*.cbl` sources → `backend-cobol/bin/` if `bin/` is missing |
+| 2️⃣ Backend | Creates Python venv → installs `requirements.txt` → runs `init_db.py` (first run only) |
+| 3️⃣ Frontend | Runs `npm install` if `node_modules/` is missing → starts `npm run dev` |
+
+Both services open in **separate terminal windows**:
+
+| Service | URL |
+|---|---|
+| FastAPI Backend | http://127.0.0.1:8000 |
+| Next.js Frontend | http://localhost:3000 |
+
+---
+
+### 🔧 Manual Setup (Fallback)
+
+Use the steps below if you prefer to start services individually.
+
+#### 1. Frontend Setup (Next.js)
 
 Navigate to the `frontend-nextjs` directory:
 
