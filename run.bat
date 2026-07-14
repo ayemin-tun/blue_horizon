@@ -12,7 +12,7 @@ set "COBOL_BIN=%ROOT_DIR%backend-cobol\bin"
 set "PYTHON_DIR=%ROOT_DIR%backend-python"
 set "FRONTEND_DIR=%ROOT_DIR%frontend-nextjs"
 
-set "DB_PATH=%ROOT_DIR%data\blue_horizon.db"
+set "DB_PATH=%PYTHON_DIR%data\blue_horizon.db"
 
 echo.
 echo ╔══════════════════════════════════════════════╗

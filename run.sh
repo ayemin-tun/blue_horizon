@@ -20,7 +20,7 @@ COBOL_BIN="$ROOT_DIR/backend-cobol/bin"
 PYTHON_DIR="$ROOT_DIR/backend-python"
 FRONTEND_DIR="$ROOT_DIR/frontend-nextjs"
 
-DB_PATH="$ROOT_DIR/data/blue_horizon.db"
+DB_PATH="$PYTHON_DIR/data/blue_horizon.db"
 
 # ── Banner ───────────────────────────────────────────────────
 echo ""
