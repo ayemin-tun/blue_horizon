@@ -12,11 +12,11 @@ set "COBOL_BIN=%ROOT_DIR%backend-cobol\bin"
 set "PYTHON_DIR=%ROOT_DIR%backend-python"
 set "FRONTEND_DIR=%ROOT_DIR%frontend-nextjs"
 
-set "DB_PATH=%ROOT_DIR%data\blue_horizon.db"
+set "DB_PATH=%PYTHON_DIR%data\blue_horizon.db"
 
 echo.
 echo ╔══════════════════════════════════════════════╗
-echo ║       Blue Horizon — Dev Server Startup       ║
+echo ║       Blue Horizon — Dev Server Startup      ║
 echo ╚══════════════════════════════════════════════╝
 echo.
 
@@ -108,7 +108,7 @@ echo   [OK] Python packages installed
 :venv_ready
 
 if not exist "%DB_PATH%" (
-    echo   [WARNING] Database file missing! Initializing database (init_db.py)...
+    echo   [WARNING] Database file missing! Initializing database with init_db.py...
     
     if not exist "%ROOT_DIR%data" mkdir "%ROOT_DIR%data"
     
@@ -118,7 +118,7 @@ if not exist "%DB_PATH%" (
         pause
         exit /b 1
     )
-    echo   [OK] New Database initialized successfully^!
+    echo   [OK] New Database initialized successfully!
 ) else (
     echo   [OK] Database file found.
 )
@@ -129,8 +129,8 @@ if not exist "%DB_PATH%" (
     echo echo Blue Horizon -- FastAPI Backend
     echo cd /d "%PYTHON_DIR%"
     echo if not exist "%PYTHON_DIR%\venv\Scripts\activate.bat" ^(
-    echo     echo [ERROR] venv\Scripts\activate.bat not found. Re-run run.bat to recreate venv.
-    echo     pause ^& exit /b 1
+        echo     echo [ERROR] venv\Scripts\activate.bat not found. Re-run run.bat to recreate venv.
+        echo     pause ^& exit /b 1
     echo ^)
     echo call "%PYTHON_DIR%\venv\Scripts\activate.bat"
     echo "%PYTHON_DIR%\venv\Scripts\python.exe" run.py
