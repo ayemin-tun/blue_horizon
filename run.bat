@@ -55,13 +55,26 @@ echo.
 :: ── Step 2: Backend (FastAPI + venv) ─────────────────────────────────
 echo [2/3] Starting FastAPI backend...
 
-:: Check python is installed
-where python >nul 2>&1
-if errorlevel 1 (
-    echo   [ERROR] python not found. Install from https://www.python.org
+:: Find real Python — prefer "py" launcher (official Windows installer)
+:: "py" always points to real Python, not embedded ones (e.g. GnuCOBOL's Python)
+set "PYTHON_CMD="
+where py >nul 2>&1
+if not errorlevel 1 (
+    set "PYTHON_CMD=py"
+) else (
+    where python >nul 2>&1
+    if not errorlevel 1 (
+        set "PYTHON_CMD=python"
+    )
+)
+
+if "%PYTHON_CMD%"=="" (
+    echo   [ERROR] Python not found.
+    echo          Install from https://www.python.org ^(check "Add to PATH" during install^)
     pause
     exit /b 1
 )
+echo   [OK] Using Python launcher: %PYTHON_CMD%
 
 :: Check if venv is properly set up (activate.bat must exist, not just the folder)
 if not exist "%PYTHON_DIR%\venv\Scripts\activate.bat" (
@@ -73,9 +86,10 @@ if not exist "%PYTHON_DIR%\venv\Scripts\activate.bat" (
         rmdir /s /q "%PYTHON_DIR%\venv"
     )
 
-    python -m venv "%PYTHON_DIR%\venv"
+    %PYTHON_CMD% -m venv "%PYTHON_DIR%\venv"
     if errorlevel 1 (
-        echo   [ERROR] Failed to create venv. Make sure Python is installed correctly.
+        echo   [ERROR] Failed to create venv.
+        echo          Make sure Python is properly installed from https://www.python.org
         pause
         exit /b 1
     )
@@ -84,7 +98,7 @@ if not exist "%PYTHON_DIR%\venv\Scripts\activate.bat" (
     echo   Installing Python dependencies...
     "%PYTHON_DIR%\venv\Scripts\pip.exe" install -r "%PYTHON_DIR%\requirements.txt"
     if errorlevel 1 (
-        echo   [ERROR] pip install failed. Check requirements.txt and your internet connection.
+        echo   [ERROR] pip install failed. Check your internet connection.
         pause
         exit /b 1
     )
