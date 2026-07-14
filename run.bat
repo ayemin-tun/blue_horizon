@@ -70,16 +70,26 @@ if not exist "%PYTHON_DIR%\venv" (
     echo   [OK] venv created
 
     echo   Installing Python dependencies...
-    "%PYTHON_DIR%\venv\Scripts\pip.exe" install -q -r "%PYTHON_DIR%\requirements.txt"
+    "%PYTHON_DIR%\venv\Scripts\pip.exe" install -r "%PYTHON_DIR%\requirements.txt"
+    if errorlevel 1 (
+        echo   [ERROR] pip install failed. Check requirements.txt and your internet connection.
+        pause
+        exit /b 1
+    )
     echo   [OK] Python packages installed
 )
 
-:: Write temp launcher for backend (avoids nested-quote path bug)
+:: Write temp launcher for backend (full absolute paths — no relative path issues)
 (
     echo @echo off
+    echo echo Blue Horizon -- FastAPI Backend
     echo cd /d "%PYTHON_DIR%"
-    echo call venv\Scripts\activate.bat
-    echo python run.py
+    echo if not exist "%PYTHON_DIR%\venv\Scripts\activate.bat" ^(
+    echo     echo [ERROR] venv\Scripts\activate.bat not found. Re-run run.bat to recreate venv.
+    echo     pause ^& exit /b 1
+    echo ^)
+    echo call "%PYTHON_DIR%\venv\Scripts\activate.bat"
+    echo "%PYTHON_DIR%\venv\Scripts\python.exe" run.py
     echo pause
 ) > "%TEMP%\bh_backend.bat"
 
