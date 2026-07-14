@@ -74,6 +74,10 @@ if [ ! -d "$PYTHON_DIR/venv" ]; then
     echo -e "${YELLOW}  Installing Python dependencies...${NC}"
     "$PYTHON_DIR/venv/bin/pip" install --quiet -r "$PYTHON_DIR/requirements.txt"
     echo -e "${GREEN}  ✓ Python packages installed${NC}"
+
+    echo -e "${YELLOW}  Initializing database (init_db.py)...${NC}"
+    "$PYTHON_DIR/venv/bin/python" "$PYTHON_DIR/app/database/init_db.py"
+    echo -e "${GREEN}  ✓ Database initialized${NC}"
 fi
 
 # Open a new Terminal tab/window for backend

@@ -103,6 +103,15 @@ if not exist "%PYTHON_DIR%\venv\Scripts\activate.bat" (
         exit /b 1
     )
     echo   [OK] Python packages installed
+
+    echo   Initializing database (init_db.py)...
+    "%PYTHON_DIR%\venv\Scripts\python.exe" "%PYTHON_DIR%\app\database\init_db.py"
+    if errorlevel 1 (
+        echo   [ERROR] Database initialization failed.
+        pause
+        exit /b 1
+    )
+    echo   [OK] Database initialized
 )
 
 :: Write temp launcher for backend (full absolute paths — no relative path issues)
