@@ -149,7 +149,13 @@ if errorlevel 1 (
 :: Auto-install node_modules if missing
 if not exist "%FRONTEND_DIR%\node_modules" (
     echo   node_modules not found -- running npm install...
-    cd /d "%FRONTEND_DIR%" && npm install --silent
+    cd /d "%FRONTEND_DIR%"
+    npm install
+    if errorlevel 1 (
+        echo   [ERROR] npm install failed. Check your internet connection.
+        pause
+        exit /b 1
+    )
     echo   [OK] npm packages installed
 )
 

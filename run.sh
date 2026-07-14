@@ -52,9 +52,13 @@ if [ ! -d "$COBOL_BIN" ]; then
     echo -e "${GREEN}  ✓ All COBOL programs compiled successfully${NC}"
 fi
 
-# chmod +x on all binaries
-chmod +x "$COBOL_BIN"/*
-echo -e "${GREEN}  ✓ chmod +x applied to all files in backend-cobol/bin/${NC}"
+# chmod +x on all binaries (only if bin/ exists and is non-empty)
+if [ -d "$COBOL_BIN" ] && [ -n "$(ls -A "$COBOL_BIN" 2>/dev/null)" ]; then
+    chmod +x "$COBOL_BIN"/*
+    echo -e "${GREEN}  ✓ chmod +x applied to all files in backend-cobol/bin/${NC}"
+else
+    echo -e "${YELLOW}  (skipping chmod — backend-cobol/bin/ is empty or missing)${NC}"
+fi
 
 # ── Step 2: Backend (FastAPI + venv) ────────────────────────
 echo -e "${YELLOW}[2/3] Starting FastAPI backend...${NC}"
@@ -102,7 +106,7 @@ fi
 # Auto-install node_modules if missing
 if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
     echo -e "${YELLOW}  node_modules not found — running npm install...${NC}"
-    npm --prefix "$FRONTEND_DIR" install --silent
+    npm --prefix "$FRONTEND_DIR" install
     echo -e "${GREEN}  ✓ npm packages installed${NC}"
 fi
 
