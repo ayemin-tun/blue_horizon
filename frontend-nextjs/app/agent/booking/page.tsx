@@ -109,7 +109,7 @@ export default function BookingHistory() {
     const userIdFromStore = useAuthStore((state) => state.userId);
     const currentAgentId = userIdFromStore ? String(userIdFromStore) : "";
 
-    const { data: bookingResponse, isLoading, isError, error } = useAgentBookingsQuery({
+    const { data: bookingResponse, isLoading, isFetching, isError, error } = useAgentBookingsQuery({
         user_id: currentAgentId,
         search,
         status,
@@ -138,6 +138,7 @@ export default function BookingHistory() {
         setCurrentPage(1);
     };
 
+    // Only show full-page states for auth error and first-ever load (no previous data)
     if (!currentAgentId && !isLoading) {
         return (
             <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
@@ -148,7 +149,7 @@ export default function BookingHistory() {
         );
     }
 
-    if (isLoading) {
+    if (isLoading && !bookingResponse) {
         return (
             <div className="min-h-screen bg-[#fcfcfc] flex flex-col">
                 <div className="flex-1 flex items-center justify-center text-xs font-semibold text-slate-500">
@@ -167,6 +168,9 @@ export default function BookingHistory() {
             </div>
         );
     }
+
+    // Whether we're refetching in the background (search/filter change)
+    const isRefetching = isFetching && !isLoading;
 
     return (
         <>
@@ -233,7 +237,7 @@ export default function BookingHistory() {
                     </div>
 
                     {/* Bookings Render Block */}
-                    <div className="flex flex-col gap-3.5">
+                    <div className={`flex flex-col gap-3.5 transition-opacity duration-200 ${isRefetching ? 'opacity-50' : 'opacity-100'}`}>
                             {currentBookings.length === 0 ? (
                             <div className="text-center py-16 text-xs font-medium text-slate-400 border border-dashed border-slate-200 rounded-xl bg-slate-50/30">
                                 {hasActiveFilters

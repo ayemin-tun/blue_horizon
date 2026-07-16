@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api } from './apiClient';
 
 export interface CitiesResponse {
@@ -213,7 +213,8 @@ export const useAgentBookingsQuery = (params: FetchAgentBookingsParams) => {
       return (response as unknown) as FetchBookingsResponse;
     },
     enabled: !!user_id, 
-    staleTime: 1000 * 60 * 2, 
+    staleTime: 1000 * 60 * 2,
+    placeholderData: keepPreviousData,
   });
 };
 
