@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FlightResult } from "@/services/BookingService";
 import { useBookingStore } from "@/services/store/bookingStore";
-import { formatDuration } from "@/utils/timeHelper";
+import { formatDuration,formatDisplayTime } from "@/utils/timeHelper";
 
 interface FlightCardProps {
   flight: FlightResult;
@@ -45,7 +45,7 @@ export default function FlightCard({ flight }: FlightCardProps) {
         {/* Route Times & Duration */}
         <div className="flex items-center gap-4 flex-1 w-full">
           <div className="text-center shrink-0 min-w-15">
-            <p className="text-lg sm:text-xl font-bold text-blue-900 leading-tight">{flight.departure_time}</p>
+            <p className="text-lg sm:text-xl font-bold text-blue-900 leading-tight">{formatDisplayTime(flight.departure_time)}</p>
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{flight.departure_city}</p>
           </div>
 
@@ -61,7 +61,7 @@ export default function FlightCard({ flight }: FlightCardProps) {
           </div>
 
           <div className="text-center shrink-0 min-w-15">
-            <p className="text-lg sm:text-xl font-bold text-blue-900 leading-tight">{flight.arrival_time}</p>
+            <p className="text-lg sm:text-xl font-bold text-blue-900 leading-tight">{formatDisplayTime(flight.arrival_time)}</p>
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{flight.arrival_city}</p>
           </div>
         </div>

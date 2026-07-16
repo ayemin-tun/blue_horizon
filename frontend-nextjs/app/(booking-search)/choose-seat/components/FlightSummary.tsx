@@ -1,5 +1,5 @@
 import { useBookingStore } from "@/services/store/bookingStore";
-import { formatDuration } from "@/utils/timeHelper";
+import { formatDuration,formatDisplayTime } from "@/utils/timeHelper";
 
 export default function FlightSummary() {
   const { selectedFlight, seatClass } = useBookingStore();
@@ -22,7 +22,7 @@ export default function FlightSummary() {
       {/* Route */}
       <div className="flex items-center gap-3">
         <div className="text-center">
-          <p className="text-lg font-bold text-blue-900">{selectedFlight.departure_time}</p>
+          <p className="text-lg font-bold text-blue-900">{formatDisplayTime(selectedFlight.departure_time)}</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase">{selectedFlight.departure_city}</p>
         </div>
         <div className="flex flex-col items-center">
@@ -34,7 +34,7 @@ export default function FlightSummary() {
           </div>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-blue-900">{selectedFlight.arrival_time}</p>
+          <p className="text-lg font-bold text-blue-900">{formatDisplayTime(selectedFlight.arrival_time)}</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase">{selectedFlight.arrival_city}</p>
         </div>
       </div>
