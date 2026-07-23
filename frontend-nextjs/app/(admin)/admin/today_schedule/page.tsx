@@ -120,6 +120,7 @@ export default function SchedulePage() {
                                 >
                                     <option value="">All Statuses</option>
                                     <option value="SCHEDULED">SCHEDULED</option>
+                                    <option value="DEPARTED">DEPARTED</option>
                                     <option value="CANCELLED">CANCELLED</option>
                                 </select>
 

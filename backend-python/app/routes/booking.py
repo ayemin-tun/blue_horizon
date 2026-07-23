@@ -5,7 +5,7 @@ from app.database.database import get_db
 from app.database import models
 from typing import List
 from app.schemas.booking_schema import ApiResponse,CreateBookingRequest
-from datetime import datetime
+from datetime import datetime,timedelta
 
 router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
 
@@ -72,10 +72,13 @@ def search_flights(
     FIXED_BUSINESS_CAPACITY = 20
 
     for instance, schedule, route, flight, airline in results:
-        # A. Time Check
+        # A. Time Check — exclude flights departing within the next 1 hour
         if instance.flight_date == today_str:
-            departure_time = datetime.strptime(instance.base_departure_time, "%H:%M").time()
-            if departure_time < now.time():
+            departure_dt = datetime.strptime(instance.base_departure_time, "%H:%M").replace(
+                year=now.year, month=now.month, day=now.day
+            )
+            cutoff_dt = now + timedelta(hours=1)
+            if departure_dt <= cutoff_dt:
                 continue
 
         # B. Class base Capacity and Available Seat Calculation
