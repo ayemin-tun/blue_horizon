@@ -27,7 +27,13 @@ from datetime import datetime, timedelta
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from app.utils.auth_utils import get_password_hash
 
-random.seed(42) 
+random.seed(42)
+
+# ---------------------------------------------------------------------------
+# Dynamic date references (never hardcoded)
+# ---------------------------------------------------------------------------
+today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+SEED_END_DATE = today + timedelta(days=30)   # instances extend 30 days into the future
 
 # ---------------------------------------------------------------------------
 # DB connection
@@ -97,7 +103,16 @@ AIRLINE_FLIGHT_COUNT = {
     "FMI Air": 2,
 }
 
-MONTH_WEIGHTS = {1: 18, 2: 10, 3: 10, 4: 25, 5: 10, 6: 15}
+# Seasonal weight per month (Jan-Dec)
+_BASE_MONTH_WEIGHTS = {
+    1: 18, 2: 10, 3: 10, 4: 25, 5: 10, 6: 15,
+    7: 20, 8: 15, 9: 12, 10: 12, 11: 10, 12: 18,
+}
+# Auto-include months from Jan up to the month of SEED_END_DATE
+MONTH_WEIGHTS = {
+    m: _BASE_MONTH_WEIGHTS[m]
+    for m in range(1, SEED_END_DATE.month + 1)
+}
 
 FIRST_NAMES = [
     "Aung", "Zaw", "Thura", "Kyaw", "Htet", "Nay", "Min", "Kaung", "Thet", "Soe",
@@ -142,12 +157,14 @@ def random_dob(min_age=18, max_age=65):
     return dob.strftime("%d/%m/%Y")
 
 def random_flight_date_2026():
-    
+    """Return a random flight date from Jan 2026 up to today + 30 days."""
     months = list(MONTH_WEIGHTS.keys())
     weights = list(MONTH_WEIGHTS.values())
     month = weighted_choice(months, weights)
-    day = random.randint(1, 28)  
-    return datetime(2026, month, day)
+    # For the last month, cap day at SEED_END_DATE.day (partial month)
+    max_day = SEED_END_DATE.day if month == SEED_END_DATE.month else 28
+    day = random.randint(1, max_day)
+    return datetime(today.year, month, day)
 
 def fmt_ddmmyyyy(dt):
     return dt.strftime("%d/%m/%Y")
@@ -183,15 +200,17 @@ def seed_routes(cur):
 
 
 def seed_flights_and_schedules(cur, airline_map, route_map):
-    
 
     route_items = list(ROUTE_WEIGHTS.keys())
     route_weights_list = list(ROUTE_WEIGHTS.values())
 
-    schedules = []  
+    schedules = []
 
+    # ── BH-101 (existing flight) ─────────────────────────────────────────────
     cur.execute("SELECT total_seats FROM FLIGHTS WHERE flight_id = 1")
     bh101_seats = cur.fetchone()[0]
+
+    # OUTBOUND: Yangon -> Mandalay
     cur.execute(
         """INSERT INTO ROUTE_SCHEDULE
            (route_id, flight_id, departure_time, arrival_time, economy_price, business_price, flight_type, is_deleted)
@@ -205,12 +224,27 @@ def seed_flights_and_schedules(cur, airline_map, route_map):
         "total_seats": bh101_seats,
     })
 
+    # INBOUND: Mandalay -> Yangon
+    cur.execute(
+        """INSERT INTO ROUTE_SCHEDULE
+           (route_id, flight_id, departure_time, arrival_time, economy_price, business_price, flight_type, is_deleted)
+           VALUES (?, ?, '13:00', '14:30', 150000.00, 250000.00, 'INBOUND', 0)""",
+        (route_map[("Mandalay", "Yangon")], 1),
+    )
+    schedules.append({
+        "schedule_id": cur.lastrowid,
+        "route_id": route_map[("Mandalay", "Yangon")],
+        "econ_price": 150000.00, "biz_price": 250000.00,
+        "total_seats": bh101_seats,
+    })
+
+    # ── New flights ──────────────────────────────────────────────────────────
     for airline_name, flight_count in AIRLINE_FLIGHT_COUNT.items():
         airline_id = airline_map.get(airline_name)
         code = AIRLINE_CODE[airline_name]
 
         if airline_name == "Blue Horizon":
-            start_num = 102  
+            start_num = 102
         else:
             start_num = 101
 
@@ -224,41 +258,64 @@ def seed_flights_and_schedules(cur, airline_map, route_map):
             flight_id = cur.lastrowid
 
             dep, arr = weighted_choice(route_items, route_weights_list)
-            route_id = route_map[(dep, arr)]
+            outbound_route_id = route_map[(dep, arr)]
 
-            dep_hour = random.randint(5, 18)
+            dep_hour = random.randint(5, 14)
             dep_time = f"{dep_hour:02d}:{random.choice(['00','15','30','45'])}"
             arr_hour = (dep_hour + random.randint(1, 2)) % 24
             arr_time = f"{arr_hour:02d}:{random.choice(['00','15','30','45'])}"
             econ_price = round(random.uniform(80000, 180000), -3)
             biz_price = round(econ_price * random.uniform(1.5, 2.0), -3)
 
+            # OUTBOUND schedule
             cur.execute(
                 """INSERT INTO ROUTE_SCHEDULE
                    (route_id, flight_id, departure_time, arrival_time, economy_price, business_price, flight_type, is_deleted)
                    VALUES (?, ?, ?, ?, ?, ?, 'OUTBOUND', 0)""",
-                (route_id, flight_id, dep_time, arr_time, econ_price, biz_price),
+                (outbound_route_id, flight_id, dep_time, arr_time, econ_price, biz_price),
             )
             schedules.append({
                 "schedule_id": cur.lastrowid,
-                "route_id": route_id,
+                "route_id": outbound_route_id,
                 "econ_price": econ_price, "biz_price": biz_price,
                 "total_seats": total_seats,
             })
+
+            # INBOUND schedule (reverse route: arr -> dep)
+            reverse_key = (arr, dep)
+            if reverse_key in route_map:
+                inbound_route_id = route_map[reverse_key]
+                in_dep_hour = (arr_hour + random.randint(2, 4)) % 24
+                in_dep_time = f"{in_dep_hour:02d}:{random.choice(['00','15','30','45'])}"
+                in_arr_hour = (in_dep_hour + random.randint(1, 2)) % 24
+                in_arr_time = f"{in_arr_hour:02d}:{random.choice(['00','15','30','45'])}"
+
+                cur.execute(
+                    """INSERT INTO ROUTE_SCHEDULE
+                       (route_id, flight_id, departure_time, arrival_time, economy_price, business_price, flight_type, is_deleted)
+                       VALUES (?, ?, ?, ?, ?, ?, 'INBOUND', 0)""",
+                    (inbound_route_id, flight_id, in_dep_time, in_arr_time, econ_price, biz_price),
+                )
+                schedules.append({
+                    "schedule_id": cur.lastrowid,
+                    "route_id": inbound_route_id,
+                    "econ_price": econ_price, "biz_price": biz_price,
+                    "total_seats": total_seats,
+                })
 
     print(f"Flights + Schedules ready: {len(schedules)} schedules")
     return schedules
 
 
+
 def seed_instances(cur, schedules):
-   
+    """Create one FLIGHT_INSTANCE per schedule per day: Jan 1, 2026 → today + 30 days."""
     instances = []
-    today = datetime(2026, 7, 9)
+    start_date = datetime(today.year, 1, 1)   # Jan 1 of current year
 
     for sch in schedules:
-        n_instances = random.randint(12, 20)
-        for _ in range(n_instances):
-            flight_date = random_flight_date_2026()
+        flight_date = start_date
+        while flight_date <= SEED_END_DATE:
             status = "DEPARTED" if flight_date < today else "SCHEDULED"
             cur.execute(
                 """INSERT INTO FLIGHT_INSTANCE
@@ -278,6 +335,7 @@ def seed_instances(cur, schedules):
                 "econ_occupied": 0,
                 "biz_occupied": 0,
             })
+            flight_date += timedelta(days=1)   # next day
 
     print(f"Flight instances ready: {len(instances)}")
     return instances
@@ -285,7 +343,7 @@ def seed_instances(cur, schedules):
 
 def seed_agents(cur):
     agent_hashed_password = get_password_hash("agent@123")
-    current_date_str = "09/07/2026"
+    current_date_str = today.strftime("%d/%m/%Y")
     agent_ids = [2]  # agent01 already exists (user_id=2)
     for username in AGENT_USERNAMES:
         cur.execute(
@@ -342,8 +400,8 @@ def seed_bookings(cur, instances, agent_ids, passenger_ids, count=500):
 
         days_before = random.randint(1, 45)
         booking_dt = inst["flight_date"] - timedelta(days=days_before)
-        if booking_dt > datetime(2026, 7, 9):
-            booking_dt = datetime(2026, 7, 8)
+        if booking_dt > today:
+            booking_dt = today - timedelta(days=1)
 
         ticket_code = f"BH{inst['flight_date'].year}{random.randint(100000, 999999)}"
 
