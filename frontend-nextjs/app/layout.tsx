@@ -13,7 +13,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
+export const metadata: Metadata = {
+  metadataBase: new URL("https://blue-horizon-steel.vercel.app"), 
   title: {
     default: "Blue Horizon",
     template: "Blue Horizon - %s",
@@ -21,6 +22,22 @@ export const metadata = {
   description: "Explore the world with Blue Horizon. Fly to your dream destinations.",
   icons: {
     icon: "/logo.png",
+  },
+  openGraph: {
+    title: "Blue Horizon",
+    description: "Explore the world with Blue Horizon. Fly to your dream destinations.",
+    url: "https://blue-horizon-steel.vercel.app",
+    siteName: "Blue Horizon",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,      
+        height: 630,
+        alt: "Blue Horizon Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
   },
 };
 
