@@ -21,16 +21,16 @@ export const metadata: Metadata = {
   },
   description: "Explore the world with Blue Horizon. Fly to your dream destinations.",
   icons: {
-    icon: "/logo.png",
+    icon: "/meta_img.png",
   },
   openGraph: {
     title: "Blue Horizon",
-    description: "Explore the world with Blue Horizon. Fly to your dream destinations.",
+    description: "Explore the world with Blue Horizon. Discover iconic cities, hidden gems, and pristine beaches as you fly to the places you’ve always dreamed of. Relax, enjoy the journey, and let Blue Horizon bring your travel goals to life",
     url: "https://blue-horizon-steel.vercel.app",
     siteName: "Blue Horizon",
     images: [
       {
-        url: "/logo.png",
+        url: "/meta_img.png",
         width: 1200,      
         height: 630,
         alt: "Blue Horizon Logo",
