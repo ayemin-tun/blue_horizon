@@ -1,20 +1,32 @@
 "use client";
 
-import { useAlertStore,AlertType } from "@/services/store/alertStore";
+import { useAlertStore, AlertType } from "@/services/store/alertStore";
 
 export default function AlertContainer() {
   const alerts = useAlertStore((state) => state.alerts);
   const removeAlert = useAlertStore((state) => state.removeAlert);
 
-  
-  const styles: Record<AlertType, { bg: string; text: string; border: string; icon: React.ReactNode }> = {
+  const styles: Record<
+    AlertType,
+    { bg: string; text: string; border: string; icon: React.ReactNode }
+  > = {
     success: {
       bg: "bg-emerald-50",
       text: "text-emerald-800",
       border: "border-emerald-200",
       icon: (
-        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-5 h-5 text-emerald-600 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
     },
@@ -23,8 +35,18 @@ export default function AlertContainer() {
       text: "text-rose-800",
       border: "border-rose-200",
       icon: (
-        <svg className="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-5 h-5 text-rose-600 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
     },
@@ -33,21 +55,32 @@ export default function AlertContainer() {
       text: "text-amber-800",
       border: "border-amber-200",
       icon: (
-        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <svg
+          className="w-5 h-5 text-amber-600 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
         </svg>
       ),
     },
   };
 
   return (
-    <div className="fixed top-5 right-5 z-9999 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
+   
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-5 sm:translate-x-0 sm:top-5 z-9999 flex flex-col gap-3 w-[calc(100%-2rem)] sm:w-full sm:max-w-sm pointer-events-none">
       {alerts.map((alert) => {
         const currentStyle = styles[alert.type];
         return (
           <div
             key={alert.id}
-            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg transition-all duration-300 transform translate-y-0 animate-fade-in-left ${currentStyle.bg} ${currentStyle.border} ${currentStyle.text}`}
+            className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg transition-all duration-300 transform animate-fade-in-left ${currentStyle.bg} ${currentStyle.border} ${currentStyle.text}`}
           >
             {/* Icon */}
             <div className="shrink-0 pt-0.5">{currentStyle.icon}</div>
@@ -62,8 +95,18 @@ export default function AlertContainer() {
               onClick={() => removeAlert(alert.id)}
               className="shrink-0 p-0.5 rounded-lg hover:bg-black/5 transition text-slate-400 hover:text-slate-600"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
