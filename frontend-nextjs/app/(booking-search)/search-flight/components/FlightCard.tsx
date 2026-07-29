@@ -43,9 +43,9 @@ export default function FlightCard({ flight }: FlightCardProps) {
         </div>
 
         {/* Route Times & Duration */}
-        <div className="flex items-center gap-4 flex-1 w-full">
+        <div className="flex items-center gap-4 flex-1 w-full p-3">
           <div className="text-center shrink-0 min-w-15">
-            <p className="text-lg sm:text-xl font-bold text-blue-900 leading-tight">{formatDisplayTime(flight.departure_time)}</p>
+            <p className="sm:text-xl text-md font-bold text-blue-900 leading-tight">{formatDisplayTime(flight.departure_time)}</p>
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{flight.departure_city}</p>
           </div>
 
@@ -61,7 +61,7 @@ export default function FlightCard({ flight }: FlightCardProps) {
           </div>
 
           <div className="text-center shrink-0 min-w-15">
-            <p className="text-lg sm:text-xl font-bold text-blue-900 leading-tight">{formatDisplayTime(flight.arrival_time)}</p>
+            <p className="text-md sm:text-xl font-bold text-blue-900 leading-tight">{formatDisplayTime(flight.arrival_time)}</p>
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{flight.arrival_city}</p>
           </div>
         </div>
@@ -73,10 +73,10 @@ export default function FlightCard({ flight }: FlightCardProps) {
         <div className="flex flex-col sm:flex-row items-center justify-between lg:justify-end gap-6 pt-3 lg:pt-0 border-t border-slate-50 lg:border-none w-full lg:w-auto">
 
           {/* Price Box */}
-          <div className="w-full sm:w-44 text-left sm:text-center shrink-0 flex sm:flex-col justify-between items-center sm:justify-center">
+          <div className="w-full sm:w-44 text-left sm:text-center shrink-0 flex sm:flex-col justify-between items-center sm:justify-center p-3">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Economy</p>
-              <p className="text-lg font-bold text-blue-900 mt-0.5">MMK {flight.economy_price.toLocaleString()}</p>
+              <p className="sm:text-lg text-md font-bold text-blue-900 mt-0.5">MMK {flight.economy_price.toLocaleString()}</p>
             </div>
             {/* 💡 Economy ရဲ့ လက်ကျန်ခုံကို သီးသန့်ခွဲပြခြင်း */}
             <p className={`text-[10px] font-bold mt-1 px-2 py-0.5 rounded sm:bg-transparent ${isEconomyLow ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50"}`}>
@@ -127,7 +127,7 @@ export default function FlightCard({ flight }: FlightCardProps) {
       <div
         className={`overflow-hidden transition-all duration-300 ease-in-out ${isDetailOpen ? "max-h-40 opacity-100 border-t border-slate-100 pt-4 mt-4" : "max-h-0 opacity-0"}`}
       >
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs p-3">
           {/* flight date */}
           <div>
             <p className="text-slate-400 font-medium">Flight Date</p>

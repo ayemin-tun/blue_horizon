@@ -14,7 +14,7 @@ export default function BarcodeStrip({ value }: { value: string }) {
         <div
           key={i}
           style={{ width: `${w * 2}px`, height: `${60 + ((i * 17) % 20)}%` }}
-          className="bg-blue-900 rounded-sm shrink-0"
+          className="bg-blue-400 rounded-sm shrink-0"
         />
       ))}
     </div>

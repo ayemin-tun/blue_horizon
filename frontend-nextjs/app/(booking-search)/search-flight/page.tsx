@@ -6,6 +6,7 @@ import { useSearchFlightsMutation } from "@/services/BookingService";
 import FlightCard from "./components/FlightCard";
 import Pagination from "@/components/Pagination";
 import FlightSearchForm from "@/app/main/FlightSearchForm";
+import FlightCardSkeleton from "./components/FlightCardSkeleton";
 
 export default function TicketBookingPage() {
   const searchParams = useSearchParams();
@@ -61,7 +62,11 @@ export default function TicketBookingPage() {
       </div>
 
       {isPending && (
-        <div className="text-center py-16 text-slate-500 text-sm">Searching flights…</div>
+        <div className="space-y-5">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <FlightCardSkeleton key={index} />
+          ))}
+        </div>
       )}
 
       {isError && (

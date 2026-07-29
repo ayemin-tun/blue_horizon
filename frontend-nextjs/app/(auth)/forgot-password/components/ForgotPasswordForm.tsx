@@ -10,7 +10,7 @@ export default function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [uiError, setUiError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   const forgotPasswordMutation = useForgotPasswordMutation();
 
   const handleRequestToAdmin = async (e: React.FormEvent) => {
@@ -20,7 +20,7 @@ export default function ForgotPasswordForm() {
 
     try {
       const response: any = await forgotPasswordMutation.mutateAsync({ email: email.trim() });
-      
+
       // Checking Unified ApiResponse Format from Python Backend
       if (response && response.success === false) {
         const backendError = response.error?.details || "Request failed";
@@ -28,11 +28,11 @@ export default function ForgotPasswordForm() {
       } else {
         toast.success("Password reset request sent successfully!");
         setIsSuccess(true);
-        setEmail(""); 
+        setEmail("");
       }
     } catch (error: any) {
-      const networkError = 
-        error?.data?.error?.details || 
+      const networkError =
+        error?.data?.error?.details ||
         error?.response?.data?.error?.details ||
         "An unexpected network error occurred.";
       setUiError(networkError);
@@ -61,7 +61,7 @@ export default function ForgotPasswordForm() {
       )}
 
       <form onSubmit={handleRequestToAdmin} className="space-y-6">
-        
+
         <Input
           id="email"
           label="Email Address"
@@ -74,15 +74,19 @@ export default function ForgotPasswordForm() {
         />
 
         <div className="space-y-4 pt-2">
-          
+
           <button
             type="submit"
             disabled={forgotPasswordMutation.isPending}
-            className="w-full rounded-md bg-blue-800 py-3 text-center text-sm font-bold tracking-wider text-white uppercase shadow-md transition-all hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:bg-slate-400"
+             className="w-full flex items-center justify-center gap-2 rounded-md bg-blue-800 py-3 text-center text-sm font-bold tracking-wider text-white uppercase shadow-md transition-all hover:bg-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed"
           >
-            {forgotPasswordMutation.isPending ? "Submitting..." : "Request to Admin"}
+            {forgotPasswordMutation.isPending ? <><svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+              <span>Submitting ...</span></> : "Request to Admin"}
           </button>
-          
+
           <p className="text-sm text-center text-slate-600">
             Try one more time?{" "}
             <Link href="/login" className="font-semibold text-blue-700 hover:underline">
@@ -95,7 +99,7 @@ export default function ForgotPasswordForm() {
       <div className="pt-6">
         <div className="h-[2px] w-full bg-slate-200 mb-4" />
         <p className="text-[11px] text-blue-800 font-medium leading-relaxed">
-          Password request is forwarded to the helpdesk. If you do not receive a response shortly, 
+          Password request is forwarded to the helpdesk. If you do not receive a response shortly,
           please contact IT Support at{" "}
           <a href="mailto:support@bluehorizon.com" className="underline font-semibold hover:text-blue-950">
             support@bluehorizon.com

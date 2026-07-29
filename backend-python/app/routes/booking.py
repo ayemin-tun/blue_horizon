@@ -49,6 +49,8 @@ def search_flights(
     limit: int = Query(5, ge=1),  
     db: Session = Depends(get_db)
 ):
+    search_date_str = date.strip()
+
     # 1. Database Query
     results = db.query(
         models.FlightInstance, models.RouteSchedule, models.Route, models.Flight, models.Airline
@@ -57,7 +59,7 @@ def search_flights(
     ).join(models.Flight, models.RouteSchedule.flight_id == models.Flight.flight_id
     ).join(models.Airline, models.Flight.airline_id == models.Airline.airline_id
     ).filter(
-        models.FlightInstance.flight_date == date.strip(),
+        models.FlightInstance.flight_date == search_date_str, 
         models.Route.departure_city.ilike(departure_city.strip()),
         models.Route.arrival_city.ilike(arrival_city.strip()),
         models.FlightInstance.is_deleted == 0,
@@ -66,7 +68,7 @@ def search_flights(
 
     all_filtered_flights = [] 
     now = datetime.now()
-    today_str = now.strftime("%d/%m/%Y")
+    today_str = now.strftime("%d/%m/%Y") 
 
     #Business Capacity default 20 ───
     FIXED_BUSINESS_CAPACITY = 20
@@ -74,19 +76,29 @@ def search_flights(
     for instance, schedule, route, flight, airline in results:
         # A. Time Check — exclude flights departing within the next 1 hour
         if instance.flight_date == today_str:
-            departure_dt = datetime.strptime(instance.base_departure_time, "%H:%M").replace(
-                year=now.year, month=now.month, day=now.day
-            )
-            cutoff_dt = now + timedelta(hours=1)
-            if departure_dt <= cutoff_dt:
-                continue
+            try:
+                # DD/MM/YYYY change date time 
+                departure_dt = datetime.strptime(
+                    f"{instance.flight_date} {instance.base_departure_time}", 
+                    "%d/%m/%Y %H:%M"
+                )
+
+                # skip the flight when departure time is within one hour in current time or departure flight
+                cutoff_dt = now + timedelta(hours=1)
+                if departure_dt <= cutoff_dt:
+                    continue
+            except ValueError:
+                # pass if the time format is false
+                pass
 
         # B. Class base Capacity and Available Seat Calculation
         total_seats = flight.total_seats
-        
-        business_available = max(0, FIXED_BUSINESS_CAPACITY - instance.business_seats_occupied)
-        
-        total_economy_capacity = total_seats - FIXED_BUSINESS_CAPACITY
+
+        # check business capacity is not greater than total seat
+        business_capacity = min(FIXED_BUSINESS_CAPACITY, total_seats)
+        business_available = max(0, business_capacity - instance.business_seats_occupied)
+
+        total_economy_capacity = max(0, total_seats - business_capacity)
         economy_available = max(0, total_economy_capacity - instance.economy_seats_occupied)
 
         if economy_available <= 0 and business_available <= 0:
@@ -96,12 +108,21 @@ def search_flights(
         fmt = "%H:%M"
         d_time = datetime.strptime(instance.base_departure_time, fmt)
         a_time = datetime.strptime(instance.base_arrival_time, fmt)
+        
+        if a_time < d_time:
+            a_time += timedelta(days=1)
+            
         duration = a_time - d_time
-        duration_str = str(duration)
+        hours, remainder = divmod(duration.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        if minutes > 0:
+            duration_str = f"{hours}h {minutes}m"
+        else:
+            duration_str = f"{hours}h"
 
         # D. Append to Array
         all_filtered_flights.append({
-            "flight_instance_id": instance.instance_id, # 💡 Frontend အတွက် Foreign Key ID ထည့်ပေးထားပါတယ်
+            "flight_instance_id": instance.instance_id, 
             "airline_name": airline.airline_name,
             "flight_no": flight.flight_no,
             "departure_time": instance.base_departure_time,

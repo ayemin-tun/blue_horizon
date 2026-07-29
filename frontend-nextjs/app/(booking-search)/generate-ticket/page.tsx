@@ -16,6 +16,7 @@ export default function GenerateTicketPage() {
     seatClass,
     selectedSeats,
     passengers,
+    ticketId,
     seatCount,
     reset,
   } = useBookingStore();
@@ -25,12 +26,18 @@ export default function GenerateTicketPage() {
 
   // State Management 
   const [isIssued, setIsIssued] = useState(false); // To check if the ticket has been issued successfully
-  const [ticketId, setTicketId] = useState<string | null>(null); // Ticket Code provided by the backend
+  const [bticketId, setBticketId] = useState<string | null>(null); // Ticket Code provided by the backend
   const [backendPayload, setBackendPayload] = useState<any>(null);
 
   const createBookingMutation = useCreateBookingMutation();
   // Redirect guard
   useEffect(() => {
+    if (ticketId) {
+    reset(); // Store ကို clean up လုပ်မည်
+    router.replace("/search-flight");
+    return;
+  }
+
     if (!selectedFlight || passengers.length === 0 || !passengers[0].name) {
       router.replace("/fill-info");
     } else {
@@ -49,7 +56,8 @@ export default function GenerateTicketPage() {
       onSuccess: (result) => {
         if (result.success) {
           toast.success("Ticket Issued Successfully!");
-          setTicketId(result.data.ticket_id);
+          setBticketId(result.data.ticket_id);
+          useBookingStore.getState().setTicketId(result.data.ticket_id);
           setIsIssued(true);
           useBookingStore.getState().setIsIssued(true);
           saveConfirmedTicketToLocalStorage(result.data);
@@ -106,7 +114,7 @@ export default function GenerateTicketPage() {
             </p>
             <div className="flex items-center gap-4">
               <div>
-                <p className="text-3xl font-black text-white">{selectedFlight.departure_city}</p>
+                <p className="sm:text-3xl text-md font-black text-white">{selectedFlight.departure_city}</p>
                 <p className="text-xs text-blue-300 font-semibold">
                   {formatDisplayTime(selectedFlight.departure_time)}
                 </p>
@@ -120,7 +128,7 @@ export default function GenerateTicketPage() {
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-black text-white">{selectedFlight.arrival_city}</p>
+                <p className="sm:text-3xl text-md font-black text-white">{selectedFlight.arrival_city}</p>
                 <p className="text-xs text-blue-300 font-semibold">
                   {formatDisplayTime(selectedFlight.arrival_time)}
                 </p>
@@ -129,15 +137,15 @@ export default function GenerateTicketPage() {
           </div>
 
           {/* Ticket ID Area */}
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col sm:items-end gap-1">
             <p className="text-[10px] text-blue-300 font-semibold uppercase tracking-widest">Ticket ID</p>
-            {isIssued && ticketId ? (
+            {isIssued && bticketId ? (
               <>
-                <p className="text-xl font-black text-white tracking-widest animate-pulse">{ticketId}</p>
-                <BarcodeStrip value={ticketId} />
+                <p className="text-xl font-black text-white tracking-widest ">{bticketId}</p>
+                <BarcodeStrip value={bticketId} />
               </>
             ) : (
-              <p className="text-xs font-bold text-slate-300 italic bg-slate-800/60 px-3 py-1.5 rounded-md">PENDING ISSUE</p>
+              <p className="text-[10px] font-bold text-slate-300 italic bg-slate-800/60 px-3 py-1.5 rounded-md animate-pulse">pending ....</p>
             )}
           </div>
         </div>
@@ -204,7 +212,7 @@ export default function GenerateTicketPage() {
             </div>
             <div className="text-right">
               <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Total Amount</p>
-              <p className="text-2xl font-black text-blue-900">MMK {totalPrice.toLocaleString()}</p>
+              <p className="sm:text-2xl text-lg font-black text-blue-900">MMK {totalPrice.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -228,9 +236,9 @@ export default function GenerateTicketPage() {
         <p className="text-amber-700">• Please arrive at the airport at least 2 hours before departure.</p>
         <p className="text-amber-700">• Carry a printed or digital copy of this ticket along with valid ID.</p>
         <p className="text-amber-700">• This ticket is non-refundable and non-transferable.</p>
-        {isIssued && ticketId && (
+        {isIssued && bticketId && (
           <p className="text-amber-700">
-            • Ticket ID: <strong className="text-amber-800">{ticketId}</strong>
+            • Ticket ID: <strong className="text-amber-800">{bticketId}</strong>
           </p>
         )}
       </div>
