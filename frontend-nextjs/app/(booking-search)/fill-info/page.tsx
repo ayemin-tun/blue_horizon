@@ -66,21 +66,12 @@ export default function FillInfoPage() {
       <div className="bg-white border border-slate-100 rounded-xl px-6 py-4 shadow-sm flex items-center justify-between">
         <div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Step 3</p>
-          <h1 className="text-lg font-bold text-blue-900">Passenger Information</h1>
+          <h1 className="sm:text-lg text-md font-bold text-blue-900">Passenger Information</h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Fill in details for all {seatCount} passenger{seatCount > 1 ? "s" : ""}
           </p>
         </div>
-        <div className="flex gap-2">
-          {selectedSeats.map((seat) => (
-            <span
-              key={seat}
-              className="bg-blue-50 text-blue-900 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-100"
-            >
-              {seat}
-            </span>
-          ))}
-        </div>
+      
       </div>
 
       {/* Passenger forms */}

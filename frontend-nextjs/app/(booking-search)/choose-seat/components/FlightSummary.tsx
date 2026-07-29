@@ -19,8 +19,9 @@ export default function FlightSummary() {
         <p className="text-[10px] text-slate-400 font-semibold">{selectedFlight.flight_no}</p>
       </div>
 
+      <hr/>
       {/* Route */}
-      <div className="flex items-center gap-3">
+      <div className="flex justify-center sm:justify-end items-center gap-3 w-100 sm:w-auto">
         <div className="text-center">
           <p className="text-lg font-bold text-blue-900">{formatDisplayTime(selectedFlight.departure_time)}</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase">{selectedFlight.departure_city}</p>

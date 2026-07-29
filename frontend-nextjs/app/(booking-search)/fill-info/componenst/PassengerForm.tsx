@@ -58,7 +58,7 @@ export default function PassengerForm({ index, seatLabel, value, onChange, onVal
       <div className="bg-blue-900 px-6 py-3 flex items-center justify-between">
         <div>
           <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">Passenger {index + 1}</p>
-          <p className="text-sm font-bold text-white">Seat <span className="text-blue-200">{seatLabel}</span></p>
+          <p className="text-sm font-bold text-white"><span className="text-blue-200">{seatLabel}</span></p>
         </div>
       </div>
 

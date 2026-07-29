@@ -8,6 +8,7 @@ import { useAuthStore } from "@/services/store/authStore";
 import { toast } from "@/services/store/alertStore";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import FlightSearchFormSkeleton from "@/components/FlightSearchFormSkeleton";
 
 // ─── Helpers: departureDate is stored as "YYYY-MM-DD" string ──────────────
 function parseDateString(dateStr: string): Date | null {
@@ -75,7 +76,7 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
     if (urlDate) setDepartureDate(parseUrlDate(urlDate));
   }, [searchParams]);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <FlightSearchFormSkeleton variant={variant}/>;
 
   const handleSwapLocations = () => {
     const temp = fromLocation;
@@ -116,8 +117,6 @@ export default function FlightSearchForm({ variant = "vertical" }: FlightSearchF
   return (
     <form
       onSubmit={handleSearch}
-      /* 💡 ဓာတ်ပုံထဲကပြဿနာကို ဖြေရှင်းရန် Mobile မှာ ဒေါင်လိုက်သွားပြီး 
-         Desktop (md:) ရောက်မှ ဘေးတိုက်တန်းစီဖို့ `flex-col md:flex-row` သုံးပေးထားပါတယ် */
       className={`bg-white rounded-xl shadow-md border border-slate-100 transition-all ${
         isHorizontal 
           ? "p-4 md:p-5 flex flex-col md:flex-row md:items-end gap-4 w-full" 
