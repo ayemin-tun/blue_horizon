@@ -19,6 +19,9 @@ export const metadata = {
     template: "Blue Horizon - %s",
   },
   description: "Explore the world with Blue Horizon. Fly to your dream destinations.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({
