@@ -6,7 +6,7 @@ from app.database import models
 from typing import List
 from app.schemas.booking_schema import ApiResponse,CreateBookingRequest
 from datetime import datetime,timedelta
-
+from zoneinfo import ZoneInfo
 router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
 
 @router.get("/cities")
@@ -67,8 +67,12 @@ def search_flights(
     ).all()
 
     all_filtered_flights = [] 
-    now = datetime.now()
-    today_str = now.strftime("%d/%m/%Y") 
+
+    tz = ZoneInfo("Asia/Yangon")
+    now = datetime.now(tz).replace(tzinfo=None) # Timezone-aware ကနေ naive datetime သို့ ပြောင်းပြီး ခိုင်းနှိုင်းခြင်း
+    today_str = now.strftime("%d/%m/%Y")
+    # now = datetime.now()
+    # today_str = now.strftime("%d/%m/%Y") 
 
     #Business Capacity default 20 ───
     FIXED_BUSINESS_CAPACITY = 20
