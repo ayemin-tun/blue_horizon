@@ -181,7 +181,7 @@ export default function FloatingAgentMail() {
                 ) : remainingMinutes > 0 ? (
                   <>
                     <Clock className="w-3.5 h-3.5" />
-                    Cooldown ({remainingMinutes}m)
+                    Unavailable
                   </>
                 ) : (
                   <>
@@ -191,15 +191,11 @@ export default function FloatingAgentMail() {
                 )}
               </button>
 
-              <a
-                href={mailtoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full py-2 px-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-xl text-[11px] font-semibold transition text-center flex items-center justify-center gap-1.5"
-              >
-                <ExternalLink className="w-3 h-3 text-slate-400" />
-                Open in Email App
-              </a>
+              {remainingMinutes > 0 && (
+                <p className="text-[10px] text-center text-slate-500 mt-1">
+                  {remainingMinutes} minute(s) remaining before you can send another email.
+                </p>
+              )}
             </div>
           </form>
         </div>
@@ -212,8 +208,8 @@ export default function FloatingAgentMail() {
           setIsOpen(!isOpen);
         }}
         className={`group relative p-3.5 rounded-2xl shadow-xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-2.5 ${isOpen
-            ? "bg-slate-900 text-white"
-            : "bg-gradient-to-r from-blue-900 to-indigo-900 text-white hover:shadow-2xl hover:scale-105"
+          ? "bg-slate-900 text-white"
+          : "bg-gradient-to-r from-blue-900 to-indigo-900 text-white hover:shadow-2xl hover:scale-105"
           }`}
         title="Contact Admin via Email"
       >
