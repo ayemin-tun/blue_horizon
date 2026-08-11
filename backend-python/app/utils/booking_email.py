@@ -6,8 +6,11 @@ Uses the same Gmail SMTP credentials as the other email utilities.
 import os
 import smtplib
 import threading
+import io
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
+import qrcode
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -140,6 +143,20 @@ def send_booking_confirmation_email(
               </td>
             </tr>
 
+            <!-- QR Code Section -->
+            <tr>
+              <td align="center" style="padding:0 32px 16px;">
+                <table cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);display:inline-block;">
+                  <tr>
+                    <td align="center">
+                      <img src="cid:qrcode" width="130" height="130" alt="Booking QR Code" style="display:block;margin:0 auto;border:none;" />
+                      <span style="font-size:10px;font-weight:bold;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-top:8px;font-family:Arial,sans-serif;">Scan to Verify Ticket</span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
             <!-- Passengers -->
             <tr>
               <td style="padding:8px 32px 4px;">
@@ -178,10 +195,15 @@ def send_booking_confirmation_email(
     </html>
     """
 
-    msg = MIMEMultipart("alternative")
+    # Top-level is related (allows inline resources like images)
+    msg = MIMEMultipart("related")
     msg["From"] = sender_email
     msg["To"] = agent_email
     msg["Subject"] = f"Booking Confirmed — {ticket_code} | {departure_city} → {arrival_city}"
+
+    # Alternatives container (plain text vs html)
+    msg_alt = MIMEMultipart("alternative")
+    msg.attach(msg_alt)
 
     # Plain-text fallback
     plain = (
@@ -195,8 +217,42 @@ def send_booking_confirmation_email(
         f"Passengers: {', '.join(p.get('name','—') for p in passengers)}\n\n"
         f"— Blue Horizon"
     )
-    msg.attach(MIMEText(plain, "plain"))
-    msg.attach(MIMEText(html, "html"))
+    msg_alt.attach(MIMEText(plain, "plain"))
+    msg_alt.attach(MIMEText(html, "html"))
+
+    # Generate QR Code and attach as related part
+    try:
+        passenger_names = ", ".join(p.get("name", "—") for p in passengers)
+        qr_payload = (
+            f"🎫 BLUE HORIZON AIRWAYS — AGENT BOOKING\n"
+            f"-----------------------------------------\n"
+            f"Ticket Code: {ticket_code}\n"
+            f"Flight: {flight_no or 'BH-FLIGHT'} ({departure_city} -> {arrival_city})\n"
+            f"Date: {flight_date} | Time: {departure_time or 'N/A'}\n"
+            f"Class: {(seat_class or 'Economy').upper()}\n"
+            f"Passengers: {passenger_names}\n"
+            f"Status: CONFIRMED"
+        )
+
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_payload)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+
+        qr_io = io.BytesIO()
+        qr_img.save(qr_io, format="PNG")
+
+        msg_img = MIMEImage(qr_io.getvalue(), name="qrcode.png")
+        msg_img.add_header("Content-ID", "<qrcode>")
+        msg_img.add_header("Content-Disposition", "inline", filename="qrcode.png")
+        msg.attach(msg_img)
+    except Exception as qr_err:
+        print(f"[BookingEmail] Error generating/attaching QR code: {qr_err}")
 
     # Send on a background thread so the API response returns instantly
     thread = threading.Thread(
