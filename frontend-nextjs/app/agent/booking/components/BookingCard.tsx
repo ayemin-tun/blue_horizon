@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookingRecord } from "@/services/BookingService";
 import { Plane, Calendar, Ticket, ArrowRight } from "lucide-react";
+import QRCodeBox from "@/app/(booking-search)/generate-ticket/components/QRCodeBox";
 
 interface BookingCardProps {
     booking: BookingRecord;
@@ -8,6 +9,13 @@ interface BookingCardProps {
 
 export default function BookingCard({ booking }: BookingCardProps) {
     const isConfirmed = booking.status.toLowerCase() === "confirmed";
+
+    const qrPayload = `🎫 BLUE HORIZON AIRWAYS — TICKET
+Ticket Code: ${booking.ticket_code}
+Flight: ${booking.flight_details.airline_name || "Blue Horizon"} (${booking.flight_details.departure_city} -> ${booking.flight_details.arrival_city})
+Date: ${booking.flight_details.flight_date}
+Class: ${booking.seat_class}
+Status: ${booking.status}`;
 
     return (
         <div className="group relative bg-white border border-slate-100 hover:border-blue-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
@@ -94,10 +102,11 @@ export default function BookingCard({ booking }: BookingCardProps) {
                     </div>
                 </div>
 
-                {/* Right: CTA */}
-                <div className="md:pl-5 md:border-l md:border-slate-100 w-full md:w-auto">
+                {/* Right: QR Code & CTA */}
+                <div className="md:pl-5 md:border-l md:border-slate-100 w-full md:w-auto flex flex-row md:flex-col items-center justify-between gap-3">
+                    <QRCodeBox value={qrPayload} size={54} showCaption={false} />
                     <Link href={`/agent/booking/${booking.booking_id}`} className="block w-full md:w-auto">
-                        <button className="w-full md:w-auto flex items-center justify-center gap-1.5 bg-[#1e3a8a] hover:bg-[#16296b] text-white font-bold text-[11px] px-4 py-2.5 rounded-lg transition-all duration-150 active:scale-[0.98] shadow-sm">
+                        <button className="w-full md:w-auto flex items-center justify-center gap-1.5 bg-[#1e3a8a] hover:bg-[#16296b] text-white font-bold text-[11px] px-4 py-2 rounded-lg transition-all duration-150 active:scale-[0.98] shadow-sm">
                             View Detail
                             <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                         </button>
