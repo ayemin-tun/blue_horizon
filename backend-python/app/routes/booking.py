@@ -255,7 +255,52 @@ def create_booking(payload: CreateBookingRequest, db: Session = Depends(get_db))
 
         # Safely commit transactions to disk storage
         db.commit()
-        
+
+        # ── 5. Send booking confirmation email to the agent ──────────
+        try:
+            agent = db.query(models.User).filter(
+                models.User.user_id == payload.user_id
+            ).first()
+
+            schedule = db.query(models.RouteSchedule).filter(
+                models.RouteSchedule.schedule_id == instance.schedule_id
+            ).first()
+
+            route = db.query(models.Route).filter(
+                models.Route.route_id == schedule.route_id
+            ).first() if schedule else None
+
+            flight = db.query(models.Flight).filter(
+                models.Flight.flight_id == schedule.flight_id
+            ).first() if schedule else None
+
+            airline = db.query(models.Airline).filter(
+                models.Airline.airline_id == flight.airline_id
+            ).first() if flight else None
+
+            if agent and agent.email and route and flight and airline:
+                from app.utils.booking_email import send_booking_confirmation_email
+
+                send_booking_confirmation_email(
+                    agent_email=agent.email,
+                    agent_name=agent.username,
+                    ticket_code=generated_ticket_code,
+                    booking_date=payload.booked_at,
+                    seat_class=target_seat_class,
+                    total_price=float(payload.total_price),
+                    flight_no=flight.flight_no,
+                    airline_name=airline.airline_name,
+                    departure_city=route.departure_city,
+                    arrival_city=route.arrival_city,
+                    flight_date=instance.flight_date,
+                    departure_time=instance.base_departure_time,
+                    arrival_time=instance.base_arrival_time,
+                    passengers=inserted_passengers,
+                )
+        except Exception as email_err:
+            # Email failure should never break the booking response
+            print(f"[BookingEmail] Warning – could not send confirmation: {email_err}")
+
         return {
             "success": True,
             "message": "Booking and passengers registered successfully under current Agent!",
