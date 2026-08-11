@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from "@/services/store/authStore";
 import { profileService, ProfileUpdatePayload } from "../../../../services/profileService";
 import { toast } from '@/services/store/alertStore';
-import { User, Mail, Lock, ShieldCheck, CheckCircle2, AlertTriangle, KeyRound } from 'lucide-react';
+import { User, Mail, Lock, ShieldCheck, CheckCircle2, AlertTriangle, KeyRound, Eye, EyeOff } from 'lucide-react';
 
 interface MessageState {
   type: 'success' | 'error' | null;
@@ -12,6 +12,8 @@ interface MessageState {
 }
 
 export default function AdminEditProfile() {
+
+  const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false });
 
   // --- Pull current user info from the auth store (set at login) ---
   const { userId, name, email: storedEmail, phone_no: storedPhone, role, setAuth } = useAuthStore((state) => state);
@@ -278,14 +280,17 @@ export default function AdminEditProfile() {
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
                     <KeyRound className="w-4 h-4" />
                   </span>
-                  <input
-                    type="password"
+                <input
+                    type={showPw.current ? 'text' : 'password'}
                     name="currentPassword"
                     value={passwords.currentPassword}
                     onChange={handlePasswordChange}
-                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-10 pr-11 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                     required
                   />
+                  <button type="button" onClick={() => setShowPw((p) => ({ ...p, current: !p.current }))} className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 transition" tabIndex={-1}>
+                    {showPw.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -296,13 +301,16 @@ export default function AdminEditProfile() {
                     <Lock className="w-4 h-4" />
                   </span>
                   <input
-                    type="password"
+                    type={showPw.new ? 'text' : 'password'}
                     name="newPassword"
                     value={passwords.newPassword}
                     onChange={handlePasswordChange}
-                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-10 pr-11 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                     required
                   />
+                  <button type="button" onClick={() => setShowPw((p) => ({ ...p, new: !p.new }))} className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 transition" tabIndex={-1}>
+                    {showPw.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -313,13 +321,16 @@ export default function AdminEditProfile() {
                     <Lock className="w-4 h-4" />
                   </span>
                   <input
-                    type="password"
+                    type={showPw.confirm ? 'text' : 'password'}
                     name="confirmPassword"
                     value={passwords.confirmPassword}
                     onChange={handlePasswordChange}
-                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                    className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-10 pr-11 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                     required
                   />
+                  <button type="button" onClick={() => setShowPw((p) => ({ ...p, confirm: !p.confirm }))} className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 transition" tabIndex={-1}>
+                    {showPw.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 

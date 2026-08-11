@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Agent } from '@/services/agentService';
-import { Pencil, Trash2, Loader2, Eye, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Eye, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react';
 
 interface AgentTableProps {
   agents: Agent[];
@@ -11,6 +11,7 @@ interface AgentTableProps {
   onUpdate: (agent: Agent) => void;
   onDelete: (agent: Agent) => void;
   onView: (agent: Agent) => void;
+  onResetPassword: (agent: Agent) => void;
 }
 
 export default function AgentTable({
@@ -20,6 +21,7 @@ export default function AgentTable({
   onUpdate,
   onDelete,
   onView,
+  onResetPassword,
 }: AgentTableProps) {
   return (
     <div className="w-full bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -111,13 +113,21 @@ export default function AgentTable({
                       {agent.joined_date}
                     </div>
 
-                    <div className="w-24 shrink-0 flex items-center justify-end gap-1.5">
+                    <div className="w-32 shrink-0 flex items-center justify-end gap-1.5">
                       <button
                         onClick={() => onView(agent)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-blue-50 transition active:scale-95"
                         title="View Agent"
                       >
                         <Eye className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => onResetPassword(agent)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition active:scale-95"
+                        title="Reset Password"
+                      >
+                        <KeyRound className="w-4 h-4" />
                       </button>
 
                       <button

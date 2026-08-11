@@ -13,6 +13,7 @@ import {
     useDeleteAgentMutation,
     useUpdateAgentMutation,
     useUpdateAgentEmailVerificationMutation,
+    useResetAgentPasswordMutation,
 } from '@/services/agentService';
 
 import AgentStats from './components/AgentStats';
@@ -33,6 +34,7 @@ export default function AgentPage() {
     const [viewTarget, setViewTarget] = useState<Agent | null>(null);
     const [editTarget, setEditTarget] = useState<Agent | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
+    const [resetPasswordTarget, setResetPasswordTarget] = useState<Agent | null>(null);
 
     const [status, setStatus] = useState('');
 
@@ -44,8 +46,8 @@ export default function AgentPage() {
     const updateStatusMutation = useUpdateAgentStatusMutation();
     const deleteMutation = useDeleteAgentMutation();
     const updateMutation = useUpdateAgentMutation();
-
     const verifyEmailMutation = useUpdateAgentEmailVerificationMutation();
+    const resetPasswordMutation = useResetAgentPasswordMutation();
 
     // ─── Type Cast Response ───────────────────────────────────────────────────
     const res = apiResponse as unknown as PaginatedAgentResponse;
@@ -146,6 +148,21 @@ export default function AgentPage() {
         );
     };
 
+    const handleResetPassword = () => {
+        if (!resetPasswordTarget) return;
+        resetPasswordMutation.mutate(resetPasswordTarget.agent_id, {
+            onSuccess: (res) => {
+                if (res.success) {
+                    toast.success(`Temp password sent to ${resetPasswordTarget.email}`);
+                    setResetPasswordTarget(null);
+                } else {
+                    toast.error(res.error?.details || 'Failed to reset password.');
+                }
+            },
+            onError: () => toast.error('An unexpected error occurred.'),
+        });
+    };
+
     return (
         <>
             <div className="max-w-5xl mx-auto">
@@ -214,6 +231,7 @@ export default function AgentPage() {
                     onView={(agent) => setViewTarget(agent)}
                     onUpdate={(agent) => setEditTarget(agent)}
                     onDelete={(agent) => setDeleteTarget(agent)}
+                    onResetPassword={(agent) => setResetPasswordTarget(agent)}
                 />
 
                 {/* ── Pagination ── */}
@@ -267,6 +285,42 @@ export default function AgentPage() {
                 onCancel={() => setDeleteTarget(null)}
                 loading={deleteMutation.isPending}
             />
+            {/* ── Reset Password Confirm Modal ── */}
+            {resetPasswordTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                                <span className="text-amber-600 text-lg">🔑</span>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-800">Reset Password</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">This will send a temp password by email.</p>
+                            </div>
+                        </div>
+                        <div className="bg-slate-50 rounded-xl px-4 py-3 text-xs text-slate-700 space-y-1">
+                            <p><span className="font-semibold">Agent:</span> {resetPasswordTarget.username}</p>
+                            <p><span className="font-semibold">Email:</span> {resetPasswordTarget.email}</p>
+                        </div>
+                        <p className="text-xs text-slate-500">A randomly generated temporary password will be hashed and saved, then emailed to the agent. The agent can log in with it and change it from their profile.</p>
+                        <div className="flex gap-3 pt-1">
+                            <button
+                                onClick={() => setResetPasswordTarget(null)}
+                                className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleResetPassword}
+                                disabled={resetPasswordMutation.isPending}
+                                className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold transition active:scale-95 disabled:opacity-60"
+                            >
+                                {resetPasswordMutation.isPending ? 'Sending...' : 'Send Temp Password'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

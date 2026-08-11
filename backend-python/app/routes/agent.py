@@ -502,3 +502,138 @@ def update_agent_email_verification(id: int, data: AgentEmailVerifyUpdateSchema,
             "data": None,
             "error": {"code": "SERVER_ERROR", "details": str(e)}
         }
+
+
+# --- 8. ADMIN RESET AGENT PASSWORD (Send Temp Password via Email) ---
+@router.post("/{id}/reset-password", response_model=ApiResponse)
+def admin_reset_agent_password(id: int, db: Session = Depends(get_db)):
+    """
+    Admin endpoint: Generate a random temporary password, save it (hashed) to DB,
+    and email it to the agent. The agent can then login with this temp password
+    and change it from their Edit Profile page.
+    """
+    try:
+        import secrets
+        import string
+        from app.utils.auth_utils import get_password_hash
+        from app.utils.reset_email_sender import send_email_notification
+
+        agent = db.query(models.User).filter(
+            models.User.user_id == id,
+            models.User.role == "agent",
+            models.User.is_deleted == 0
+        ).first()
+
+        if not agent:
+            return {
+                "success": False,
+                "message": "Agent not found",
+                "data": None,
+                "error": {"code": "AGENT_NOT_FOUND", "details": f"Active agent with ID {id} does not exist."}
+            }
+
+        # Generate a random 10-character temp password
+        alphabet = string.ascii_letters + string.digits
+        temp_password = "".join(secrets.choice(alphabet) for _ in range(10))
+
+        # Hash and save
+        agent.password = get_password_hash(temp_password)
+        db.commit()
+
+        # Send email (non-blocking best-effort)
+        try:
+            send_email_notification(
+                email=agent.email,
+                username=agent.username,
+                temp_password=temp_password
+            )
+        except Exception as mail_err:
+            print(f"[ResetPassword] Email send failed: {mail_err}")
+
+        return {
+            "success": True,
+            "message": f"Temporary password sent to {agent.email}",
+            "data": {"agent_id": agent.user_id, "email": agent.email},
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": "Failed to reset password",
+            "data": None,
+            "error": {"code": "SERVER_ERROR", "details": str(e)}
+        }
+
+
+class AgentChangePasswordSchema(BaseModel):
+    current_password: str
+    new_password: str
+
+# --- 9. AGENT CHANGE OWN PASSWORD ---
+@router.patch("/{id}/change-password", response_model=ApiResponse)
+def agent_change_password(id: int, data: AgentChangePasswordSchema, db: Session = Depends(get_db)):
+    """
+    Agent endpoint: Verify current password then update to new password.
+    Used after the agent logs in with a temp password sent by admin.
+    """
+    try:
+        from app.utils.auth_utils import verify_password, get_password_hash
+
+        agent = db.query(models.User).filter(
+            models.User.user_id == id,
+            models.User.role == "agent",
+            models.User.is_deleted == 0
+        ).first()
+
+        if not agent:
+            return {
+                "success": False,
+                "message": "Agent not found",
+                "data": None,
+                "error": {"code": "AGENT_NOT_FOUND", "details": "Agent does not exist."}
+            }
+
+        # Verify current password
+        if not verify_password(data.current_password, agent.password):
+            return {
+                "success": False,
+                "message": "Current password is incorrect",
+                "data": None,
+                "error": {"code": "WRONG_PASSWORD", "details": "The current password you entered is incorrect."}
+            }
+
+        # Reject if new password is same as current
+        if data.current_password == data.new_password:
+            return {
+                "success": False,
+                "message": "New password must differ from current password",
+                "data": None,
+                "error": {"code": "SAME_PASSWORD", "details": "Please choose a different password."}
+            }
+
+        if len(data.new_password) < 6:
+            return {
+                "success": False,
+                "message": "Password too short",
+                "data": None,
+                "error": {"code": "WEAK_PASSWORD", "details": "Password must be at least 6 characters."}
+            }
+
+        agent.password = get_password_hash(data.new_password)
+        db.commit()
+
+        return {
+            "success": True,
+            "message": "Password changed successfully",
+            "data": {"agent_id": agent.user_id},
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": "Failed to change password",
+            "data": None,
+            "error": {"code": "SERVER_ERROR", "details": str(e)}
+        }
