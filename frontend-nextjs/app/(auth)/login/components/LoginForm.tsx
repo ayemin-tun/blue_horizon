@@ -51,13 +51,13 @@ export default function LoginForm() {
         toast.success("Login Successful!");
 
         // cookie store because next js middleware does not use zustand localStorage
-        document.cookie = `token=${data.access_token}; path=/; max-age=3600`;
-        document.cookie = `name=${data.username}; path=/; max-age=3600`;
-        document.cookie = `role=${data.role}; path=/; max-age=3600`;
+        document.cookie = `token=${data.access_token}; path=/; max-age=86400`;
+        document.cookie = `name=${data.username}; path=/; max-age=86400`;
+        document.cookie = `role=${data.role}; path=/; max-age=86400`;
 
         setAuth(
           data.access_token,
-          3600000,
+          86400000,
           data.user_id || null,
           data.username || "Unknown user",
           data.role || "agent",

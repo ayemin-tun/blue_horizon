@@ -98,7 +98,7 @@ export default function AdminEditProfile() {
         // Keep the auth store (and cookies used elsewhere) in sync with the new name/email
         setAuth(
           token,
-          3600000,
+          86400000,
           updatedData.user_id,
           updatedData.username,
           updatedData.role,

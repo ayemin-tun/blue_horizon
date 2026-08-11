@@ -112,7 +112,7 @@ export default function AgentProfile() {
 
         setAuth(
           token,
-          3600000,
+          86400000,
           updatedData.user_id,
           updatedData.username,
           updatedData.role,
