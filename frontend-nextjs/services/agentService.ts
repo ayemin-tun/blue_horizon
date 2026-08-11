@@ -176,3 +176,17 @@ export function useChangeAgentPasswordMutation() {
       api.patch(`/api/agents/${id}/change-password`, payload, { headers: authHeader() }),
   });
 }
+
+// ─── 9. Agent Contact Admin via Email Mutation (POST) ──────────────────────
+export interface ContactAdminPayload {
+  subject: string;
+  message: string;
+}
+
+export function useContactAdminMutation() {
+  return useMutation({
+    mutationFn: (payload: ContactAdminPayload) =>
+      api.post('/api/agents/contact-admin', payload, { headers: authHeader() }),
+  });
+}
+
