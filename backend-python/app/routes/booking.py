@@ -341,20 +341,7 @@ def get_all_bookings_for_admin(
     optional search parameters, and functional status/class filters.
     """
     try:
-        # ─── 1. COMPUTE GLOBAL DASHBOARD METRICS ────────────────────────────
-        metrics_query = db.query(
-            func.count(models.Booking.booking_id).label("total"),
-            func.count(case((func.lower(models.Booking.status) == "confirmed", 1))).label("confirmed"),
-            func.count(case((func.lower(models.Booking.status) == "cancelled", 1))).label("cancelled")
-        ).first()
-
-        metrics_data = {
-            "total_booking": metrics_query.total or 0,
-            "confirmed_booking": metrics_query.confirmed or 0,
-            "cancelled_booking": metrics_query.cancelled or 0
-        }
-
-        # ─── 2. BASE PAGINATED LIST QUERY ───────────────────────────────────
+        # ─── 1. BASE PAGINATED LIST QUERY ───────────────────────────────────
         query = db.query(
             models.Booking, models.FlightInstance, models.RouteSchedule, models.Route, models.Flight, models.Airline, models.User
         ).join(models.FlightInstance, models.Booking.instance_id == models.FlightInstance.instance_id
@@ -365,26 +352,46 @@ def get_all_bookings_for_admin(
             models.User, models.Booking.user_id == models.User.user_id
         )
 
-        # Apply Status Filter
-        if status:
-            query = query.filter(models.Booking.status.ilike(status.strip()))
-
         # Apply Seat Class Filter
         if seat_class:
             query = query.filter(models.Booking.seat_class.ilike(seat_class.strip()))
 
-        # Apply Search Filter (Dynamic text match across multiple attributes)
+        # Apply Search Filter (Dynamic text match across multiple attributes including Agent name and email)
         if search:
             search_val = f"%{search.strip()}%"
             query = query.filter(
                 (models.Booking.ticket_code.ilike(search_val)) |
                 (models.Route.departure_city.ilike(search_val)) |
-                (models.Route.arrival_city.ilike(search_val))
+                (models.Route.arrival_city.ilike(search_val)) |
+                (models.User.username.ilike(search_val)) |
+                (models.User.email.ilike(search_val))
             )
 
-        # Total count for the currently filtered query (used for pagination layout)
-        filtered_total_count = query.count()
-        results = query.order_by(models.Booking.booking_id.desc()).offset(skip).limit(limit).all()
+        # ─── 2. COMPUTE DYNAMIC METRICS FOR THIS SEARCH/FILTER ─────────────
+        metrics_subquery = query.with_entities(
+            models.Booking.booking_id,
+            models.Booking.status
+        ).subquery()
+
+        metrics_query = db.query(
+            func.count(metrics_subquery.c.booking_id).label("total"),
+            func.count(case((func.lower(metrics_subquery.c.status) == "confirmed", 1))).label("confirmed"),
+            func.count(case((func.lower(metrics_subquery.c.status) == "cancelled", 1))).label("cancelled")
+        ).first()
+
+        metrics_data = {
+            "total_booking": metrics_query.total if metrics_query else 0,
+            "confirmed_booking": metrics_query.confirmed if metrics_query else 0,
+            "cancelled_booking": metrics_query.cancelled if metrics_query else 0
+        }
+
+        # Apply Status Filter for list pagination
+        list_query = query
+        if status:
+            list_query = list_query.filter(models.Booking.status.ilike(status.strip()))
+
+        filtered_total_count = list_query.count()
+        results = list_query.order_by(models.Booking.booking_id.desc()).offset(skip).limit(limit).all()
 
         formatted_bookings = []
         for booking, instance, schedule, route, flight, airline,agent in results:
