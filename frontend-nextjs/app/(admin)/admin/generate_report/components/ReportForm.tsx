@@ -26,6 +26,8 @@ export default function ReportForm({
   onClearDates,
   onGenerate,
 }: Props) {
+  const hasDateError =
+    currentOption.supportsDateFilter && dateFrom !== '' && dateTo !== '' && dateFrom > dateTo;
   return (
     <section className="card no-print">
       <h2 className="cardTitle">📋 Report Generation</h2>
@@ -51,6 +53,7 @@ export default function ReportForm({
           <input
             type="date"
             value={dateFrom}
+            max={dateTo || undefined}
             disabled={!currentOption.supportsDateFilter}
             onChange={(e) => onDateFromChange(e.target.value)}
           />
@@ -63,6 +66,7 @@ export default function ReportForm({
           <input
             type="date"
             value={dateTo}
+            min={dateFrom || undefined}
             disabled={!currentOption.supportsDateFilter}
             onChange={(e) => onDateToChange(e.target.value)}
           />
@@ -75,6 +79,12 @@ export default function ReportForm({
         </button>
       )}
 
+      {hasDateError && (
+        <p className="dateError">
+          ⚠ "From" date must be earlier than or equal to "To" date.
+        </p>
+      )}
+
       {!currentOption.supportsDateFilter && (
         <p className="hint">
           This report currently covers the entire confirmed-booking history — date-range filtering isn't wired up
@@ -82,7 +92,7 @@ export default function ReportForm({
         </p>
       )}
 
-      <button className="primaryButton" onClick={onGenerate}>
+      <button className="primaryButton" onClick={onGenerate} disabled={hasDateError}>
         Generate Report
       </button>
 
@@ -152,6 +162,15 @@ export default function ReportForm({
           padding: 0 0 1rem;
           text-decoration: underline;
         }
+        .dateError {
+          font-size: 0.82rem;
+          color: #c0392b;
+          margin: 0 0 0.8rem;
+          padding: 0.5rem 0.75rem;
+          background: #fdecea;
+          border: 1px solid #f5c6cb;
+          border-radius: 0.4rem;
+        }
         .hint {
           font-size: 0.78rem;
           color: #9098a8;
@@ -168,7 +187,11 @@ export default function ReportForm({
           font-weight: 600;
           cursor: pointer;
         }
-        .primaryButton:hover {
+        .primaryButton:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .primaryButton:hover:not(:disabled) {
           background: #23237f;
         }
       `}</style>

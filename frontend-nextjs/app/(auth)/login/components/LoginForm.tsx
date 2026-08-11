@@ -124,8 +124,8 @@ export default function LoginForm() {
         />
 
         {/* Checkbox & Forgot Password */}
-        <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
+        <div className="flex  justify-end items-center text-sm">
+          <label className=" items-center gap-2 text-slate-700 cursor-pointer select-none hidden">
             <input
               type="checkbox"
               checked={rememberMe}
@@ -134,7 +134,7 @@ export default function LoginForm() {
             />
             Remember this device
           </label>
-          <Link href="/forgot-password" className="font-medium text-blue-700 hover:underline">
+          <Link href="/forgot-password" className=" font-medium text-blue-700 hover:underline">
             Forgot password
           </Link>
         </div>
