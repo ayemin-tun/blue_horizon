@@ -7,6 +7,7 @@ import { useAuthStore } from "@/services/store/authStore"; // 🟢 1. Import Aut
 
 import Modal from "@/components/Modal";
 import { AlertTriangle } from "lucide-react";
+import QRCodeBox from "@/app/(booking-search)/generate-ticket/components/QRCodeBox";
 
 import {
     Plane,
@@ -102,6 +103,15 @@ export default function BookingDetailPage() {
 
     const { flight_details, passengers } = booking;
 
+    const qrPayload = `🎫 BLUE HORIZON AIRWAYS — AGENT BOOKING
+-----------------------------------------
+Ticket Code: ${booking.ticket_code}
+Flight: ${flight_details.flight_no || "BH-FLIGHT"} (${flight_details.departure_city} -> ${flight_details.arrival_city})
+Date: ${flight_details.flight_date} | Time: ${flight_details.departure_time || "N/A"}
+Class: ${(booking.seat_class || "Economy").toUpperCase()}
+Passengers: ${passengers.map((p: any) => p.name).join(", ")}
+Status: ${(booking.status || "CONFIRMED").toUpperCase()}`;
+
     return (
         <div className="min-h-screen bg-[#fcfcfc] font-sans text-gray-800 pb-16">
 
@@ -142,22 +152,25 @@ export default function BookingDetailPage() {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold uppercase ${isConfirmed ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isConfirmed ? "bg-emerald-500" : "bg-rose-500"}`} />
-                                {booking.status}
-                            </span>
+                        <div className="flex items-center gap-4">
+                            <QRCodeBox value={qrPayload} size={64} showCaption={false} />
+                            <div className="flex flex-col items-end gap-2">
+                                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold uppercase ${isConfirmed ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isConfirmed ? "bg-emerald-500" : "bg-rose-500"}`} />
+                                    {booking.status}
+                                </span>
 
-                            {/* 🆕 Cancel Button — only show if still confirmed */}
-                            {isConfirmed && (
-                                <button
-                                    onClick={() => setShowCancelModal(true)}
-                                    className="flex items-center gap-1.5 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-lg transition-all active:scale-95"
-                                >
-                                    <X size={12} />
-                                    Cancel
-                                </button>
-                            )}
+                                {/* 🆕 Cancel Button — only show if still confirmed */}
+                                {isConfirmed && (
+                                    <button
+                                        onClick={() => setShowCancelModal(true)}
+                                        className="flex items-center gap-1.5 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                                    >
+                                        <X size={12} />
+                                        Cancel
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
 

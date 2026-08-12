@@ -23,7 +23,7 @@ export default function FillInfoPage() {
   const [forms, setForms] = useState<PassengerInfo[]>(passengers);
 
   // 💡 Form  Validation Status store and prevent Array State (Reset)
-  const [formValidities, setFormValidities] = useState<boolean[]>([]);
+  const [formValidities, setFormValidities] = useState<string[][]>([]);
 
   const updatePassenger = (index: number, updated: PassengerInfo) => {
     setForms((prev) => {
@@ -34,17 +34,17 @@ export default function FillInfoPage() {
   };
 
   // Store Validity from Child (PassengerForm)
-  const handleFormValidate = (index: number, isValid: boolean) => {
+  const handleFormValidate = (index: number, missingFields: string[]) => {
     setFormValidities((prev) => {
       const next = [...prev];
-      next[index] = isValid;
+      next[index] = missingFields;
       return next;
     });
   };
 
   // formvalid check
   const isFormValid = 
-    formValidities.length === forms.length && formValidities.every((v) => v === true);
+    formValidities.length === forms.length && formValidities.every((fields) => fields.length === 0);
 
   const handleContinue = () => {
     if (!isFormValid) return; 
@@ -90,9 +90,24 @@ export default function FillInfoPage() {
 
       {/* Validation hint */}
       {!isFormValid && (
-        <p className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 rounded-lg px-4 py-3">
-          ⚠ Please complete all required fields with a valid format for every passenger before continuing.
-        </p>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 space-y-3">
+          <p className="text-xs font-bold text-amber-800 flex items-center gap-2">
+            <span className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center shrink-0 text-amber-600 text-[10px] font-black">!</span>
+            Please complete the following required fields before continuing:
+          </p>
+          {formValidities.map((missingFields, idx) =>
+            missingFields.length > 0 ? (
+              <div key={idx} className="ml-7">
+                <p className="text-[11px] font-bold text-amber-700 mb-1">Passenger {idx + 1}:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {missingFields.map((field, fIdx) => (
+                    <li key={fIdx} className="text-[11px] text-amber-600">{field}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null
+          )}
+        </div>
       )}
 
       {/* ─── 💡 Responsive Navigation Buttons ────────────────────────────────── */}

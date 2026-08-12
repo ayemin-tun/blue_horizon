@@ -11,45 +11,91 @@ interface PassengerFormProps {
   seatLabel: string;
   value: PassengerInfo;
   onChange: (updated: PassengerInfo) => void;
-  onValidate: (index: number, isValid: boolean) => void;
+  onValidate: (index: number, missingFields: string[]) => void;
 }
 
 export default function PassengerForm({ index, seatLabel, value, onChange, onValidate }: PassengerFormProps) {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
   const handleField = (field: keyof PassengerInfo, val: string) => {
     onChange({ ...value, [field]: val });
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
   // ─── 💡 Validation Controller ───
   useEffect(() => {
-    let phoneError = "";
-    let dobError = "";
+    const missing: string[] = [];
 
-    if (value.phone.trim()) {
+    if (!value.name.trim()) missing.push("Full Name");
+
+    const isNrcValid = value.nrc === "Applying" || (!!value.nrc && value.nrc.length >= 10);
+    if (!isNrcValid) missing.push("NRC");
+
+    if (!value.dob) {
+      missing.push("Date of Birth");
+    } else {
+      const date = parseDob(value.dob);
+      if (date && date > new Date()) missing.push("Date of Birth (cannot be in the future)");
+    }
+
+    if (!value.gender) missing.push("Gender");
+
+    if (!value.phone.trim()) {
+      missing.push("Phone Number");
+    } else {
       const phoneRegex = /^(09|\+959)\d{7,9}$/;
       if (!phoneRegex.test(value.phone.trim().replace(/[-\s]/g, ""))) {
-        phoneError = "Invalid phone number.";
+        missing.push("Phone Number (invalid format)");
       }
     }
 
-    if (value.dob) {
-      const date = parseDob(value.dob);
-      if (date && date > new Date()) dobError = "Date of Birth cannot be in the future.";
-    }
-
-    const isNrcValid = value.nrc === "Applying" || (!!value.nrc && value.nrc.length >= 10);
-    const isAllFieldsFilled = !!(value.name.trim() && value.dob && value.gender && value.phone.trim() && isNrcValid);
-    const hasAnyError = !!(phoneError || dobError);
-
-    onValidate(index, isAllFieldsFilled && !hasAnyError);
+    onValidate(index, missing);
   }, [value]);
+
+  // ─── Field-level error checks (used for inline messages) ───
+  const getFieldError = (field: string): string => {
+    // Explicit errors first (e.g. format errors from onBlur)
+    if (errors[field]) return errors[field];
+    // Then check touched + empty/invalid
+    if (!touched[field]) return "";
+    switch (field) {
+      case "name":
+        return !value.name.trim() ? "Full Name is required." : "";
+      case "nrc": {
+        const valid = value.nrc === "Applying" || (!!value.nrc && value.nrc.length >= 10);
+        return !valid ? "NRC is required." : "";
+      }
+      case "dob":
+        if (!value.dob) return "Date of Birth is required.";
+        const d = parseDob(value.dob);
+        return d && d > new Date() ? "Date of Birth cannot be in the future." : "";
+      case "gender":
+        return !value.gender ? "Gender is required." : "";
+      case "phone":
+        if (!value.phone.trim()) return "Phone Number is required.";
+        const phoneRegex = /^(09|\+959)\d{7,9}$/;
+        return !phoneRegex.test(value.phone.trim().replace(/[-\s]/g, "")) ? "Invalid phone number format." : "";
+      default:
+        return "";
+    }
+  };
 
   const getInputClass = (fieldName: string) => {
     const baseClass = "w-full border rounded-lg px-3 py-2.5 text-xs font-medium placeholder:text-slate-300 focus:outline-none transition bg-white ";
-    if (errors[fieldName]) return baseClass + "border-rose-500 bg-rose-50/30 text-rose-900";
+    const hasError = !!getFieldError(fieldName);
+    if (hasError) return baseClass + "border-rose-400 bg-rose-50/40 text-rose-900 ring-1 ring-rose-200";
     return baseClass + "border-slate-200 text-slate-800 focus:border-blue-700 focus:ring-1 focus:ring-blue-700/20";
+  };
+
+  const ErrorMsg = ({ field }: { field: string }) => {
+    const msg = getFieldError(field);
+    if (!msg) return null;
+    return <p className="text-[10px] text-rose-500 font-semibold mt-1 flex items-center gap-1"><span>⚠</span> {msg}</p>;
   };
 
   return (
@@ -66,7 +112,15 @@ export default function PassengerForm({ index, seatLabel, value, onChange, onVal
         {/* Full Name */}
         <div className="sm:col-span-2">
           <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name *</label>
-          <input type="text" placeholder="e.g. Ko Aung Kyaw" value={value.name} onChange={(e) => handleField("name", e.target.value)} className={getInputClass("name")} />
+          <input
+            type="text"
+            placeholder="e.g. Ko Aung Kyaw"
+            value={value.name}
+            onChange={(e) => handleField("name", e.target.value)}
+            onBlur={() => handleBlur("name")}
+            className={getInputClass("name")}
+          />
+          <ErrorMsg field="name" />
         </div>
 
         <div className="sm:col-span-2">
@@ -74,6 +128,7 @@ export default function PassengerForm({ index, seatLabel, value, onChange, onVal
             value={value.nrc}
             onChange={(compiledNrc) => handleField("nrc", compiledNrc)}
           />
+          <ErrorMsg field="nrc" />
         </div>
 
         {/* Date of Birth */}
@@ -82,23 +137,26 @@ export default function PassengerForm({ index, seatLabel, value, onChange, onVal
           <DatePicker
             selected={parseDob(value.dob)}
             onChange={(date: Date | null) => {
-              handleField("dob", formatDob(date)); let msg = "";
+              handleField("dob", formatDob(date));
+              setTouched(p => ({ ...p, dob: true }));
+              let msg = "";
               if (date && date > new Date()) msg = "Date of Birth cannot be in the future.";
               setErrors(p => ({ ...p, dob: msg }));
             }}
+            onCalendarClose={() => handleBlur("dob")}
             maxDate={new Date()}
             placeholderText="Select date" dateFormat="dd/MM/yyyy" showYearDropdown showMonthDropdown dropdownMode="select" yearDropdownItemNumber={100} scrollableYearDropdown wrapperClassName="w-full" className={getInputClass("dob")} autoComplete="off" />
-          {errors.dob && <p className="text-[10px] text-rose-500 font-semibold mt-1">⚠ {errors.dob}</p>}
+          <ErrorMsg field="dob" />
         </div>
 
-        {/* Gender */}
         {/* Gender */}
         <div>
           <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Gender *</label>
           <div className="relative">
             <select
               value={value.gender}
-              onChange={(e) => handleField("gender", e.target.value)}
+              onChange={(e) => { handleField("gender", e.target.value); setTouched(p => ({ ...p, gender: true })); }}
+              onBlur={() => handleBlur("gender")}
               className={getInputClass("gender") + " appearance-none pr-8"}
             >
               <option value="">Select gender</option>
@@ -116,6 +174,7 @@ export default function PassengerForm({ index, seatLabel, value, onChange, onVal
               <path d="M5 7l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
+          <ErrorMsg field="gender" />
         </div>
 
         {/* Phone */}
@@ -127,13 +186,14 @@ export default function PassengerForm({ index, seatLabel, value, onChange, onVal
             value={value.phone}
             onChange={(e) => handleField("phone", e.target.value)}
             onBlur={(e) => {
+              handleBlur("phone");
               const phoneRegex = /^(09|\+959)\d{7,9}$/;
               const msg = phoneRegex.test(e.target.value.trim().replace(/[-\s]/g, "")) ? "" : "Invalid phone number.";
               setErrors(p => ({ ...p, phone: msg }));
             }}
             className={getInputClass("phone")}
           />
-          {errors.phone && <p className="text-[10px] text-rose-500 font-semibold mt-1">⚠ {errors.phone}</p>}
+          <ErrorMsg field="phone" />
         </div>
       </div>
     </div>

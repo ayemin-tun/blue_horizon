@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/services/store/authStore";
 import { profileService, ProfileUpdatePayload } from "../../../services/profileService";
+import { useChangeAgentPasswordMutation } from "@/services/agentService";
 import { toast } from "@/services/store/alertStore";
 import {
   User,
@@ -11,6 +12,9 @@ import {
   ShieldCheck,
   Loader2,
   Settings,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function AgentProfile() {
@@ -33,6 +37,38 @@ export default function AgentProfile() {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+
+  // --- Change Password state ---
+  const changePasswordMutation = useChangeAgentPasswordMutation();
+  const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
+  const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false });
+
+  const handlePwInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPwForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const submitChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userId) { toast.warning('Session expired. Please login again.'); return; }
+    if (pwForm.new_password !== pwForm.confirm_password) { toast.error('New passwords do not match.'); return; }
+    if (pwForm.new_password.length < 6) { toast.error('New password must be at least 6 characters.'); return; }
+
+    changePasswordMutation.mutate(
+      { id: userId, payload: { current_password: pwForm.current_password, new_password: pwForm.new_password } },
+      {
+        onSuccess: (res) => {
+          if (res.success) {
+            toast.success('Password changed successfully!');
+            setPwForm({ current_password: '', new_password: '', confirm_password: '' });
+          } else {
+            toast.error(res.error?.details || res.message || 'Failed to change password.');
+          }
+        },
+        onError: () => toast.error('An unexpected error occurred.'),
+      }
+    );
+  };
 
   // Keep local state in sync if the store changes
   useEffect(() => {
@@ -112,7 +148,7 @@ export default function AgentProfile() {
 
         setAuth(
           token,
-          3600000,
+          86400000,
           updatedData.user_id,
           updatedData.username,
           updatedData.role,
@@ -234,6 +270,107 @@ export default function AgentProfile() {
                 </>
               ) : (
                 "Save Changes"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+      {/* Change Password Card */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-5 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Change Password</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Use your temporary password or update to a new one</p>
+          </div>
+          <span className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 shadow-3xs">
+            <Lock className="w-4 h-4" />
+          </span>
+        </div>
+
+        <form onSubmit={submitChangePassword} className="p-6 space-y-5">
+          {/* Current Password */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">Current Password</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 pointer-events-none">
+                <Lock className="w-4 h-4 stroke-[1.8]" />
+              </span>
+              <input
+                type={showPw.current ? 'text' : 'password'}
+                name="current_password"
+                value={pwForm.current_password}
+                onChange={handlePwInput}
+                placeholder="Enter current / temp password"
+                className="w-full bg-slate-50/40 border border-slate-200 rounded-xl pl-11 pr-11 py-3 text-sm text-slate-800 placeholder-slate-400 transition-all focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/8 shadow-3xs"
+                required
+              />
+              <button type="button" onClick={() => setShowPw((p) => ({ ...p, current: !p.current }))} className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-600">
+                {showPw.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* New Password */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">New Password</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 pointer-events-none">
+                <Lock className="w-4 h-4 stroke-[1.8]" />
+              </span>
+              <input
+                type={showPw.new ? 'text' : 'password'}
+                name="new_password"
+                value={pwForm.new_password}
+                onChange={handlePwInput}
+                placeholder="At least 6 characters"
+                className="w-full bg-slate-50/40 border border-slate-200 rounded-xl pl-11 pr-11 py-3 text-sm text-slate-800 placeholder-slate-400 transition-all focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/8 shadow-3xs"
+                required
+              />
+              <button type="button" onClick={() => setShowPw((p) => ({ ...p, new: !p.new }))} className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-600">
+                {showPw.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Confirm New Password */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">Confirm New Password</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 pointer-events-none">
+                <Lock className="w-4 h-4 stroke-[1.8]" />
+              </span>
+              <input
+                type={showPw.confirm ? 'text' : 'password'}
+                name="confirm_password"
+                value={pwForm.confirm_password}
+                onChange={handlePwInput}
+                placeholder="Repeat new password"
+                className={`w-full bg-slate-50/40 border rounded-xl pl-11 pr-11 py-3 text-sm text-slate-800 placeholder-slate-400 transition-all focus:outline-none focus:bg-white focus:ring-4 shadow-3xs ${
+                  pwForm.confirm_password && pwForm.confirm_password !== pwForm.new_password
+                    ? 'border-rose-400 focus:border-rose-400 focus:ring-rose-500/8'
+                    : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/8'
+                }`}
+                required
+              />
+              <button type="button" onClick={() => setShowPw((p) => ({ ...p, confirm: !p.confirm }))} className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-600">
+                {showPw.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {pwForm.confirm_password && pwForm.confirm_password !== pwForm.new_password && (
+              <p className="text-xs text-rose-500 mt-1">Passwords do not match.</p>
+            )}
+          </div>
+
+          <div className="pt-4 flex justify-end border-t border-slate-100">
+            <button
+              type="submit"
+              disabled={changePasswordMutation.isPending}
+              className="w-full sm:w-auto px-6 bg-amber-700 text-white font-semibold py-2.5 rounded-xl hover:bg-amber-800 transition duration-150 active:scale-[0.98] text-sm shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {changePasswordMutation.isPending ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Changing...</>
+              ) : (
+                'Change Password'
               )}
             </button>
           </div>

@@ -155,3 +155,38 @@ export function useUpdateAgentEmailVerificationMutation() {
     },
   });
 }
+
+// ─── 7. Admin Reset Agent Password Mutation (POST) ─────────────────────────
+export function useResetAgentPasswordMutation() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      api.post(`/api/agents/${id}/reset-password`, {}, { headers: authHeader() }),
+  });
+}
+
+// ─── 8. Agent Change Own Password Mutation (PATCH) ─────────────────────────
+export interface ChangePasswordPayload {
+  current_password: string;
+  new_password: string;
+}
+
+export function useChangeAgentPasswordMutation() {
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: ChangePasswordPayload }) =>
+      api.patch(`/api/agents/${id}/change-password`, payload, { headers: authHeader() }),
+  });
+}
+
+// ─── 9. Agent Contact Admin via Email Mutation (POST) ──────────────────────
+export interface ContactAdminPayload {
+  subject: string;
+  message: string;
+}
+
+export function useContactAdminMutation() {
+  return useMutation({
+    mutationFn: (payload: ContactAdminPayload) =>
+      api.post('/api/agents/contact-admin', payload, { headers: authHeader() }),
+  });
+}
+

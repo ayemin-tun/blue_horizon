@@ -26,8 +26,8 @@ export function SeasonTrendsSection() {
               <tr>
                 <th className="text-left font-mono text-[11px] tracking-wider uppercase text-[#8b93a8] font-medium px-2 pb-2.5 border-b border-[#e3e6ef]">Month</th>
                 <th className="text-left font-mono text-[11px] tracking-wider uppercase text-[#8b93a8] font-medium px-2 pb-2.5 border-b border-[#e3e6ef]">Bookings</th>
-                <th className="text-left font-mono text-[11px] tracking-wider uppercase text-[#8b93a8] font-medium px-2 pb-2.5 border-b border-[#e3e6ef]">MoM</th>
-                <th className="text-left font-mono text-[11px] tracking-wider uppercase text-[#8b93a8] font-medium px-2 pb-2.5 border-b border-[#e3e6ef]">Season</th>
+                <th className="text-left font-mono text-[11px] tracking-wider uppercase text-[#8b93a8] font-medium px-2 pb-2.5 border-b border-[#e3e6ef]">Growth</th>
+                <th className="text-left font-mono text-[11px] tracking-wider uppercase text-[#8b93a8] font-medium px-2 pb-2.5 border-b border-[#e3e6ef]">Status</th>
                 <th className="text-left font-mono text-[11px] tracking-wider uppercase text-[#8b93a8] font-medium px-2 pb-2.5 border-b border-[#e3e6ef]">Next month</th>
               </tr>
             </thead>

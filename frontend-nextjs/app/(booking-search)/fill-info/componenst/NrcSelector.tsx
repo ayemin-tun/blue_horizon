@@ -39,6 +39,7 @@ export default function NrcSelector({ value, onChange }: NrcSelectorProps) {
   const [nrcType, setNrcType] = useState("N");
   const [nrcNumber, setNrcNumber] = useState("");
   const [isApplying, setIsApplying] = useState(value === "Applying");
+  const [numberTouched, setNumberTouched] = useState(false);
 
   // Pre-fill fields if editing or returning with existing data
   useEffect(() => {
@@ -79,6 +80,14 @@ export default function NrcSelector({ value, onChange }: NrcSelectorProps) {
     }
   }, [nrcStateCode, nrcTownshipCode, nrcType, nrcNumber, isApplying]);
 
+  // ─── Number field error state ───
+  const numberHasError = numberTouched && !isApplying && nrcNumber.trim().length > 0 && nrcNumber.trim().length < 6;
+  const numberIsEmpty = numberTouched && !isApplying && nrcNumber.trim().length === 0;
+
+  const numberInputClass = (numberHasError || numberIsEmpty)
+    ? "w-full border border-rose-400 bg-rose-50/40 rounded-lg p-2.5 text-xs text-rose-900 font-medium focus:outline-none ring-1 ring-rose-200 placeholder:text-slate-300"
+    : "w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white text-slate-800 font-medium focus:border-blue-700 focus:outline-none placeholder:text-slate-300";
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -91,6 +100,7 @@ export default function NrcSelector({ value, onChange }: NrcSelectorProps) {
               setIsApplying(e.target.checked);
               if (e.target.checked) {
                 setNrcStateCode(""); setNrcTownshipCode(""); setNrcNumber("");
+                setNumberTouched(false);
               }
             }}
             className="w-3.5 h-3.5 rounded border-slate-300 text-blue-900 focus:ring-blue-900" 
@@ -104,46 +114,61 @@ export default function NrcSelector({ value, onChange }: NrcSelectorProps) {
           NRC will be registered as "Applying".
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-          {/* 1. State / Region Code */}
-          <select 
-            value={nrcStateCode} 
-            onChange={(e) => { setNrcStateCode(e.target.value); setNrcTownshipCode(""); }} 
-            className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white text-slate-800 font-medium focus:border-blue-700 focus:outline-none"
-          >
-            <option value="">State Code</option>
-            {nrcCodes.map(c => <option key={c} value={c}>{c}/</option>)}
-          </select>
+        <div className="space-y-1.5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+            {/* 1. State / Region Code */}
+            <select 
+              value={nrcStateCode} 
+              onChange={(e) => { setNrcStateCode(e.target.value); setNrcTownshipCode(""); }} 
+              className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white text-slate-800 font-medium focus:border-blue-700 focus:outline-none"
+            >
+              <option value="">State Code</option>
+              {nrcCodes.map(c => <option key={c} value={c}>{c}/</option>)}
+            </select>
 
-          {/* 2. Township Code */}
-          <select 
-            value={nrcTownshipCode} 
-            disabled={!nrcStateCode}
-            onChange={(e) => setNrcTownshipCode(e.target.value)} 
-            className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white text-slate-800 font-medium focus:border-blue-700 focus:outline-none disabled:opacity-50"
-          >
-            <option value="">Township</option>
-            {(nrcTownships[nrcStateCode] || []).map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
+            {/* 2. Township Code */}
+            <select 
+              value={nrcTownshipCode} 
+              disabled={!nrcStateCode}
+              onChange={(e) => setNrcTownshipCode(e.target.value)} 
+              className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white text-slate-800 font-medium focus:border-blue-700 focus:outline-none disabled:opacity-50"
+            >
+              <option value="">Township</option>
+              {(nrcTownships[nrcStateCode] || []).map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
 
-          {/* 3. Type Selection (N, E, P) */}
-          <select 
-            value={nrcType} 
-            onChange={(e) => setNrcType(e.target.value)} 
-            className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white text-slate-800 font-medium focus:border-blue-700 focus:outline-none"
-          >
-            {nrcTypes.map(t => <option key={t.value} value={t.value}>({t.label})</option>)}
-          </select>
+            {/* 3. Type Selection (N, E, P) */}
+            <select 
+              value={nrcType} 
+              onChange={(e) => setNrcType(e.target.value)} 
+              className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white text-slate-800 font-medium focus:border-blue-700 focus:outline-none"
+            >
+              {nrcTypes.map(t => <option key={t.value} value={t.value}>({t.label})</option>)}
+            </select>
 
-          {/* 4. 6-Digit Serial Number */}
-          <input 
-            type="text" 
-            maxLength={6}
-            placeholder="123456" 
-            value={nrcNumber} 
-            onChange={(e) => setNrcNumber(e.target.value.replace(/\D/g, ""))} 
-            className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white text-slate-800 font-medium focus:border-blue-700 focus:outline-none placeholder:text-slate-300" 
-          />
+            {/* 4. 6-Digit Serial Number */}
+            <input 
+              type="text" 
+              maxLength={6}
+              placeholder="123456" 
+              value={nrcNumber} 
+              onChange={(e) => setNrcNumber(e.target.value.replace(/\D/g, ""))} 
+              onBlur={() => setNumberTouched(true)}
+              className={numberInputClass} 
+            />
+          </div>
+
+          {/* Inline error messages */}
+          {numberIsEmpty && (
+            <p className="text-[10px] text-rose-500 font-semibold flex items-center gap-1 ml-1">
+              <span>⚠</span> NRC number is required (6 digits).
+            </p>
+          )}
+          {numberHasError && (
+            <p className="text-[10px] text-rose-500 font-semibold flex items-center gap-1 ml-1">
+              <span>⚠</span> NRC number must be exactly 6 digits ({nrcNumber.length}/6).
+            </p>
+          )}
         </div>
       )}
     </div>

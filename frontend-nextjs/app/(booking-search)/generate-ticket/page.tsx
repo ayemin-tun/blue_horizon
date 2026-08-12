@@ -6,8 +6,12 @@ import { useBookingStore } from "@/services/store/bookingStore";
 import { formatDuration, formatDisplayTime, formatDisplayDate } from "@/utils/timeHelper";
 import { buildBookingPayload, saveConfirmedTicketToLocalStorage } from "@/utils/ticketHelper";
 import BarcodeStrip from "./components/BarcodeStrip";
+import QRCodeBox from "./components/QRCodeBox";
 import { toast } from "@/services/store/alertStore";
 import { useCreateBookingMutation } from "@/services/BookingService";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
+import { Download } from "lucide-react";
 
 export default function GenerateTicketPage() {
   const router = useRouter();
@@ -28,15 +32,16 @@ export default function GenerateTicketPage() {
   const [isIssued, setIsIssued] = useState(false); // To check if the ticket has been issued successfully
   const [bticketId, setBticketId] = useState<string | null>(null); // Ticket Code provided by the backend
   const [backendPayload, setBackendPayload] = useState<any>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const createBookingMutation = useCreateBookingMutation();
   // Redirect guard
   useEffect(() => {
     if (ticketId) {
-    reset(); // Store ကို clean up လုပ်မည်
-    router.replace("/search-flight");
-    return;
-  }
+      reset(); // Store ကို clean up လုပ်မည်
+      router.replace("/search-flight");
+      return;
+    }
 
     if (!selectedFlight || passengers.length === 0 || !passengers[0].name) {
       router.replace("/fill-info");
@@ -49,6 +54,49 @@ export default function GenerateTicketPage() {
 
   const handleBackToInfo = () => {
     router.push("/fill-info");
+  };
+
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById("boarding-pass-card");
+    if (!element) return;
+
+    try {
+      setIsDownloading(true);
+      toast.success("Generating Boarding Pass PDF...");
+
+      const dataUrl = await toPng(element, {
+        pixelRatio: 2,
+        cacheBust: true,
+        backgroundColor: "#ffffff",
+      });
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const imgWidth = pdfWidth - 20; // 10mm margins
+      const imgHeight = (img.height * imgWidth) / img.width;
+
+      pdf.addImage(dataUrl, "PNG", 10, 10, imgWidth, imgHeight);
+      pdf.save(`BoardingPass_${bticketId || "ticket"}.pdf`);
+
+      toast.success("Boarding Pass downloaded successfully!");
+    } catch (error) {
+      console.error("PDF download error:", error);
+      toast.error("Failed to download PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleIssueTicket = async () => {
@@ -82,6 +130,15 @@ export default function GenerateTicketPage() {
 
   const formattedDate = formatDisplayDate(selectedFlight.flight_date);
 
+  const qrPayload = isIssued && bticketId ? `🎫 BLUE HORIZON AIRWAYS — BOARDING PASS
+---------------------------------------
+Ticket ID: ${bticketId}
+Flight: ${selectedFlight.flight_no} (${selectedFlight.departure_city} -> ${selectedFlight.arrival_city})
+Date: ${formattedDate} | Time: ${formatDisplayTime(selectedFlight.departure_time)}
+Class: ${(seatClass || "economy").toUpperCase()}
+Passengers: ${passengers.map((p) => p.name).join(", ")}
+Status: VERIFIED & CONFIRMED` : "";
+
   return (
     <div className={`space-y-6 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
 
@@ -105,7 +162,7 @@ export default function GenerateTicketPage() {
       )}
 
       {/* ── Boarding Pass Card ──────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-md overflow-hidden">
+      <div id="boarding-pass-card" className="bg-white rounded-2xl border border-slate-100 shadow-md overflow-hidden">
         {/* Top Header */}
         <div className={`${isIssued ? "bg-blue-900" : "bg-slate-700"} px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors duration-500`}>
           <div>
@@ -136,12 +193,12 @@ export default function GenerateTicketPage() {
             </div>
           </div>
 
-          {/* Ticket ID Area */}
+          {/* Ticket ID & Barcode Area */}
           <div className="flex flex-col sm:items-end gap-1">
             <p className="text-[10px] text-blue-300 font-semibold uppercase tracking-widest">Ticket ID</p>
             {isIssued && bticketId ? (
               <>
-                <p className="text-xl font-black text-white tracking-widest ">{bticketId}</p>
+                <p className="text-xl font-black text-white tracking-widest">{bticketId}</p>
                 <BarcodeStrip value={bticketId} />
               </>
             ) : (
@@ -198,6 +255,55 @@ export default function GenerateTicketPage() {
                 <span className="text-[10px] text-slate-500 font-medium capitalize">{p.gender} · DOB: {p.dob}</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* ── Security QR Code Verification Stub ──────────────────────── */}
+        <div className="px-8 py-5 bg-slate-900 text-white border-t border-slate-800">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              {/* QR Code */}
+              {isIssued && bticketId ? (
+                <QRCodeBox value={qrPayload} size={88} />
+              ) : (
+                <div className="w-[100px] h-[100px] bg-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-400 text-[10px] font-bold text-center p-2 border border-dashed border-slate-700 shrink-0">
+                  <span>🔒 Pending Issue</span>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
+                    E-Ticket Digital Verification
+                  </span>
+                </div>
+                <p className="text-sm font-bold text-white">
+                  Boarding Pass QR Pass
+                </p>
+                <p className="text-xs text-slate-300 max-w-sm leading-relaxed">
+                  Scan this QR code with any mobile camera to verify passenger details and flight confirmation.
+                </p>
+                {isIssued && bticketId && (
+                  <p className="text-[10px] font-mono text-blue-300 pt-0.5">
+                    Ticket ID: <span className="text-white font-bold">{bticketId}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Verification Stamp Badge */}
+            <div className="hidden md:flex flex-col items-end justify-center border-l border-slate-800 pl-6 shrink-0 text-right">
+              <div className="w-10 h-10 rounded-full bg-blue-900 border border-blue-400/40 flex items-center justify-center text-blue-300 font-bold mb-1">
+                ✓
+              </div>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                Blue Horizon Air
+              </span>
+              <span className="text-[10px] font-bold text-emerald-400">
+                Official Boarding Pass
+              </span>
+            </div>
           </div>
         </div>
 
@@ -265,10 +371,19 @@ export default function GenerateTicketPage() {
         ) : (
           <>
             <button
-              onClick={() => window.print()}
-              className="flex-1 py-3.5 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-slate-50 transition flex items-center justify-center gap-2"
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              className="flex-1 py-3.5 bg-blue-900 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-blue-950 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              Print Boarding Pass
+              {isDownloading ? (
+                <>
+                  <span className="animate-spin text-sm">🌀</span> Downloading PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="text-xs" /> Download Ticket (PDF)
+                </>
+              )}
             </button>
             <button
               onClick={() => { reset(); router.push("/"); }}

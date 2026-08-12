@@ -51,13 +51,13 @@ export default function LoginForm() {
         toast.success("Login Successful!");
 
         // cookie store because next js middleware does not use zustand localStorage
-        document.cookie = `token=${data.access_token}; path=/; max-age=3600`;
-        document.cookie = `name=${data.username}; path=/; max-age=3600`;
-        document.cookie = `role=${data.role}; path=/; max-age=3600`;
+        document.cookie = `token=${data.access_token}; path=/; max-age=86400`;
+        document.cookie = `name=${data.username}; path=/; max-age=86400`;
+        document.cookie = `role=${data.role}; path=/; max-age=86400`;
 
         setAuth(
           data.access_token,
-          3600000,
+          86400000,
           data.user_id || null,
           data.username || "Unknown user",
           data.role || "agent",
@@ -124,8 +124,8 @@ export default function LoginForm() {
         />
 
         {/* Checkbox & Forgot Password */}
-        <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2 text-slate-700 cursor-pointer select-none">
+        <div className="flex  justify-end items-center text-sm">
+          <label className=" items-center gap-2 text-slate-700 cursor-pointer select-none hidden">
             <input
               type="checkbox"
               checked={rememberMe}
@@ -134,7 +134,7 @@ export default function LoginForm() {
             />
             Remember this device
           </label>
-          <Link href="/forgot-password" className="font-medium text-blue-700 hover:underline">
+          <Link href="/forgot-password" className=" font-medium text-blue-700 hover:underline">
             Forgot password
           </Link>
         </div>

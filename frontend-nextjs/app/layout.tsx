@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./provider";
 import AlertContainer from "@/components/AlertContainer";
+import FloatingAgentMail from "@/components/FloatingAgentMail";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -60,6 +62,7 @@ export default function RootLayout({
           <Providers>
             <AlertContainer />
             {children}
+            <FloatingAgentMail />
           </Providers>
         </Suspense>
       </body>

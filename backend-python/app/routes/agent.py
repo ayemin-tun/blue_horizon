@@ -502,3 +502,230 @@ def update_agent_email_verification(id: int, data: AgentEmailVerifyUpdateSchema,
             "data": None,
             "error": {"code": "SERVER_ERROR", "details": str(e)}
         }
+
+
+# --- 8. ADMIN RESET AGENT PASSWORD (Send Temp Password via Email) ---
+@router.post("/{id}/reset-password", response_model=ApiResponse)
+def admin_reset_agent_password(id: int, db: Session = Depends(get_db)):
+    """
+    Admin endpoint: Generate a random temporary password, save it (hashed) to DB,
+    and email it to the agent. The agent can then login with this temp password
+    and change it from their Edit Profile page.
+    """
+    try:
+        import secrets
+        import string
+        from app.utils.auth_utils import get_password_hash
+        from app.utils.reset_email_sender import send_email_notification
+
+        agent = db.query(models.User).filter(
+            models.User.user_id == id,
+            models.User.role == "agent",
+            models.User.is_deleted == 0
+        ).first()
+
+        if not agent:
+            return {
+                "success": False,
+                "message": "Agent not found",
+                "data": None,
+                "error": {"code": "AGENT_NOT_FOUND", "details": f"Active agent with ID {id} does not exist."}
+            }
+
+        # Generate a random 10-character temp password
+        alphabet = string.ascii_letters + string.digits
+        temp_password = "".join(secrets.choice(alphabet) for _ in range(10))
+
+        # Hash and save
+        agent.password = get_password_hash(temp_password)
+        db.commit()
+
+        # Send email (non-blocking best-effort)
+        try:
+            send_email_notification(
+                email=agent.email,
+                username=agent.username,
+                temp_password=temp_password
+            )
+        except Exception as mail_err:
+            print(f"[ResetPassword] Email send failed: {mail_err}")
+
+        return {
+            "success": True,
+            "message": f"Temporary password sent to {agent.email}",
+            "data": {"agent_id": agent.user_id, "email": agent.email},
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": "Failed to reset password",
+            "data": None,
+            "error": {"code": "SERVER_ERROR", "details": str(e)}
+        }
+
+
+class AgentChangePasswordSchema(BaseModel):
+    current_password: str
+    new_password: str
+
+# --- 9. AGENT CHANGE OWN PASSWORD ---
+@router.patch("/{id}/change-password", response_model=ApiResponse)
+def agent_change_password(id: int, data: AgentChangePasswordSchema, db: Session = Depends(get_db)):
+    """
+    Agent endpoint: Verify current password then update to new password.
+    Used after the agent logs in with a temp password sent by admin.
+    """
+    try:
+        from app.utils.auth_utils import verify_password, get_password_hash
+
+        agent = db.query(models.User).filter(
+            models.User.user_id == id,
+            models.User.role == "agent",
+            models.User.is_deleted == 0
+        ).first()
+
+        if not agent:
+            return {
+                "success": False,
+                "message": "Agent not found",
+                "data": None,
+                "error": {"code": "AGENT_NOT_FOUND", "details": "Agent does not exist."}
+            }
+
+        # Verify current password
+        if not verify_password(data.current_password, agent.password):
+            return {
+                "success": False,
+                "message": "Current password is incorrect",
+                "data": None,
+                "error": {"code": "WRONG_PASSWORD", "details": "The current password you entered is incorrect."}
+            }
+
+        # Reject if new password is same as current
+        if data.current_password == data.new_password:
+            return {
+                "success": False,
+                "message": "New password must differ from current password",
+                "data": None,
+                "error": {"code": "SAME_PASSWORD", "details": "Please choose a different password."}
+            }
+
+        if len(data.new_password) < 6:
+            return {
+                "success": False,
+                "message": "Password too short",
+                "data": None,
+                "error": {"code": "WEAK_PASSWORD", "details": "Password must be at least 6 characters."}
+            }
+
+        agent.password = get_password_hash(data.new_password)
+        db.commit()
+
+        return {
+            "success": True,
+            "message": "Password changed successfully",
+            "data": {"agent_id": agent.user_id},
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": "Failed to change password",
+            "data": None,
+            "error": {"code": "SERVER_ERROR", "details": str(e)}
+        }
+
+
+class AgentContactAdminSchema(BaseModel):
+    subject: str
+    message: str
+
+# --- 10. AGENT CONTACT ADMIN VIA EMAIL ---
+@router.post("/contact-admin", response_model=ApiResponse)
+def contact_admin(data: AgentContactAdminSchema, db: Session = Depends(get_db)):
+    """
+    Endpoint for Agents to send an email message directly to Admin Support.
+    """
+    try:
+        import os
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        sender_email = os.getenv("SENDER_MAIL")
+        sender_password = os.getenv("GMAIL_APP_PASSWORD")
+
+        if not sender_email or not sender_password:
+            return {
+                "success": False,
+                "message": "Email service not configured",
+                "data": None,
+                "error": {"code": "SMTP_NOT_CONFIGURED", "details": "Email credentials are missing."}
+            }
+
+        if not data.subject.strip() or not data.message.strip():
+            return {
+                "success": False,
+                "message": "Subject and message are required",
+                "data": None,
+                "error": {"code": "INVALID_INPUT", "details": "Please fill in both subject and message."}
+            }
+
+        # Build HTML email for Admin
+        html_content = f"""\
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:20px;font-family:Arial,sans-serif;background:#f4f6fb;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#0f172a,#1e3a8a);padding:24px 32px;color:#fff;">
+      <h2 style="margin:0;font-size:20px;">📩 Agent Inquiry / Support Message</h2>
+      <p style="margin:6px 0 0;font-size:13px;color:#bfdbfe;">Blue Horizon Admin Notification</p>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="margin:0 0 12px;font-size:14px;color:#334155;">
+        You have received a new message from an Agent:
+      </p>
+      <div style="background:#f8fafc;border-left:4px solid #1e3a8a;padding:14px 18px;border-radius:6px;margin-bottom:20px;">
+        <p style="margin:0;font-size:13px;color:#64748b;"><strong>Subject:</strong> {data.subject.strip()}</p>
+      </div>
+      <div style="background:#ffffff;border:1px solid #e2e8f0;padding:18px;border-radius:8px;font-size:14px;color:#1e293b;line-height:1.6;white-space:pre-wrap;">
+        {data.message.strip()}
+      </div>
+    </div>
+    <div style="padding:16px 32px;background:#f1f5f9;font-size:12px;color:#64748b;text-align:center;">
+      This email was sent via Blue Horizon Floating Support Widget.
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = sender_email
+        msg["To"] = sender_email  # Send to Admin email
+        msg["Subject"] = f"📩 [Agent Inquiry] {data.subject.strip()}"
+        msg.attach(MIMEText(data.message.strip(), "plain"))
+        msg.attach(MIMEText(html_content, "html"))
+
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+        server.quit()
+
+        return {
+            "success": True,
+            "message": "Your email message has been sent to Admin successfully!",
+            "data": None,
+            "error": None
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": "Failed to send email to Admin",
+            "data": None,
+            "error": {"code": "SERVER_ERROR", "details": str(e)}
+        }
