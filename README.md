@@ -285,8 +285,8 @@ pip install -r requirements.txt
 
 ```bash
 cd backend-python/batch
-chmod +x bash_run_loop.sh
-./bash_run_loop.sh | tee test_run.log
+chmod +x batch_run_loop.sh
+./batch_run_loop.sh | tee test_run.log
 ```
 
 - `update_departed_status.py` runs immediately on startup, then every 10 minutes.
